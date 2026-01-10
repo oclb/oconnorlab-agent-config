@@ -1,0 +1,8 @@
+{
+  "name": "learn-tool",
+  "description": "A skill to help learn and set up new tools, libraries, and frameworks by searching documentation, installing dependencies, and running sanity checks",
+  "version": "1.0.0",
+  "author": {
+    "name": "Luke O'Connor"
+  }
+}

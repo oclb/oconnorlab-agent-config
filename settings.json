@@ -1,5 +1,8 @@
 {
   "model": "sonnet",
+  "pluginDirs": [
+    "~/Dropbox/GitHub/claude-config/plugins"
+  ],
   "hooks": {
     "Notification": [
       {

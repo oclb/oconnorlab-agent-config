@@ -4,8 +4,10 @@ This repository contains my Claude Code settings and configuration files, synced
 
 ## What's Included
 
-- `settings.json` - User-level Claude Code settings (model preferences, hooks, etc.)
+- `settings.json` - User-level Claude Code settings (model preferences, hooks, plugins, etc.)
 - `setup.sh` - Automated setup script to create symlinks on new machines
+- `plugins/` - Custom Claude Code plugins and skills
+  - `learn-tool/` - Skill for learning and setting up new tools/libraries
 
 ## How It Works
 
@@ -103,6 +105,14 @@ The `settings.json` includes hooks that run shell commands. Review these before 
 
 ### Model Preference
 - Default model: `sonnet` (Claude Sonnet 4.5)
+
+### Plugins
+- **Plugin Directory**: `~/Dropbox/GitHub/claude-config/plugins`
+- **learn-tool**: Automatically helps learn and set up new tools/libraries
+  - Searches documentation
+  - Installs tools
+  - Runs sanity checks
+  - Provides examples and resources
 
 ### Hooks
 - **Notification Hook**: Shows a terminal notification when tasks complete
