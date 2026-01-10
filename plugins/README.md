@@ -4,6 +4,31 @@ This directory contains custom plugins for Claude Code.
 
 ## Available Plugins
 
+### perform-analysis
+
+A comprehensive skill that provides a systematic framework for performing data analyses and experiments.
+
+**Triggers when you ask to:**
+- "Perform an analysis"
+- "Run an experiment"
+- "Analyze this data"
+- "Test if X correlates with Y"
+- "Compute statistics"
+
+**What it does:**
+1. Understands the motivation for the analysis
+2. Sets expectations about results
+3. Verifies all data and tools are available
+4. Creates an analysis plan
+5. Performs the analysis with time estimates
+6. Displays results with key takeaways
+7. Documents choices and challenges
+8. Lists all created files
+
+**Integrates with:** learn-tool, sanity-check-data (future), submit-O2-job (future)
+
+See `perform-analysis/README.md` for full documentation.
+
 ### learn-tool
 
 A skill that helps you quickly learn and set up new tools, libraries, and frameworks.

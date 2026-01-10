@@ -1,0 +1,8 @@
+{
+  "name": "perform-analysis",
+  "description": "A skill to systematically perform data analyses and experiments, from planning through execution to results presentation",
+  "version": "1.0.0",
+  "author": {
+    "name": "Luke O'Connor"
+  }
+}
