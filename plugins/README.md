@@ -4,6 +4,31 @@ This directory contains custom plugins for Claude Code.
 
 ## Available Plugins
 
+### sanity-check-data
+
+A comprehensive skill for acquiring, validating, and exploring new datasets.
+
+**Triggers when you ask to:**
+- "Download this dataset"
+- "Check this data"
+- "Validate the data"
+- "Sanity check the expression data"
+- "Explore what's in this file"
+
+**What it does:**
+1. Acquires or locates the dataset
+2. Examines file format and structure
+3. Loads data with appropriate tools
+4. Computes basic statistics (dimensions, ranges, missingness)
+5. Performs automatic and domain-specific sanity checks
+6. Creates visual summaries (optional)
+7. Generates comprehensive validation report
+8. Verifies tool compatibility for analysis
+
+**Integrates with:** learn-tool, perform-analysis
+
+See `sanity-check-data/README.md` for full documentation.
+
 ### perform-analysis
 
 A comprehensive skill that provides a systematic framework for performing data analyses and experiments.

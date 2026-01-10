@@ -8,6 +8,7 @@ This repository contains my Claude Code settings and configuration files, synced
 - `setup.sh` - Automated setup script to create symlinks on new machines
 - `plugins/` - Custom Claude Code plugins and skills
   - `perform-analysis/` - Systematic framework for data analyses and experiments
+  - `sanity-check-data/` - Dataset validation and exploration
   - `learn-tool/` - Skill for learning and setting up new tools/libraries
 
 ## How It Works
@@ -114,7 +115,14 @@ The `settings.json` includes hooks that run shell commands. Review these before 
   - Verifies resources and creates plans
   - Performs analysis with time estimates
   - Documents results, choices, and all files created
-  - Integrates with other skills (learn-tool, O2 cluster, data validation)
+  - Integrates with other skills (learn-tool, O2 cluster, sanity-check-data)
+- **sanity-check-data**: Dataset validation and exploration (8-step process)
+  - Acquires/downloads datasets
+  - Examines format and structure
+  - Computes statistics and checks for issues
+  - Validates with domain-specific rules
+  - Verifies tool compatibility
+  - Provides actionable recommendations
 - **learn-tool**: Automatically helps learn and set up new tools/libraries
   - Searches documentation
   - Installs tools
