@@ -12,8 +12,9 @@
 #   2. Configures TMPDIR in .bashrc
 #   3. Installs sandbox dependencies (socat) via conda
 #   4. Creates ~/.claude directory
-#   5. Generates settings.json from template
-#   6. Symlinks settings.json to ~/.claude/
+#   5. Symlinks skills directory to ~/.claude/
+#   6. Generates settings.json from template
+#   7. Symlinks settings.json to ~/.claude/
 
 set -e
 
@@ -113,9 +114,25 @@ else
     echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
 fi
 
-# Step 5: Generate settings.json from template
+# Step 5: Set up skills symlink
 echo ""
-echo "Step 5: Generating settings.json..."
+echo "Step 5: Setting up skills symlink..."
+if [ -d "$CLAUDE_DIR/skills" ] && [ ! -L "$CLAUDE_DIR/skills" ]; then
+    echo "  Backing up existing skills directory to skills.backup"
+    mv "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills.backup"
+fi
+
+if [ -L "$CLAUDE_DIR/skills" ]; then
+    echo "  Removing existing skills symlink"
+    rm "$CLAUDE_DIR/skills"
+fi
+
+echo "  Creating symlink: $CLAUDE_DIR/skills -> $REPO_DIR/skills"
+ln -s "$REPO_DIR/skills" "$CLAUDE_DIR/skills"
+
+# Step 6: Generate settings.json from template
+echo ""
+echo "Step 6: Generating settings.json..."
 
 if [ -f "$REPO_DIR/settings.template.json" ]; then
     # Use template - substitute __REPO_DIR__ with actual path
@@ -129,9 +146,9 @@ else
     echo "  WARNING: settings.json may contain hardcoded paths"
 fi
 
-# Step 6: Backup and symlink settings.json
+# Step 7: Backup and symlink settings.json
 echo ""
-echo "Step 6: Linking settings.json..."
+echo "Step 7: Linking settings.json..."
 if [ -f "$CLAUDE_DIR/settings.json" ] && [ ! -L "$CLAUDE_DIR/settings.json" ]; then
     echo "  Backing up existing settings.json to settings.json.backup"
     mv "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.backup"
@@ -158,5 +175,7 @@ echo "  1. Run: echo \$TMPDIR"
 echo "     Should show: $SCRATCH_BASE"
 echo "  2. Run: ls -la ~/.claude/settings.json"
 echo "     Should show symlink to this repo"
-echo "  3. Start Claude Code and try: /learn-tool"
+echo "  3. Run: ls -la ~/.claude/skills"
+echo "     Should show symlink to this repo"
+echo "  4. Start Claude Code and try: /learn-tool"
 echo ""
