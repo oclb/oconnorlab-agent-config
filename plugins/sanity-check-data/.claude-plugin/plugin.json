@@ -1,8 +1,0 @@
-{
-  "name": "sanity-check-data",
-  "description": "A skill to validate, explore, and sanity-check new datasets, whether downloaded, simulated, or accessed for the first time",
-  "version": "1.0.0",
-  "author": {
-    "name": "Luke O'Connor"
-  }
-}

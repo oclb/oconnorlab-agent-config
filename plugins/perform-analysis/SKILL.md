@@ -374,10 +374,10 @@ KEY TAKEAWAY: [One clear sentence summarizing the main result]
 - **Actionable**: What does this mean for the question asked?
 
 **Examples:**
-- ✅ "Treatment A increases response by 34% compared to control (p < 0.001), indicating a strong therapeutic effect."
-- ✅ "No significant correlation was found between X and Y (r = 0.05, p = 0.67), suggesting these factors are independent."
-- ❌ "The analysis showed some interesting patterns." (Too vague)
-- ❌ "P-value was 0.03." (Not interpreted)
+- "Treatment A increases response by 34% compared to control (p < 0.001), indicating a strong therapeutic effect."
+- "No significant correlation was found between X and Y (r = 0.05, p = 0.67), suggesting these factors are independent."
+- "The analysis showed some interesting patterns." (Too vague)
+- "P-value was 0.03." (Not interpreted)
 
 ### Step 7: Document Choices and Challenges
 

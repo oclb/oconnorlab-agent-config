@@ -43,7 +43,7 @@ Before section-specific revision, check these universal principles:
 **Check for:**
 - Does the reader understand WHY they're reading something BEFORE the details?
 - Does each paragraph lead with its main point?
-- Other acceptable ways to order content, especially sentences: by logical precedence (A implies B); by temporal precedence (we did A, then we did B); by motivation (A motivates B). 
+- Other acceptable ways to order content, especially sentences: by logical precedence (A implies B); by temporal precedence (we did A, then we did B); by motivation (A motivates B).
 
 **Bad**: "We performed simulation with 1000 replicates under a neutral model. Effect size variance was 0.05. We found..."
 
@@ -62,15 +62,15 @@ Before section-specific revision, check these universal principles:
 - **Sentence structure**: Short or unusual sentence structures give emphasis
 
 **Check for over-emphasis:**
-- ❌ An entire paragraph devoted to a secondary point or caveat
-- ❌ Repeating a point that has already been made and is either obvious, secondary, or dubious
-- ❌ "We performed a sophisticated analysis..."
-- ❌ Emphatic punctuation, like em-dashes or question marks, in more than a few places
+- An entire paragraph devoted to a secondary point or caveat
+- Repeating a point that has already been made and is either obvious, secondary, or dubious
+- "We performed a sophisticated analysis..."
+- Emphatic punctuation, like em-dashes or question marks, in more than a few places
 
 **Check for under-emphasis:**
-- ❌ Burying the main finding in the middle of a long paragraph
-- ❌ Not naming a key concept that's referenced repeatedly
-- ❌ The paper's three most important findings are all shoehorned into one of its three Results subsections
+- Burying the main finding in the middle of a long paragraph
+- Not naming a key concept that's referenced repeatedly
+- The paper's three most important findings are all shoehorned into one of its three Results subsections
 
 #### Cohesiveness
 
@@ -82,8 +82,8 @@ Before section-specific revision, check these universal principles:
 - **Use pronouns (with clear antecedent)**: "this approach," "these results"
 
 **Example**:
-- ❌ "Genome-wide association studies (GWAS) have identified thousands of genetic associations. Common variants have small effect sizes individually, but they combine to explain a large fraction of common disease heritability"
-- ✅ "Genome-wide association studies (GWAS) have identified thousands of common variants that are associated with common diseases and traits. Common variants have small effect sizes individually, but they combine to explain a large fraction of common disease heritability" (Repeated keyword: "common variants")
+- "Genome-wide association studies (GWAS) have identified thousands of genetic associations. Common variants have small effect sizes individually, but they combine to explain a large fraction of common disease heritability"
+- "Genome-wide association studies (GWAS) have identified thousands of common variants that are associated with common diseases and traits. Common variants have small effect sizes individually, but they combine to explain a large fraction of common disease heritability" (Repeated keyword: "common variants")
 
 **Paragraph-level cohesiveness:**
 - First sentence of paragraph should connect to the previous paragraph's point
@@ -136,7 +136,7 @@ Apply targeted revisions based on the section:
 
 **Structure**
 1. **Broad context** (1 sentence): Key background for the subject matter - something already known to target audience
-2. **Specific gap and motivation** (1-2 sentences): More detailed background; what is specifically unknown? 
+2. **Specific gap and motivation** (1-2 sentences): More detailed background; what is specifically unknown?
 3. **What you did** (1-2 sentences): Your approach (brief)
 4. **What you found** (2-4 sentences): One sentence per major result; can be interspersed with (3)
 5. **Implications** (1 sentence): Broader perspective
@@ -317,8 +317,8 @@ measuring selection20,25,26 and analyzing complex traits27 ,28
 - Reference supplementary table with numerical results
 
 **Example title**:
-- ❌ "Our method outperforms existing approaches"
-- ✅ "Comparison of heritability estimation methods"
+- "Our method outperforms existing approaches"
+- "Comparison of heritability estimation methods"
 
 **Revision checklist:**
 - [ ] One finding per panel?
