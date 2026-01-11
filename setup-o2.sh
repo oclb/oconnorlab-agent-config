@@ -98,6 +98,21 @@ echo "Step 4: Setting up Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
+# Step 4b: Update CONFIG_REPO in behavior.conf
+echo ""
+echo "Step 4b: Recording config repo location..."
+if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
+    if grep -q "^CONFIG_REPO=" "$CLAUDE_DIR/behavior.conf"; then
+        sed -i "s|^CONFIG_REPO=.*|CONFIG_REPO=$REPO_DIR|" "$CLAUDE_DIR/behavior.conf"
+    else
+        echo "CONFIG_REPO=$REPO_DIR" >> "$CLAUDE_DIR/behavior.conf"
+    fi
+    echo "  Set CONFIG_REPO=$REPO_DIR in behavior.conf"
+else
+    echo "CONFIG_REPO=$REPO_DIR" > "$CLAUDE_DIR/behavior.conf"
+    echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
+fi
+
 # Step 5: Generate settings.json from template
 echo ""
 echo "Step 5: Generating settings.json..."
