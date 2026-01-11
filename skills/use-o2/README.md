@@ -366,6 +366,181 @@ Don't rely on command history - save all submission scripts.
 ### 6. Monitor Efficiency
 Always run `seff` after jobs complete to optimize future jobs.
 
+### 7. Enable Desktop/Phone Notifications
+Get notified when jobs complete, even when away from your desk:
+
+**Setup (one time):**
+```bash
+# Add to ~/.bashrc
+export NTFY_TOPIC="$(whoami)_o2_notifications"
+
+# Subscribe on your devices
+# Phone: Install ntfy app, subscribe to your topic
+# Desktop: Visit https://ntfy.sh/your_topic
+```
+
+**Usage:**
+```bash
+# Simple notification
+notify "Job completed!"
+
+# In SLURM script
+#SBATCH --wrap="python analysis.py && notify 'Analysis done'"
+
+# With timing
+notifyme long_running_command
+```
+
+See the **Notifications** section below for detailed setup and usage.
+
+## Notifications
+
+O2 jobs can send real-time notifications to your phone or desktop when they complete. This uses [ntfy.sh](https://ntfy.sh/), a simple HTTP-based notification service.
+
+### Setup
+
+**1. Configure your notification topic:**
+
+Add to your `~/.bashrc` on O2:
+```bash
+# Use a unique topic name (username + random string recommended)
+export NTFY_TOPIC="$(whoami)_o2_notifications"
+```
+
+**2. Subscribe on your devices:**
+
+**Phone (iOS/Android):**
+- Install ntfy app from App Store or Play Store
+- Tap "Subscribe to topic"
+- Enter your topic name: `your_username_o2_notifications`
+
+**Desktop:**
+- Visit: `https://ntfy.sh/your_username_o2_notifications`
+- Bookmark for easy access
+- Or install [ntfy desktop app](https://github.com/Aetherinox/ntfy-desktop)
+
+**macOS Terminal (optional):**
+```bash
+# Subscribe and show notifications
+ntfy subscribe your_username_o2_notifications 'osascript -e "display notification \"$NTFY_MESSAGE\" with title \"$NTFY_TITLE\""'
+```
+
+**3. Test the setup:**
+```bash
+source ~/.bashrc
+test_notify
+```
+
+You should receive a test notification on all subscribed devices!
+
+### Usage Examples
+
+**Simple notification:**
+```bash
+notify "Job completed successfully!"
+```
+
+**With title and priority:**
+```bash
+notify "Analysis finished" "GWAS Results" high
+```
+
+**Notify after command:**
+```bash
+python long_analysis.py && notify "Analysis done!"
+```
+
+**In SLURM job script:**
+```bash
+#!/bin/bash
+#SBATCH -p short
+#SBATCH -t 0-04:00
+#SBATCH -c 8
+#SBATCH --mem=32G
+
+# Your analysis
+python analysis.py
+
+# Notify on completion (checks exit code)
+notify_job_complete $?
+```
+
+**Wrap command with timing:**
+```bash
+# Automatically notifies with runtime
+notifyme python long_script.py
+```
+
+**One-liner SLURM submission with notification:**
+```bash
+sbatch -p short -t 0-02:00 --mem=16G --wrap="python analysis.py && notify 'Analysis complete'"
+```
+
+### Available Functions
+
+After running the setup script, these functions are available:
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `notify` | Send simple notification | `notify "Done!"` |
+| `notify_job_complete` | Notify SLURM job status | `notify_job_complete $?` |
+| `notifyme` | Run command and notify with timing | `notifyme python script.py` |
+| `test_notify` | Test notification setup | `test_notify` |
+
+### Alternative: Email Notifications
+
+SLURM has built-in email notifications:
+
+```bash
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@hms.harvard.edu
+```
+
+**Mail types:**
+- `BEGIN`: Job started
+- `END`: Job completed
+- `FAIL`: Job failed
+- `ALL`: All events
+
+**Pros:** No setup needed, works everywhere
+**Cons:** Email delays, no phone push notifications, less immediate
+
+### Privacy & Security
+
+**ntfy.sh public service:**
+- Topics are public by default (anyone who knows your topic can see messages)
+- Don't send sensitive data
+- Use a random topic name for obscurity
+- Topics auto-delete after ~12 hours of inactivity
+
+**For sensitive data:**
+- Use email notifications instead (`--mail-type`)
+- Self-host ntfy ([docs](https://docs.ntfy.sh/install/))
+- Use access control and authentication
+
+### Troubleshooting
+
+**Not receiving notifications:**
+```bash
+# Check topic is set
+echo $NTFY_TOPIC
+
+# Test manually
+curl -d "Test message" https://ntfy.sh/$NTFY_TOPIC
+
+# Check you're subscribed to the right topic
+```
+
+**Notifications from compute nodes:**
+- Compute nodes can access internet via http/https
+- No special configuration needed
+- Works from interactive and batch jobs
+
+**Too many notifications:**
+- Use only for long jobs (>30 min)
+- Set priority to `low` for routine jobs
+- Only notify on failures: `|| notify "Failed!" "Error" high`
+
 ## Helpful Bash Aliases
 
 Add to `~/.bashrc`:

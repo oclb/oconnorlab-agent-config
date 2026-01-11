@@ -93,6 +93,26 @@ fi
 export PATH="$CONDA_ENV/bin:$PATH"
 echo "  Sandbox tools available: $(which socat 2>/dev/null || echo 'not found')"
 
+# Step 3b: Set up notification system
+echo ""
+echo "Step 3b: Setting up notification system..."
+if grep -q "source.*o2-notify.sh" "$HOME/.bashrc" 2>/dev/null; then
+    echo "  Notification system already configured in .bashrc"
+else
+    echo "" >> "$HOME/.bashrc"
+    echo "# Claude Code: Notification system for O2 jobs" >> "$HOME/.bashrc"
+    echo "source $REPO_DIR/o2-notify.sh" >> "$HOME/.bashrc"
+    echo "  Added notification system to .bashrc"
+    echo ""
+    echo "  SETUP REQUIRED for notifications:"
+    echo "  Add this to your ~/.bashrc AFTER the source line above:"
+    echo "    export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
+    echo ""
+    echo "  Then subscribe on your device(s):"
+    echo "    • Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
+    echo "    • Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
+fi
+
 # Step 4: Create .claude directory
 echo ""
 echo "Step 4: Setting up Claude configuration directory..."
@@ -188,4 +208,13 @@ echo "     Should show symlink to this repo"
 echo "  3. Run: ls -la ~/.claude/skills"
 echo "     Should show symlink to this repo"
 echo "  4. Start Claude Code and try: /learn-tool"
+echo ""
+echo "To enable notifications:"
+echo "  1. Add to ~/.bashrc:"
+echo "       export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
+echo "  2. Subscribe on your device:"
+echo "       Phone: Install ntfy app from App/Play Store"
+echo "       Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
+echo "  3. Test with: test_notify"
+echo "  4. Use in jobs: notify 'Job done!'"
 echo ""

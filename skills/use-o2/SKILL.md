@@ -228,6 +228,29 @@ module load cuda/11.7
 python train_model.py
 ```
 
+**Job with notifications:**
+
+```bash
+#!/bin/bash
+#SBATCH -p short
+#SBATCH -t 0-04:00
+#SBATCH -c 8
+#SBATCH --mem=32G
+#SBATCH -o %j.out
+#SBATCH -e %j.err
+
+# Run analysis
+python analysis.py
+
+# Send notification with job status
+notify_job_complete $?
+```
+
+Or use a one-liner with notification:
+```bash
+sbatch -p short -t 0-02:00 --mem=16G --wrap="python analysis.py && notify 'Analysis complete!'"
+```
+
 ### Step 5: Submit the Job
 
 **Method 1: Submit script file**
