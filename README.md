@@ -1,49 +1,87 @@
-# Claude Code Configuration
+# Claude Code Configuration for O'Connor Lab
 
-This repository contains my Claude Code settings and configuration files, synced across multiple computers.
+This repository contains Claude Code configuration customized for scientific research workflows in the O'Connor Lab, with special support for the Harvard O2 HPC cluster.
+
+## Purpose
+
+This configuration optimizes Claude Code for:
+- **Scientific research workflows** - Data analysis, experiment design, statistical computing
+- **O2 cluster integration** - Seamless job submission and resource management on Harvard's O2 HPC
+- **Reproducible research** - Systematic approaches to data validation and analysis
 
 ## What's Included
 
-- `settings.json` - User-level Claude Code settings (model preferences, hooks, plugins, etc.)
-- `setup.sh` - Automated setup script to create symlinks on new machines
-- `skills/` - Custom Claude Code skills
-  - `perform-analysis/` - Systematic framework for data analyses and experiments
-  - `sanity-check-data/` - Dataset validation and exploration
-  - `learn-tool/` - Skill for learning and setting up new tools/libraries
+- `settings.json` - User-level Claude Code settings (model preferences, hooks, skills, etc.)
+- `setup.sh` - Setup script for local machines (macOS/Linux)
+- `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
+- `skills/` - Custom Claude Code skills for scientific research
+  - `perform-analysis/` - Systematic 8-step framework for data analyses and experiments
+  - `new-data/` - Dataset acquisition, validation, and exploration
+  - `new-software/` - Tool learning and setup assistance
+  - `use-o2/` - O2 cluster job submission and resource management
+  - `help/` - Documentation and capability reference
+  - Additional skills for teaching, writing, and document handling
+- `CLAUDE.md` - Global behavioral configuration (AFK mode, environment detection)
 
 ## How It Works
 
-Claude Code requires settings files to be at specific locations:
+Claude Code requires configuration files at specific locations:
 - User settings: `~/.claude/settings.json`
-- Project settings: `.claude/settings.json` (in each project)
+- Skills directory: `~/.claude/skills/`
+- Behavior flags: `~/.claude/behavior.conf`
 
-This repository uses symlinks to keep the actual files in a synced location (Dropbox/GitHub) while Claude Code reads them from the expected paths.
+This repository uses symlinks to keep the actual files in a synced location (Dropbox/GitHub) while Claude Code reads them from the expected paths. This allows:
+- **Version control** - Track configuration changes over time
+- **Sharing** - Lab members can use the same optimized configuration
+- **Multi-machine sync** - Consistent setup across local machines and O2
 
-## Setup on a New Computer
+## Setup for O'Connor Lab Members
 
-### Prerequisites
+### For O2 Cluster (Recommended for compute-intensive work)
 
-1. Clone this repository to the same location on all computers:
+1. SSH into O2 and clone this repository:
    ```bash
-   cd ~/Dropbox/GitHub/
-   git clone <your-repo-url> claude-config
+   ssh USERNAME@o2.hms.harvard.edu
+   cd ~
+   git clone https://github.com/USERNAME/claude-config.git
    ```
 
-2. Ensure Dropbox is synced (if using Dropbox sync)
+2. Run the O2-specific setup script:
+   ```bash
+   cd ~/claude-config
+   ./setup-o2.sh
+   ```
 
-### Installation
+3. Start a new terminal session or run:
+   ```bash
+   source ~/.bashrc
+   ```
 
-Run the setup script to create symlinks:
+The O2 setup script will:
+- Configure scratch directory for TMPDIR (required for O2)
+- Install sandbox dependencies (socat) via conda
+- Create symlinks for settings and skills
+- Set `Environment=O2` flag for automatic O2 skill integration
 
-```bash
-cd ~/Dropbox/GitHub/claude-config
-./setup.sh
-```
+### For Local Machines (macOS/Linux)
 
-The script will:
+1. Clone this repository:
+   ```bash
+   cd ~/Dropbox/GitHub/  # or your preferred location
+   git clone https://github.com/USERNAME/claude-config.git
+   ```
+
+2. Run the local setup script:
+   ```bash
+   cd ~/Dropbox/GitHub/claude-config
+   ./setup.sh
+   ```
+
+The local setup script will:
 - Create the `~/.claude/` directory if it doesn't exist
-- Backup any existing `settings.json` to `settings.json.backup`
-- Create a symlink from `~/.claude/settings.json` to this repo's `settings.json`
+- Backup any existing configuration files
+- Create symlinks for settings and skills
+- Set `Environment=local` flag for local execution
 
 ### Verification
 
@@ -88,50 +126,71 @@ git pull
 
 Changes will be immediately available since the file is symlinked.
 
-## Sharing with Coworkers
+## For New Lab Members
 
-To share this configuration:
+To adopt this configuration:
 
-1. Make sure sensitive information is removed from `settings.json` (API keys, personal paths, etc.)
-2. Share the repository URL
-3. Coworkers can clone and run `./setup.sh` to set up on their machines
-4. They can customize their own settings as needed
+1. **Choose your primary environment:**
+   - Working primarily on O2? Use the O2 setup (recommended for data analysis)
+   - Working primarily on your laptop? Use the local setup
 
-### Note on Hooks
+2. **Clone and run setup:**
+   - Follow the appropriate setup instructions above
+   - All sensitive information has been removed from the shared configuration
 
-The `settings.json` includes hooks that run shell commands. Review these before sharing:
-- Terminal notifications may require `terminal-notifier` to be installed
-- Adjust paths and commands for different environments if needed
+3. **Customize as needed:**
+   - The configuration works out of the box, but you can personalize it
+   - Add your own skills to the `skills/` directory
+   - Modify `settings.json` for personal preferences
+   - Settings are version controlled, so you can always revert changes
 
-## Current Settings
+### Note on Notifications
 
-### Model Preference
-- Default model: `sonnet` (Claude Sonnet 4.5)
+The `settings.json` includes terminal notification hooks:
+- **macOS**: Requires `terminal-notifier` (install via: `brew install terminal-notifier`)
+- **Linux/O2**: Notifications are disabled by default (no terminal-notifier available)
 
-### Skills
-- **Skills Directory**: `~/Dropbox/GitHub/claude-config/skills`
-- **perform-analysis**: Systematic framework for data analyses (8-step process)
-  - Understands motivation and sets expectations
-  - Verifies resources and creates plans
-  - Performs analysis with time estimates
-  - Documents results, choices, and all files created
-  - Integrates with other skills (learn-tool, O2 cluster, sanity-check-data)
-- **sanity-check-data**: Dataset validation and exploration (8-step process)
-  - Acquires/downloads datasets
-  - Examines format and structure
-  - Computes statistics and checks for issues
-  - Validates with domain-specific rules
-  - Verifies tool compatibility
+## Configuration Features
+
+### Scientific Research Skills
+
+This configuration includes specialized skills for research workflows:
+
+- **perform-analysis** - Systematic 8-step analysis framework
+  - Understands research questions and sets expectations
+  - Verifies data and computational resources
+  - Creates detailed analysis plans
+  - Executes analysis with progress tracking
+  - Documents all results, decisions, and output files
+  - Automatically integrates with O2 cluster when appropriate
+
+- **new-data** - Dataset handling and validation
+  - Downloads and acquires datasets from various sources
+  - Validates data format and structure
+  - Computes descriptive statistics
+  - Identifies data quality issues
   - Provides actionable recommendations
-- **learn-tool**: Automatically helps learn and set up new tools/libraries
-  - Searches documentation
-  - Installs tools
-  - Runs sanity checks
-  - Provides examples and resources
 
-### Hooks
-- **Notification Hook**: Shows a terminal notification when tasks complete
-  - Requires: `terminal-notifier` (install via Homebrew: `brew install terminal-notifier`)
+- **use-o2** - O2 HPC cluster integration
+  - Submits SLURM jobs with appropriate resources
+  - Monitors job status and retrieves results
+  - Handles compute-intensive tasks automatically on O2
+  - Integrated with analysis workflows
+
+- **new-software** - Tool learning and setup
+  - Searches documentation and best practices
+  - Installs and configures tools
+  - Runs sanity checks
+  - Provides usage examples
+
+- **Additional skills**: Teaching mode, scientific writing revision, document handling (PDF, DOCX, PPTX)
+
+### Behavioral Configuration
+
+- **Default model**: Claude Sonnet 4.5
+- **Environment detection**: Automatically adapts behavior for O2 vs local environments
+- **AFK mode**: Optional autonomous operation mode for long-running tasks
+- **Terminal notifications**: Desktop alerts on task completion (macOS only)
 
 ## Troubleshooting
 
@@ -204,6 +263,18 @@ MCP (Model Context Protocol) server configurations can be added to `settings.jso
 
 ## Resources
 
+### Claude Code Documentation
 - [Claude Code Documentation](https://docs.claude.ai/claude-code)
 - [Claude Code Settings Reference](https://docs.claude.ai/claude-code/settings)
+- [Claude Code Skills](https://docs.claude.ai/claude-code/skills)
 - [Claude Code Hooks](https://docs.claude.ai/claude-code/hooks)
+
+### O2 Cluster Resources
+- [O2 User Guide](https://harvardmed.atlassian.net/wiki/spaces/O2/overview)
+- [O2 SLURM Documentation](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1586793619/Using+Slurm+Basic)
+- [O2 Research Computing Portal](https://rc.hms.harvard.edu/)
+
+### Getting Help
+- For configuration issues: Check this README or open an issue in the repository
+- For Claude Code questions: Run `/help` skill or check Claude Code documentation
+- For O2 cluster issues: Contact RC help (rchelp@hms.harvard.edu)
