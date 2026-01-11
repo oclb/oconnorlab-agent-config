@@ -4,6 +4,9 @@
 # Machine-specific Claude settings
 settings.json
 
+# Generated settings (machine-specific)
+settings.local.json
+
 # Backup files
 *.backup
 *.bak
