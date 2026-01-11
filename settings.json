@@ -1,8 +1,5 @@
 {
-  "model": "sonnet",
-  "pluginDirs": [
-    "~/Dropbox/GitHub/claude-config/plugins"
-  ],
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -15,5 +12,8 @@
         ]
       }
     ]
-  }
+  },
+  "pluginDirs": [
+    "~/Dropbox/GitHub/claude-config/plugins"
+  ]
 }
