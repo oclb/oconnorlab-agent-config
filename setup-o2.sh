@@ -10,8 +10,10 @@
 # What it does:
 #   1. Creates scratch directory for TMPDIR
 #   2. Configures TMPDIR in .bashrc
-#   3. Generates settings.json from template
-#   4. Symlinks settings.json to ~/.claude/
+#   3. Installs sandbox dependencies (socat) via conda
+#   4. Creates ~/.claude directory
+#   5. Generates settings.json from template
+#   6. Symlinks settings.json to ~/.claude/
 
 set -e
 
@@ -60,15 +62,45 @@ fi
 export TMPDIR="$SCRATCH_BASE"
 echo "  TMPDIR set to: $TMPDIR"
 
-# Step 3: Create .claude directory
+# Step 3: Install sandbox dependencies (socat) via conda
 echo ""
-echo "Step 3: Setting up Claude configuration directory..."
+echo "Step 3: Installing sandbox dependencies..."
+CONDA_ENV="$HOME/.conda/envs/claude-sandbox"
+
+if [ -f "$CONDA_ENV/bin/socat" ]; then
+    echo "  Sandbox dependencies already installed: $CONDA_ENV"
+else
+    echo "  Loading conda module..."
+    module load conda/miniforge3/24.11.3-0
+
+    echo "  Creating conda environment with socat..."
+    conda create -y -p "$CONDA_ENV" -c conda-forge socat > /dev/null 2>&1
+    echo "  Installed socat to: $CONDA_ENV"
+fi
+
+# Add conda env to PATH in .bashrc if not already present
+if grep -q "claude-sandbox/bin" "$HOME/.bashrc" 2>/dev/null; then
+    echo "  Sandbox PATH already configured in .bashrc"
+else
+    echo "" >> "$HOME/.bashrc"
+    echo "# Claude Code: Add sandbox tools (socat) to PATH" >> "$HOME/.bashrc"
+    echo 'export PATH="$HOME/.conda/envs/claude-sandbox/bin:$PATH"' >> "$HOME/.bashrc"
+    echo "  Added sandbox tools to PATH in .bashrc"
+fi
+
+# Export for current session
+export PATH="$CONDA_ENV/bin:$PATH"
+echo "  Sandbox tools available: $(which socat 2>/dev/null || echo 'not found')"
+
+# Step 4: Create .claude directory
+echo ""
+echo "Step 4: Setting up Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
-# Step 4: Generate settings.json from template
+# Step 5: Generate settings.json from template
 echo ""
-echo "Step 4: Generating settings.json..."
+echo "Step 5: Generating settings.json..."
 
 if [ -f "$REPO_DIR/settings.template.json" ]; then
     # Use template - substitute __REPO_DIR__ with actual path
@@ -82,9 +114,9 @@ else
     echo "  WARNING: settings.json may contain hardcoded paths"
 fi
 
-# Step 5: Backup and symlink settings.json
+# Step 6: Backup and symlink settings.json
 echo ""
-echo "Step 5: Linking settings.json..."
+echo "Step 6: Linking settings.json..."
 if [ -f "$CLAUDE_DIR/settings.json" ] && [ ! -L "$CLAUDE_DIR/settings.json" ]; then
     echo "  Backing up existing settings.json to settings.json.backup"
     mv "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.backup"
