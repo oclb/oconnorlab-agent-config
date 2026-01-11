@@ -662,9 +662,44 @@ slurmstepd: error: *** JOB 12345678 ON compute-a-16-163 CANCELLED AT 2024-01-10T
 ### Monitoring and Debugging
 
 1. **Check jobs regularly**: `squeue -u $USER`
-2. **Use email notifications**: `--mail-type=END,FAIL`
+2. **Use notifications**: Desktop/phone notifications via `notify` or email via `--mail-type=END,FAIL`
 3. **Keep output files**: Don't delete immediately
 4. **Test interactively first**: Before batch submission
+
+### Notifications
+
+Get real-time notifications when jobs complete using ntfy.sh:
+
+**Quick setup:**
+```bash
+# Add to ~/.bashrc on O2
+export NTFY_TOPIC="$(whoami)_o2_notifications"
+
+# Subscribe on phone (install ntfy app) or desktop (visit https://ntfy.sh/your_topic)
+```
+
+**Usage:**
+```bash
+# Simple notification
+notify "Job done!"
+
+# In SLURM script
+#SBATCH --wrap="python analysis.py && notify 'Analysis complete'"
+
+# With job status tracking
+notify_job_complete $?
+
+# Test setup
+test_notify
+```
+
+**Alternative - Email notifications:**
+```bash
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=yourname@hms.harvard.edu
+```
+
+See the use-o2 README for detailed notification setup and privacy considerations.
 
 ## Helper Functions
 
