@@ -1,41 +1,30 @@
 # Claude Code Configuration for O'Connor Lab
 
-This repository contains Claude Code configuration customized for scientific research workflows in the O'Connor Lab, with special support for the Harvard O2 HPC cluster.
+This repository contains Claude Code configuration and skills customized for scientific research workflows, with special support for the Harvard O2 HPC cluster.
 
-## Purpose
+## Background
 
-This configuration optimizes Claude Code for:
-- **Scientific research workflows** - Data analysis, experiment design, statistical computing
-- **O2 cluster integration** - Seamless job submission and resource management on Harvard's O2 HPC
-- **Reproducible research** - Systematic approaches to data validation and analysis
+**Claude Code** is an interactive CLI (command-line interface) tool that brings Claude AI directly into your terminal. It can read and edit files, run commands, search codebases, and assist with complex software engineering and data analysis tasks - all through conversational interaction.
+
+A Claude **skill** is a specialized prompt that extends Claude Code's capabilities with domain-specific knowledge and workflows. Skills can provide step-by-step procedures, integrate with specific tools, or customize Claude's behavior for particular tasks (like scientific analysis or cluster computing).
 
 ## What's Included
 
-- `settings.json` - User-level Claude Code settings (model preferences, hooks, skills, etc.)
-- `setup.sh` - Setup script for local machines (macOS/Linux)
-- `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
+- `CLAUDE.md` - Global behavioral configuration including environment detection
 - `skills/` - Custom Claude Code skills for scientific research
+  - `help/` - Documentation and capability reference
+  - `use-o2/` - O2 cluster job submission and resource management
   - `perform-analysis/` - Systematic 8-step framework for data analyses and experiments
   - `new-data/` - Dataset acquisition, validation, and exploration
   - `new-software/` - Tool learning and setup assistance
-  - `use-o2/` - O2 cluster job submission and resource management
-  - `help/` - Documentation and capability reference
-  - Additional skills for teaching, writing, and document handling
-- `CLAUDE.md` - Global behavioral configuration (AFK mode, environment detection)
+  - Additional skills for teaching, writing/editing, and document handling
+- `settings.json` - User-level Claude Code settings (model preferences, hooks, skills, etc.)
+- `setup.sh` - Setup script for local machines (macOS/Linux)
+- `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
 
-## How It Works
+## Quick start
 
-Claude Code requires configuration files at specific locations:
-- User settings: `~/.claude/settings.json`
-- Skills directory: `~/.claude/skills/`
-- Behavior flags: `~/.claude/behavior.conf`
-
-This repository uses symlinks to keep the actual files in a synced location (Dropbox/GitHub) while Claude Code reads them from the expected paths. This allows:
-- **Version control** - Track configuration changes over time
-- **Sharing** - Lab members can use the same optimized configuration
-- **Multi-machine sync** - Consistent setup across local machines and O2
-
-## Setup for O'Connor Lab Members
+Claude Code requires configuration files at specific locations. This repository uses symlinks (sort of like shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths. 
 
 ### For O2 Cluster (Recommended for compute-intensive work)
 
@@ -63,6 +52,8 @@ The O2 setup script will:
 - Create symlinks for settings and skills
 - Set `Environment=O2` flag for automatic O2 skill integration
 
+**O2 best practices:** Run Claude Code on a compute node in an interactive session. Inside of Claude Code, enable sandbox mode using the `/sandbox` command. Do not ever use the `--dangerously-skip-permissions` option.
+
 ### For Local Machines (macOS/Linux)
 
 1. Clone this repository:
@@ -83,19 +74,6 @@ The local setup script will:
 - Create symlinks for settings and skills
 - Set `Environment=local` flag for local execution
 
-### Verification
-
-Verify the symlink was created correctly:
-
-```bash
-ls -la ~/.claude/settings.json
-```
-
-You should see output like:
-```
-lrwxr-xr-x  1 user  staff  ... ~/.claude/settings.json -> /Users/user/Dropbox/GitHub/claude-config/settings.json
-```
-
 ## Usage
 
 ### Updating Settings
@@ -105,44 +83,6 @@ Simply edit the `settings.json` file in this repository. Changes will be immedia
 You can edit either:
 - The file in this repo: `~/Dropbox/GitHub/claude-config/settings.json`
 - The symlinked file: `~/.claude/settings.json` (they're the same)
-
-### Syncing Changes
-
-After making changes, commit and push:
-
-```bash
-cd ~/Dropbox/GitHub/claude-config
-git add settings.json
-git commit -m "Update settings"
-git push
-```
-
-On your other computer, pull the changes:
-
-```bash
-cd ~/Dropbox/GitHub/claude-config
-git pull
-```
-
-Changes will be immediately available since the file is symlinked.
-
-## For New Lab Members
-
-To adopt this configuration:
-
-1. **Choose your primary environment:**
-   - Working primarily on O2? Use the O2 setup (recommended for data analysis)
-   - Working primarily on your laptop? Use the local setup
-
-2. **Clone and run setup:**
-   - Follow the appropriate setup instructions above
-   - All sensitive information has been removed from the shared configuration
-
-3. **Customize as needed:**
-   - The configuration works out of the box, but you can personalize it
-   - Add your own skills to the `skills/` directory
-   - Modify `settings.json` for personal preferences
-   - Settings are version controlled, so you can always revert changes
 
 ### Note on Notifications
 
