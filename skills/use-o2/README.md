@@ -35,6 +35,25 @@ The skill activates when:
 - `gpu`: GPU computation
 - `mpi`: Multi-node MPI jobs
 
+## Running Claude Code on O2
+
+When you SSH to O2, you land on a login node (login01-login05). Login nodes are fine for most tasks, but resource-intensive work should use compute nodes to avoid your session being killed.
+
+### Starting an Interactive Session (Optional)
+
+For compute-intensive analyses, use an interactive session on a compute node:
+
+```bash
+# Start interactive session
+srun -p interactive -t 0-04:00 -c 4 --mem=16G --pty /bin/bash
+
+# Verify you're on a compute node
+hostname
+# Should show: compute-X-YY-ZZ (not login0X)
+```
+
+See the **Best Practices** section below for guidelines on when to use compute nodes.
+
 ## Quick Start
 
 ### Submit a Simple Job
@@ -283,6 +302,41 @@ cat 12345678.err
    - `highmem` partition if very large
 
 ## Best Practices
+
+### 0. **Know Your Node: Login vs Compute**
+
+When you log in to O2, you land on a login node (login01-login05). You can use Claude Code on login nodes for most tasks, but be aware of resource usage.
+
+**Check which node you're on:**
+```bash
+hostname
+```
+- Starts with `login`: You're on a login node
+- Starts with `compute`: You're on a compute node
+
+**Login nodes are fine for:**
+- Editing scripts and files
+- Submitting jobs (`sbatch`)
+- Checking job status (`squeue`, `seff`)
+- Navigating directories
+- Small data exploration and testing
+- Installing packages
+
+**Use compute nodes (interactive session) for resource-intensive work:**
+- Large data processing or analysis
+- Heavy compilation
+- Long-running computations
+- Memory-intensive operations (>4GB)
+
+**Starting an interactive session:**
+```bash
+# Request interactive session (4 hours, 4 cores, 16GB RAM)
+srun -p interactive -t 0-04:00 -c 4 --mem=16G --pty /bin/bash
+```
+
+Your hostname will change from `login0X` to `compute-X-YY-ZZ` once the session starts.
+
+**Note:** Running resource-intensive processes on login nodes may result in your session being killed if you exceed resource limits.
 
 ### 1. Test First
 - Run interactively to test code

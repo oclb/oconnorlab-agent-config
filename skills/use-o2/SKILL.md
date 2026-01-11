@@ -8,6 +8,50 @@ version: 1.0.0
 
 This skill helps you work with the O2 compute cluster at Harvard Medical School, using the SLURM workload manager for job submission and resource management.
 
+## Understanding O2 Login vs Compute Nodes
+
+When operating on O2, be aware of whether you're on a login node or compute node.
+
+### Detecting Node Type
+
+Run this command to check your current node:
+```bash
+hostname
+```
+
+- **Login nodes**: Hostname starts with `login` (e.g., login01, login02, login03, login04, login05)
+- **Compute nodes**: Hostname starts with `compute` (e.g., compute-a-16-28, compute-e-16-155)
+
+### Best Practice: Use Compute Nodes for Resource-Intensive Work
+
+**Login nodes** are shared by all users for lightweight tasks like editing scripts, submitting jobs, and checking status. Running resource-intensive processes on login nodes may result in your session being killed if you use too many resources.
+
+**For compute-intensive work**, use an interactive session on a compute node:
+```bash
+srun -p interactive -t 0-4:00 -c 4 --mem=16G --pty /bin/bash
+```
+
+Once you get the interactive session, your hostname will change from `login0X` to `compute-X-YY-ZZ`.
+
+### Guidelines for Login Nodes
+
+If you're on a login node, you can still use Claude Code for most tasks. Just be mindful of resource usage:
+
+**Lightweight operations (fine on login nodes):**
+- Creating/editing SLURM submission scripts
+- Checking job status (`squeue`, `seff`, `sacct`)
+- Navigating directories, viewing files
+- Small data explorations, quick tests
+- Installing packages, setting up environments
+
+**Resource-intensive operations (use compute nodes to avoid being killed):**
+- Large data processing or analysis
+- Long-running computations
+- Heavy compilation
+- Memory-intensive operations (>4GB)
+
+**Recommendation:** If unsure, check your current node with `hostname`. For any substantial computational work, consider starting an interactive session to avoid potential interruptions.
+
 ## When This Skill Applies
 
 Use this skill when:
