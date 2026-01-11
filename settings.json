@@ -14,7 +14,10 @@
     ]
   },
   "pluginDirs": [
-    "~/Dropbox/GitHub/claude-config/plugins",
-    "/n/data1/hms/dbmi/oconnor/lab/luke/claude/plugins"
-  ]
+    "~/Dropbox/GitHub/claude-config/skills",
+    "/n/data1/hms/dbmi/oconnor/lab/luke/claude/skills"
+  ],
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true
+  }
 }

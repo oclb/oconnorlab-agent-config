@@ -1,5 +1,5 @@
 ---
-name: learn-tool
+name: new-software
 description: This skill should be used when the user asks to "learn", "explore", "try out", "get started with", "set up", or "install and test" a new tool, library, framework, CLI, package, or technology. Also triggers when the user mentions they want to understand how something works or needs help with initial setup.
 version: 1.0.0
 ---
