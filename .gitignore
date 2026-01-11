@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Generated settings (machine-specific)
+settings.local.json
+
 # Backup files
 *.backup
 *.bak

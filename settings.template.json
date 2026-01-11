@@ -1,0 +1,6 @@
+{
+  "model": "opus",
+  "pluginDirs": [
+    "__REPO_DIR__/plugins"
+  ]
+}
