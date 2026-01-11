@@ -83,8 +83,8 @@ if [ -L "$CLAUDE_DIR/skills" ]; then
     rm "$CLAUDE_DIR/skills"
 fi
 
-echo "  Creating symlink: $CLAUDE_DIR/skills -> $REPO_DIR/plugins"
-ln -s "$REPO_DIR/plugins" "$CLAUDE_DIR/skills"
+echo "  Creating symlink: $CLAUDE_DIR/skills -> $REPO_DIR/skills"
+ln -s "$REPO_DIR/skills" "$CLAUDE_DIR/skills"
 
 # Step 5: Backup existing settings if they exist and aren't symlinks
 echo ""

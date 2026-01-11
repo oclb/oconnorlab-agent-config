@@ -6,7 +6,7 @@ This repository contains my Claude Code settings and configuration files, synced
 
 - `settings.json` - User-level Claude Code settings (model preferences, hooks, plugins, etc.)
 - `setup.sh` - Automated setup script to create symlinks on new machines
-- `plugins/` - Custom Claude Code plugins and skills
+- `skills/` - Custom Claude Code skills
   - `perform-analysis/` - Systematic framework for data analyses and experiments
   - `sanity-check-data/` - Dataset validation and exploration
   - `learn-tool/` - Skill for learning and setting up new tools/libraries
@@ -108,8 +108,8 @@ The `settings.json` includes hooks that run shell commands. Review these before 
 ### Model Preference
 - Default model: `sonnet` (Claude Sonnet 4.5)
 
-### Plugins
-- **Plugin Directory**: `~/Dropbox/GitHub/claude-config/plugins`
+### Skills
+- **Skills Directory**: `~/Dropbox/GitHub/claude-config/skills`
 - **perform-analysis**: Systematic framework for data analyses (8-step process)
   - Understands motivation and sets expectations
   - Verifies resources and creates plans
