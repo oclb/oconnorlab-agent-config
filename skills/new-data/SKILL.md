@@ -1,5 +1,5 @@
 ---
-name: sanity-check-data
+name: new-data
 description: This skill should be used when the user asks to "download a dataset", "access new data", "check this data", "validate data", "sanity check data", "explore a dataset", or when working with unfamiliar data for the first time. Also triggers when simulating or generating new data that needs validation.
 version: 1.0.0
 ---
