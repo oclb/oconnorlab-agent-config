@@ -1,0 +1,8 @@
+{
+  "name": "teaching-mode",
+  "description": "A skill that transforms Claude into teaching mode, providing explanations of how to replicate tasks, why choices were made, and background context for learning",
+  "version": "1.0.0",
+  "author": {
+    "name": "Luke O'Connor"
+  }
+}

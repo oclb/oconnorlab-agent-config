@@ -1,0 +1,8 @@
+{
+  "name": "use-o2",
+  "description": "A skill for working with the O2 compute cluster at Harvard Medical School, including job submission, monitoring, resource management, and troubleshooting",
+  "version": "1.0.0",
+  "author": {
+    "name": "Luke O'Connor"
+  }
+}

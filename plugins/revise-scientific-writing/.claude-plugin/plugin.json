@@ -1,0 +1,8 @@
+{
+  "name": "revise-scientific-writing",
+  "description": "A skill to revise scientific papers and documents using O'Connor lab writing principles for clarity, structure, and persuasiveness",
+  "version": "1.0.0",
+  "author": {
+    "name": "Luke O'Connor"
+  }
+}
