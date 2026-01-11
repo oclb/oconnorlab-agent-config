@@ -1,5 +1,11 @@
 # Global Claude Configuration
 
+## Configuration Repository
+
+Your settings and skills are managed in a Git repository, symlinked to their standard locations by setup scripts. Everything should "just work" - no special paths needed.
+
+The repo location is stored in `~/.claude/behavior.conf` as `CONFIG_REPO`. If you need to understand the configuration setup, modify settings at the source, or read documentation about available skills, check `$CONFIG_REPO/README.md`.
+
 ## Behavior Flags
 
 At the start of each session, read `~/.claude/behavior.conf` to check the current flag values. These flags modify how you should behave.
