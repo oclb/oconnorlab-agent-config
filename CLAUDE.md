@@ -15,7 +15,7 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 | Flag | Default | Behavior |
 |------|---------|----------|
 | `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
-| `USING_O2` | `false` | When `true`: Use the `use-o2` skill for tasks. Invoke the skill at the start of complex reasoning or problem-solving tasks. |
+| `Environment` | `local` | Indicates the compute environment. When `O2`: Use the `use-o2` skill for compute-intensive tasks. Invoke the skill at the start of complex analyses or tasks requiring substantial resources. When `local`: Run tasks locally. |
 
 ### Auto-Detection Keywords
 
@@ -38,6 +38,7 @@ The file uses simple `KEY=value` format:
 - Blank lines are ignored
 - Flag names are case-sensitive
 - Boolean flags use `true` or `false`
+- String flags use their defined values (e.g., `Environment=local` or `Environment=O2`)
 
 ### How to Apply Flags
 

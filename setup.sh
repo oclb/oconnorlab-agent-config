@@ -31,9 +31,9 @@ echo "Step 1: Creating Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
-# Step 1b: Update CONFIG_REPO in behavior.conf
+# Step 1b: Update CONFIG_REPO and Environment in behavior.conf
 echo ""
-echo "Step 1b: Recording config repo location..."
+echo "Step 1b: Recording config repo location and environment..."
 if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
     if grep -q "^CONFIG_REPO=" "$CLAUDE_DIR/behavior.conf"; then
         sed -i.bak "s|^CONFIG_REPO=.*|CONFIG_REPO=$REPO_DIR|" "$CLAUDE_DIR/behavior.conf"
@@ -41,10 +41,21 @@ if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
     else
         echo "CONFIG_REPO=$REPO_DIR" >> "$CLAUDE_DIR/behavior.conf"
     fi
+    if grep -q "^Environment=" "$CLAUDE_DIR/behavior.conf"; then
+        sed -i.bak "s|^Environment=.*|Environment=local|" "$CLAUDE_DIR/behavior.conf"
+        rm -f "$CLAUDE_DIR/behavior.conf.bak"
+    else
+        echo "Environment=local" >> "$CLAUDE_DIR/behavior.conf"
+    fi
     echo "  Set CONFIG_REPO=$REPO_DIR in behavior.conf"
+    echo "  Set Environment=local in behavior.conf"
 else
-    echo "CONFIG_REPO=$REPO_DIR" > "$CLAUDE_DIR/behavior.conf"
+    cat > "$CLAUDE_DIR/behavior.conf" <<EOF
+CONFIG_REPO=$REPO_DIR
+Environment=local
+EOF
     echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
+    echo "  Set Environment=local"
 fi
 
 # Step 2: Generate settings.json from template

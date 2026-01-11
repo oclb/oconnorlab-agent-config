@@ -99,19 +99,29 @@ echo "Step 4: Setting up Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
-# Step 4b: Update CONFIG_REPO in behavior.conf
+# Step 4b: Update CONFIG_REPO and Environment in behavior.conf
 echo ""
-echo "Step 4b: Recording config repo location..."
+echo "Step 4b: Recording config repo location and environment..."
 if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
     if grep -q "^CONFIG_REPO=" "$CLAUDE_DIR/behavior.conf"; then
         sed -i "s|^CONFIG_REPO=.*|CONFIG_REPO=$REPO_DIR|" "$CLAUDE_DIR/behavior.conf"
     else
         echo "CONFIG_REPO=$REPO_DIR" >> "$CLAUDE_DIR/behavior.conf"
     fi
+    if grep -q "^Environment=" "$CLAUDE_DIR/behavior.conf"; then
+        sed -i "s|^Environment=.*|Environment=O2|" "$CLAUDE_DIR/behavior.conf"
+    else
+        echo "Environment=O2" >> "$CLAUDE_DIR/behavior.conf"
+    fi
     echo "  Set CONFIG_REPO=$REPO_DIR in behavior.conf"
+    echo "  Set Environment=O2 in behavior.conf"
 else
-    echo "CONFIG_REPO=$REPO_DIR" > "$CLAUDE_DIR/behavior.conf"
+    cat > "$CLAUDE_DIR/behavior.conf" <<EOF
+CONFIG_REPO=$REPO_DIR
+Environment=O2
+EOF
     echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
+    echo "  Set Environment=O2"
 fi
 
 # Step 5: Set up skills symlink
