@@ -19,5 +19,17 @@
   ],
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true
+  },
+  "permissions": {
+    "allowWithinAllow": {
+      "WebFetch": [
+        "github.com",
+        "harvardmed.atlassian.net",
+        "docs.astral.sh",
+        "dev.to",
+        "ntfy.sh",
+        "docs.ntfy.sh"
+      ]
+    }
   }
 }
