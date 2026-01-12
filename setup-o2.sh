@@ -96,22 +96,33 @@ echo "  Sandbox tools available: $(which socat 2>/dev/null || echo 'not found')"
 # Step 3b: Set up notification system
 echo ""
 echo "Step 3b: Setting up notification system..."
+
+# Check and add NTFY_TOPIC
+if grep -q "export NTFY_TOPIC=" "$HOME/.bashrc" 2>/dev/null; then
+    echo "  NTFY_TOPIC already configured in .bashrc"
+else
+    echo "" >> "$HOME/.bashrc"
+    echo "# Claude Code: Notification topic for O2 job notifications" >> "$HOME/.bashrc"
+    echo "export NTFY_TOPIC=\"$(whoami)_o2_notifications\"" >> "$HOME/.bashrc"
+    echo "  Added NTFY_TOPIC to .bashrc"
+fi
+
+# Check and add source line
 if grep -q "source.*o2-notify.sh" "$HOME/.bashrc" 2>/dev/null; then
-    echo "  Notification system already configured in .bashrc"
+    echo "  Notification script already sourced in .bashrc"
 else
     echo "" >> "$HOME/.bashrc"
     echo "# Claude Code: Notification system for O2 jobs" >> "$HOME/.bashrc"
     echo "source $REPO_DIR/o2-notify.sh" >> "$HOME/.bashrc"
     echo "  Added notification system to .bashrc"
-    echo ""
-    echo "  SETUP REQUIRED for notifications:"
-    echo "  Add this to your ~/.bashrc AFTER the source line above:"
-    echo "    export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
-    echo ""
-    echo "  Then subscribe on your device(s):"
-    echo "    • Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
-    echo "    • Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
 fi
+
+# Show subscription instructions
+echo ""
+echo "  To receive notifications, subscribe on your device(s):"
+echo "    • Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
+echo "    • Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
+echo "    • Test with: source ~/.bashrc && test_notify"
 
 # Step 4: Create .claude directory
 echo ""
