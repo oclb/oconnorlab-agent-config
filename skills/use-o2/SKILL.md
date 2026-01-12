@@ -119,6 +119,60 @@ If you need to push, pull, or sync with a remote repository while on a compute n
 **Workaround for package installation:**
 If packages need to be installed, do this on a login node BEFORE starting the compute session, or suggest the user run the install command from a login node.
 
+### Configuring Git with SSH on O2
+
+GitHub can be accessed via HTTPS or SSH. **SSH is recommended** because it avoids repeated password/token prompts.
+
+**Option 1: Clone a new repo using SSH**
+```bash
+git clone git@github.com:username/repo.git
+```
+
+**Option 2: Change existing repo from HTTPS to SSH**
+```bash
+# Check current remote
+git remote -v
+
+# If it shows https://github.com/..., change to SSH:
+git remote set-url origin git@github.com:username/repo.git
+```
+
+**Setting up SSH keys for GitHub:**
+
+Claude can help create the SSH key. The user must add it to their GitHub account.
+
+1. **Create SSH key** (Claude can run this):
+   ```bash
+   # Check if key already exists
+   ls -la ~/.ssh/id_ed25519.pub 2>/dev/null || ls -la ~/.ssh/id_rsa.pub 2>/dev/null
+
+   # If no key exists, create one:
+   ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/id_ed25519 -N ""
+   ```
+
+2. **Display the public key** (Claude can run this):
+   ```bash
+   cat ~/.ssh/id_ed25519.pub
+   ```
+
+3. **User must add key to GitHub** (provide these instructions):
+   ```
+   To add your SSH key to GitHub:
+   1. Go to https://github.com/settings/keys
+   2. Click "New SSH key"
+   3. Give it a title like "O2 cluster"
+   4. Paste the public key (the output from the cat command above)
+   5. Click "Add SSH key"
+   ```
+
+4. **Test the connection** (Claude can run this):
+   ```bash
+   ssh -T git@github.com
+   ```
+   Success message: "Hi username! You've successfully authenticated..."
+
+**Note:** SSH keys created on O2 are stored in your home directory, which is shared across login and compute nodes. However, SSH to GitHub still requires internet access, so git remote operations still only work from login nodes.
+
 ## When This Skill Applies
 
 Use this skill when:
