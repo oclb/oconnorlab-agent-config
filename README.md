@@ -12,18 +12,19 @@ Claude Code is traditionally used via its (amazing) CLI. It can also be used ins
 
 ## What's Included
 
-- `global/CLAUDE.md` - Global behavioral configuration
+- `global/` - Global configuration files
+  - `CLAUDE.md` - Behavioral configuration and instructions
+  - `settings.json` - Claude Code settings (model, hooks, permissions)
 - `skills/` - Custom Claude Code skills for scientific research
   - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `use-o2/` - O2 cluster job submission and resource management
   - `perform-analysis/` - Gives step-by-step instructions for performing an analysis, examining results, potentially iterating, and creating a display item
-  - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset 
+  - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset
   - `new-software/` - Gives instructions for installing and learning a new library or software tool
   - Additional skills for teaching, editing scientific writing, and editing .docx, .pptx, and .pdf file formats
-- `settings.json` - Custom Claude Code settings, in particular enabling notifications
+- `hooks/` - Shell scripts for Claude Code hooks (notifications)
 - `setup.sh` - Setup script for local machines (macOS/Linux)
 - `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
-- `o2-notify.sh` - Shell commands enabling local notifications from a remote server
 
 ## Quick start
 
@@ -80,14 +81,14 @@ The local setup script will:
 ### Updating Settings
 
 You can edit either:
-- The `settings.json` file in this repo:
+- The source file: `global/settings.json` in this repo
 - The symlinked file: `~/.claude/settings.json` (they're the same)
 
 ### Note on Notifications
 
-The `settings.json` includes terminal notification hooks:
+The `settings.json` includes notification hooks that trigger when Claude needs input or completes a task:
 - **macOS**: Requires `terminal-notifier` (install via: `brew install terminal-notifier`)
-- **Linux/O2**: Notifications are disabled by default (no terminal-notifier available)
+- **O2/Linux**: Uses `ntfy.sh` for push notifications to your phone/desktop
 
 ## Configuration Features
 

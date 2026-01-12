@@ -1,0 +1,38 @@
+{
+  "model": "sonnet",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Awaiting your input'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Task completed'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "WebFetch(github.com/oclb/*)",
+      "WebFetch(harvardmed.atlassian.net/*)",
+      "WebFetch(docs.astral.sh/*)",
+      "WebFetch(ntfy.sh/*)",
+      "WebFetch(docs.ntfy.sh/*)",
+      "WebFetch(docs.rc.fas.harvard.edu/*)"
+    ]
+  }
+}

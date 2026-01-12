@@ -11,11 +11,9 @@
 #   1. Creates scratch directory for TMPDIR
 #   2. Configures TMPDIR in .bashrc
 #   3. Installs sandbox dependencies (socat) via conda
-#   4. Creates ~/.claude directory
-#   5. Symlinks CLAUDE.md to ~/.claude/
-#   6. Symlinks skills directory to ~/.claude/
-#   7. Generates settings.json from template
-#   8. Symlinks settings.json to ~/.claude/
+#   4. Sets up notification system (ntfy)
+#   5. Creates ~/.claude directory and behavior.conf
+#   6. Symlinks CLAUDE.md, skills, hooks, and settings.json to ~/.claude/
 
 set -e
 
@@ -94,9 +92,9 @@ fi
 export PATH="$CONDA_ENV/bin:$PATH"
 echo "  Sandbox tools available: $(which socat 2>/dev/null || echo 'not found')"
 
-# Step 3b: Set up notification system
+# Step 4: Set up notification system
 echo ""
-echo "Step 3b: Setting up notification system..."
+echo "Step 4: Setting up notification system..."
 
 # Check and add NTFY_TOPIC
 if grep -q "export NTFY_TOPIC=" "$HOME/.bashrc" 2>/dev/null; then
@@ -118,22 +116,20 @@ else
     echo "  Added notification system to .bashrc"
 fi
 
-# Show subscription instructions
 echo ""
 echo "  To receive notifications, subscribe on your device(s):"
-echo "    • Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
-echo "    • Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
-echo "    • Test with: source ~/.bashrc && test_notify"
+echo "    - Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
+echo "    - Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
+echo "    - Test with: source ~/.bashrc && test_notify"
 
-# Step 4: Create .claude directory
+# Step 5: Create .claude directory and behavior.conf
 echo ""
-echo "Step 4: Setting up Claude configuration directory..."
+echo "Step 5: Setting up Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
-# Step 4b: Update CONFIG_REPO and Environment in behavior.conf
 echo ""
-echo "Step 4b: Recording config repo location and environment..."
+echo "Step 5b: Recording config repo location and environment..."
 if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
     if grep -q "^CONFIG_REPO=" "$CLAUDE_DIR/behavior.conf"; then
         sed -i "s|^CONFIG_REPO=.*|CONFIG_REPO=$REPO_DIR|" "$CLAUDE_DIR/behavior.conf"
@@ -156,69 +152,33 @@ EOF
     echo "  Set Environment=O2"
 fi
 
-# Step 5: Set up CLAUDE.md symlink
+# Helper function to create symlink with backup
+setup_symlink() {
+    local target="$1"
+    local link="$2"
+    local name="$3"
+
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        echo "  Backing up existing $name"
+        mv "$link" "${link}.backup"
+    fi
+
+    if [ -L "$link" ]; then
+        rm "$link"
+    fi
+
+    echo "  Creating symlink: $link -> $target"
+    ln -s "$target" "$link"
+}
+
+# Step 6: Set up symlinks
 echo ""
-echo "Step 5: Setting up CLAUDE.md symlink..."
-if [ -f "$CLAUDE_DIR/CLAUDE.md" ] && [ ! -L "$CLAUDE_DIR/CLAUDE.md" ]; then
-    echo "  Backing up existing CLAUDE.md to CLAUDE.md.backup"
-    mv "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
-fi
+echo "Step 6: Setting up symlinks..."
 
-if [ -L "$CLAUDE_DIR/CLAUDE.md" ]; then
-    echo "  Removing existing CLAUDE.md symlink"
-    rm "$CLAUDE_DIR/CLAUDE.md"
-fi
-
-echo "  Creating symlink: $CLAUDE_DIR/CLAUDE.md -> $REPO_DIR/global/CLAUDE.md"
-ln -s "$REPO_DIR/global/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-
-# Step 6: Set up skills symlink
-echo ""
-echo "Step 6: Setting up skills symlink..."
-if [ -d "$CLAUDE_DIR/skills" ] && [ ! -L "$CLAUDE_DIR/skills" ]; then
-    echo "  Backing up existing skills directory to skills.backup"
-    mv "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills.backup"
-fi
-
-if [ -L "$CLAUDE_DIR/skills" ]; then
-    echo "  Removing existing skills symlink"
-    rm "$CLAUDE_DIR/skills"
-fi
-
-echo "  Creating symlink: $CLAUDE_DIR/skills -> $REPO_DIR/skills"
-ln -s "$REPO_DIR/skills" "$CLAUDE_DIR/skills"
-
-# Step 7: Generate settings.json from template
-echo ""
-echo "Step 7: Generating settings.json..."
-
-if [ -f "$REPO_DIR/settings.template.json" ]; then
-    # Use template - substitute __REPO_DIR__ with actual path
-    sed "s|__REPO_DIR__|$REPO_DIR|g" "$REPO_DIR/settings.template.json" > "$REPO_DIR/settings.local.json"
-    SETTINGS_FILE="$REPO_DIR/settings.local.json"
-    echo "  Generated from template: $SETTINGS_FILE"
-else
-    # Fall back to existing settings.json
-    SETTINGS_FILE="$REPO_DIR/settings.json"
-    echo "  Using existing: $SETTINGS_FILE"
-    echo "  WARNING: settings.json may contain hardcoded paths"
-fi
-
-# Step 8: Backup and symlink settings.json
-echo ""
-echo "Step 8: Linking settings.json..."
-if [ -f "$CLAUDE_DIR/settings.json" ] && [ ! -L "$CLAUDE_DIR/settings.json" ]; then
-    echo "  Backing up existing settings.json to settings.json.backup"
-    mv "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.backup"
-fi
-
-if [ -L "$CLAUDE_DIR/settings.json" ]; then
-    echo "  Removing existing symlink"
-    rm "$CLAUDE_DIR/settings.json"
-fi
-
-echo "  Creating symlink: $CLAUDE_DIR/settings.json -> $SETTINGS_FILE"
-ln -s "$SETTINGS_FILE" "$CLAUDE_DIR/settings.json"
+setup_symlink "$REPO_DIR/global/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md" "CLAUDE.md"
+setup_symlink "$REPO_DIR/global/settings.json" "$CLAUDE_DIR/settings.json" "settings.json"
+setup_symlink "$REPO_DIR/skills" "$CLAUDE_DIR/skills" "skills"
+setup_symlink "$REPO_DIR/hooks" "$CLAUDE_DIR/hooks" "hooks"
 
 echo ""
 echo "======================================"
@@ -238,20 +198,6 @@ echo ""
 echo "To verify setup:"
 echo "  1. Run: echo \$TMPDIR"
 echo "     Should show: $SCRATCH_BASE"
-echo "  2. Run: ls -la ~/.claude/CLAUDE.md"
-echo "     Should show symlink to this repo"
-echo "  3. Run: ls -la ~/.claude/skills"
-echo "     Should show symlink to this repo"
-echo "  4. Run: ls -la ~/.claude/settings.json"
-echo "     Should show symlink to this repo"
-echo "  5. Start Claude Code and try: /help"
-echo ""
-echo "To enable notifications:"
-echo "  1. Add to ~/.bashrc:"
-echo "       export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
-echo "  2. Subscribe on your device:"
-echo "       Phone: Install ntfy app from App/Play Store"
-echo "       Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
-echo "  3. Test with: test_notify"
-echo "  4. Use in jobs: notify 'Job done!'"
+echo "  2. Run: ls -la ~/.claude/"
+echo "     Should show symlinks to this repo"
 echo ""

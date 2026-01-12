@@ -1,17 +1,8 @@
 # macOS
 .DS_Store
 
-# Machine-specific Claude settings
-settings.json
-
-# Generated settings (machine-specific)
-settings.local.json
-
 # User-specific overrides (not committed to repo)
-*.user.md
-*.user.json
 global/CLAUDE.user.md
-settings.user.json
 
 # Backup files
 *.backup

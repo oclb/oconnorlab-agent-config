@@ -1,15 +1,14 @@
 # User-Specific Configuration
 
-This document explains how to add your own personal settings and instructions without creating git conflicts.
+This document explains how to add your own personal instructions without creating git conflicts.
 
 ## Overview
 
-The repository supports user-specific overrides that are automatically gitignored:
+The repository supports a user-specific instruction file that is gitignored:
 
-- **`global/CLAUDE.user.md`** - Personal instructions for Claude Code (appended to CLAUDE.md)
-- **`settings.user.json`** - Personal settings overrides (merged with base settings)
+- **`global/CLAUDE.user.md`** - Personal instructions for Claude Code (read after CLAUDE.md)
 
-These files are never committed to the repository, so you can customize freely without conflicts.
+This file is never committed to the repository, so you can customize freely without conflicts.
 
 ## CLAUDE.user.md - Personal Instructions
 
@@ -58,165 +57,36 @@ When I say "run standard GWAS":
 3. Output results to my standard location
 ```
 
-## settings.user.json - Personal Settings
+## Editing Shared Settings
 
-### Setup
+Settings are stored in `global/settings.json` and tracked in git. To modify settings:
 
-1. Copy the example file:
-   ```bash
-   cp settings.user.json.example settings.user.json
-   ```
+1. Edit `global/settings.json` directly
+2. Commit and push your changes
 
-2. Edit `settings.user.json` with your overrides
+If you need personal settings that differ from the shared config, you can:
+- Create a project-level `.claude/settings.json` that overrides user settings
+- Or maintain your own fork of this repository
 
-3. **Note:** Currently requires manual merging with settings.json
-   - See "Merging Settings" section below
+## What's Tracked vs Gitignored
 
-### What to Override
+**Tracked in git:**
+- `global/CLAUDE.md` - Shared instructions
+- `global/settings.json` - Shared settings
+- `skills/` - Shared skills
+- `hooks/` - Shared hooks
 
-- Model preferences (`model`, `maxTokens`)
-- Custom hooks
-- WebFetch permissions for private domains
-- Plugin configurations
-- Editor preferences
-
-### Example
-
-```json
-{
-  "model": "opus",
-  "permissions": {
-    "allowWithinAllow": {
-      "WebFetch": [
-        "my-private-gitlab.com",
-        "internal-docs.company.com"
-      ]
-    }
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/my-custom-hook.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-## Merging Settings (Advanced)
-
-### Option 1: Manual Merge (Current)
-
-Edit your `settings.json` or `settings.local.json` directly with your overrides. These files are gitignored.
-
-### Option 2: JSON Merge Script (Future)
-
-We plan to add a merge script that automatically combines:
-- `settings.template.json` (base settings from repo)
-- `settings.user.json` (your overrides)
-- → `settings.local.json` (final merged settings)
-
-This would run automatically in setup scripts.
-
-## Setup Scripts
-
-### Local Setup
-
-The `setup.sh` script:
-- Creates symlinks for CLAUDE.md and skills
-- Prompts you to create `global/CLAUDE.user.md` if it doesn't exist
-- Configures behavior.conf
-
-### O2 Setup
-
-The `setup-o2.sh` script:
-- Does everything setup.sh does
-- Configures O2-specific paths and notifications
-- Sets up TMPDIR and sandbox dependencies
-- Prompts for user-specific configuration
-
-## Best Practices
-
-### What to Commit
-
-✅ Commit to repo:
-- Base configuration (CLAUDE.md, settings.template.json)
-- Skills and plugins
-- Documentation
-- Setup scripts
-
-### What NOT to Commit
-
-❌ Don't commit:
+**Gitignored (personal):**
 - `global/CLAUDE.user.md` - Personal instructions
-- `settings.user.json` - Personal overrides
-- `settings.json` - Machine-specific settings
-- `settings.local.json` - Generated merged settings
-- API keys or credentials
-
-### Sharing User Config
-
-If you want to share your user config with teammates:
-1. Keep a separate private repo with your `*.user.*` files
-2. Or copy them manually to new machines
-3. Or keep them in your dotfiles repo
-
-## Migration Guide
-
-If you have existing personal settings in the repo:
-
-1. **Extract personal instructions:**
-   ```bash
-   # Move your personal notes from CLAUDE.md to global/CLAUDE.user.md
-   vim global/CLAUDE.user.md
-   ```
-
-2. **Extract personal settings:**
-   ```bash
-   # Copy your overrides from settings.json to settings.user.json
-   vim settings.user.json
-   ```
-
-3. **Test:**
-   ```bash
-   # Verify Claude Code still works
-   claude "echo hello"
-   ```
-
-4. **Commit the cleanup:**
-   ```bash
-   git add CLAUDE.md settings.template.json
-   git commit -m "Remove personal config from repo"
-   ```
 
 ## Troubleshooting
 
 ### CLAUDE.user.md not being read
 
-Claude Code reads CLAUDE.md, which now instructs Claude to also check for CLAUDE.user.md. If it's not working:
+Claude Code reads CLAUDE.md, which instructs Claude to also check for CLAUDE.user.md. If it's not working:
 1. Verify the file exists: `ls -la $CONFIG_REPO/global/CLAUDE.user.md`
 2. Check it's referenced in CLAUDE.md
 3. Restart your Claude Code session
-
-### Settings not applying
-
-If your settings.user.json overrides aren't working:
-1. Currently requires manual merging into settings.json
-2. Verify JSON syntax: `jq . settings.user.json`
-3. Check file is gitignored: `git status`
-
-### Git conflicts
-
-If you get conflicts despite using user files:
-1. Make sure your personal changes are in `*.user.*` files
-2. Check `.gitignore` includes the user files
-3. Stash any uncommitted changes: `git stash`
-4. Pull and re-apply: `git pull && git stash pop`
 
 ## See Also
 
