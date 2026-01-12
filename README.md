@@ -86,9 +86,16 @@ You can edit either:
 
 ### Note on Notifications
 
-The `settings.json` includes notification hooks that trigger when Claude needs input or completes a task:
-- **macOS**: Requires `terminal-notifier` (install via: `brew install terminal-notifier`)
-- **O2/Linux**: Uses `ntfy.sh` for push notifications to your phone/desktop
+The `settings.json` includes notification hooks that trigger when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop.
+
+Setup scripts automatically configure your shell with:
+- `NTFY_TOPIC` environment variable (your unique notification channel)
+- Helper functions like `notify`, `test_notify`, `notifyme`
+
+To receive notifications:
+1. Install the ntfy app on your phone or visit `https://ntfy.sh/YOUR_TOPIC` in a browser
+2. Subscribe to your topic (shown during setup, typically `username_claude_notifications`)
+3. Test with `test_notify`
 
 ## Configuration Features
 

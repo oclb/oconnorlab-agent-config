@@ -9,7 +9,7 @@
 #
 # What it does:
 #   1. Creates scratch directory for TMPDIR
-#   2. Configures TMPDIR in .bashrc
+#   2. Configures TMPDIR in shell config
 #   3. Installs sandbox dependencies (socat) via conda
 #   4. Sets up notification system (ntfy)
 #   5. Creates ~/.claude directory and behavior.conf
@@ -28,6 +28,32 @@ echo ""
 echo "Repository directory: $REPO_DIR"
 echo "Claude directory: $CLAUDE_DIR"
 echo "Scratch directory: $SCRATCH_BASE"
+
+# Detect shell and config file
+detect_shell_config() {
+    local user_shell=$(basename "$SHELL")
+    case "$user_shell" in
+        zsh)
+            [ -f "$HOME/.zshrc" ] && echo "$HOME/.zshrc" || { touch "$HOME/.zshrc"; echo "$HOME/.zshrc"; }
+            ;;
+        bash)
+            if [ -f "$HOME/.bashrc" ]; then
+                echo "$HOME/.bashrc"
+            elif [ -f "$HOME/.bash_profile" ]; then
+                echo "$HOME/.bash_profile"
+            else
+                touch "$HOME/.bashrc"
+                echo "$HOME/.bashrc"
+            fi
+            ;;
+        *)
+            [ -f "$HOME/.bashrc" ] && echo "$HOME/.bashrc" || echo "$HOME/.profile"
+            ;;
+    esac
+}
+
+SHELL_CONFIG=$(detect_shell_config)
+echo "Detected shell config: $SHELL_CONFIG"
 echo ""
 
 # Step 1: Create scratch directory for TMPDIR
@@ -46,16 +72,16 @@ else
     fi
 fi
 
-# Step 2: Add TMPDIR to .bashrc if not already present
+# Step 2: Add TMPDIR to shell config if not already present
 echo ""
-echo "Step 2: Configuring TMPDIR in .bashrc..."
-if grep -q "export TMPDIR=/n/scratch" "$HOME/.bashrc" 2>/dev/null; then
-    echo "  TMPDIR already configured in .bashrc"
+echo "Step 2: Configuring TMPDIR..."
+if grep -q "export TMPDIR=/n/scratch" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  TMPDIR already configured in $SHELL_CONFIG"
 else
-    echo "" >> "$HOME/.bashrc"
-    echo "# Claude Code: Set TMPDIR to scratch space (required for O2)" >> "$HOME/.bashrc"
-    echo "export TMPDIR=$SCRATCH_BASE" >> "$HOME/.bashrc"
-    echo "  Added TMPDIR to .bashrc"
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Set TMPDIR to scratch space (required for O2)" >> "$SHELL_CONFIG"
+    echo "export TMPDIR=$SCRATCH_BASE" >> "$SHELL_CONFIG"
+    echo "  Added TMPDIR to $SHELL_CONFIG"
 fi
 
 # Export for current session
@@ -78,14 +104,14 @@ else
     echo "  Installed socat to: $CONDA_ENV"
 fi
 
-# Add conda env to PATH in .bashrc if not already present
-if grep -q "claude-sandbox/bin" "$HOME/.bashrc" 2>/dev/null; then
-    echo "  Sandbox PATH already configured in .bashrc"
+# Add conda env to PATH if not already present
+if grep -q "claude-sandbox/bin" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  Sandbox PATH already configured in $SHELL_CONFIG"
 else
-    echo "" >> "$HOME/.bashrc"
-    echo "# Claude Code: Add sandbox tools (socat) to PATH" >> "$HOME/.bashrc"
-    echo 'export PATH="$HOME/.conda/envs/claude-sandbox/bin:$PATH"' >> "$HOME/.bashrc"
-    echo "  Added sandbox tools to PATH in .bashrc"
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Add sandbox tools (socat) to PATH" >> "$SHELL_CONFIG"
+    echo 'export PATH="$HOME/.conda/envs/claude-sandbox/bin:$PATH"' >> "$SHELL_CONFIG"
+    echo "  Added sandbox tools to PATH in $SHELL_CONFIG"
 fi
 
 # Export for current session
@@ -94,33 +120,33 @@ echo "  Sandbox tools available: $(which socat 2>/dev/null || echo 'not found')"
 
 # Step 4: Set up notification system
 echo ""
-echo "Step 4: Setting up notification system..."
+echo "Step 4: Setting up notifications..."
 
-# Check and add NTFY_TOPIC
-if grep -q "export NTFY_TOPIC=" "$HOME/.bashrc" 2>/dev/null; then
-    echo "  NTFY_TOPIC already configured in .bashrc"
+# Add NTFY_TOPIC if not already present
+if grep -q "export NTFY_TOPIC=" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  NTFY_TOPIC already configured in $SHELL_CONFIG"
 else
-    echo "" >> "$HOME/.bashrc"
-    echo "# Claude Code: Notification topic for O2 job notifications" >> "$HOME/.bashrc"
-    echo "export NTFY_TOPIC=\"$(whoami)_o2_notifications\"" >> "$HOME/.bashrc"
-    echo "  Added NTFY_TOPIC to .bashrc"
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Notification topic for ntfy.sh" >> "$SHELL_CONFIG"
+    echo "export NTFY_TOPIC=\"$(whoami)_claude_notifications\"" >> "$SHELL_CONFIG"
+    echo "  Added NTFY_TOPIC to $SHELL_CONFIG"
 fi
 
-# Check and add source line
-if grep -q "source.*o2-notify.sh" "$HOME/.bashrc" 2>/dev/null; then
-    echo "  Notification script already sourced in .bashrc"
+# Add source line for notification helpers if not already present
+if grep -q "source.*notify-helpers.sh" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  Notification helpers already sourced in $SHELL_CONFIG"
 else
-    echo "" >> "$HOME/.bashrc"
-    echo "# Claude Code: Notification system for O2 jobs" >> "$HOME/.bashrc"
-    echo "source $REPO_DIR/o2-notify.sh" >> "$HOME/.bashrc"
-    echo "  Added notification system to .bashrc"
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Notification helper functions" >> "$SHELL_CONFIG"
+    echo "source \"$REPO_DIR/notify-helpers.sh\"" >> "$SHELL_CONFIG"
+    echo "  Added notification helpers to $SHELL_CONFIG"
 fi
 
 echo ""
 echo "  To receive notifications, subscribe on your device(s):"
-echo "    - Phone: Install ntfy app, subscribe to: $(whoami)_o2_notifications"
-echo "    - Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
-echo "    - Test with: source ~/.bashrc && test_notify"
+echo "    - Phone: Install ntfy app, subscribe to: $(whoami)_claude_notifications"
+echo "    - Desktop: Visit https://ntfy.sh/$(whoami)_claude_notifications"
+echo "    - Test with: source $SHELL_CONFIG && test_notify"
 
 # Step 5: Create .claude directory and behavior.conf
 echo ""
@@ -185,7 +211,7 @@ echo "======================================"
 echo "Setup complete!"
 echo "======================================"
 echo ""
-echo "IMPORTANT: Run 'source ~/.bashrc' or start a new terminal session"
+echo "IMPORTANT: Run 'source $SHELL_CONFIG' or start a new terminal session"
 echo "before using Claude Code."
 echo ""
 echo "Optional: Create user-specific configuration"

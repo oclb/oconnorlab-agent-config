@@ -6,6 +6,7 @@
 # What it does:
 #   1. Creates ~/.claude directory and behavior.conf
 #   2. Symlinks CLAUDE.md, skills, hooks, and settings.json to ~/.claude/
+#   3. Sets up ntfy.sh notifications in shell config
 
 set -e
 
@@ -23,6 +24,45 @@ echo ""
 # Detect OS
 OS="$(uname -s)"
 echo "Detected OS: $OS"
+
+# Detect shell and config file
+detect_shell_config() {
+    # Check what shell is set as default
+    local user_shell=$(basename "$SHELL")
+
+    case "$user_shell" in
+        zsh)
+            if [ -f "$HOME/.zshrc" ]; then
+                echo "$HOME/.zshrc"
+            else
+                # Create .zshrc if it doesn't exist
+                touch "$HOME/.zshrc"
+                echo "$HOME/.zshrc"
+            fi
+            ;;
+        bash)
+            if [ -f "$HOME/.bashrc" ]; then
+                echo "$HOME/.bashrc"
+            elif [ -f "$HOME/.bash_profile" ]; then
+                echo "$HOME/.bash_profile"
+            else
+                touch "$HOME/.bashrc"
+                echo "$HOME/.bashrc"
+            fi
+            ;;
+        *)
+            # Default to .bashrc for unknown shells
+            if [ -f "$HOME/.bashrc" ]; then
+                echo "$HOME/.bashrc"
+            else
+                echo "$HOME/.profile"
+            fi
+            ;;
+    esac
+}
+
+SHELL_CONFIG=$(detect_shell_config)
+echo "Detected shell config: $SHELL_CONFIG"
 echo ""
 
 # Step 1: Create .claude directory if it doesn't exist
@@ -85,22 +125,43 @@ setup_symlink "$REPO_DIR/global/settings.json" "$CLAUDE_DIR/settings.json" "sett
 setup_symlink "$REPO_DIR/skills" "$CLAUDE_DIR/skills" "skills"
 setup_symlink "$REPO_DIR/hooks" "$CLAUDE_DIR/hooks" "hooks"
 
+# Step 3: Set up notifications
+echo ""
+echo "Step 3: Setting up notifications..."
+
+# Add NTFY_TOPIC if not already present
+if grep -q "export NTFY_TOPIC=" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  NTFY_TOPIC already configured in $SHELL_CONFIG"
+else
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Notification topic for ntfy.sh" >> "$SHELL_CONFIG"
+    echo "export NTFY_TOPIC=\"$(whoami)_claude_notifications\"" >> "$SHELL_CONFIG"
+    echo "  Added NTFY_TOPIC to $SHELL_CONFIG"
+fi
+
+# Add source line for notification helpers if not already present
+if grep -q "source.*notify-helpers.sh" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  Notification helpers already sourced in $SHELL_CONFIG"
+else
+    echo "" >> "$SHELL_CONFIG"
+    echo "# Claude Code: Notification helper functions" >> "$SHELL_CONFIG"
+    echo "source \"$REPO_DIR/notify-helpers.sh\"" >> "$SHELL_CONFIG"
+    echo "  Added notification helpers to $SHELL_CONFIG"
+fi
+
 echo ""
 echo "======================================"
 echo "Setup complete!"
 echo "======================================"
 echo ""
-echo "To verify, run:"
+echo "IMPORTANT: Run 'source $SHELL_CONFIG' or start a new terminal session"
+echo ""
+echo "To receive notifications:"
+echo "  1. Subscribe on your device:"
+echo "     - Phone: Install ntfy app, subscribe to: $(whoami)_claude_notifications"
+echo "     - Desktop: Visit https://ntfy.sh/$(whoami)_claude_notifications"
+echo "  2. Test with: source $SHELL_CONFIG && test_notify"
+echo ""
+echo "To verify setup:"
 echo "  ls -la ~/.claude/"
 echo ""
-
-# OS-specific notes
-if [ "$OS" = "Darwin" ]; then
-    echo "macOS Notes:"
-    echo "  - Install terminal-notifier for notifications: brew install terminal-notifier"
-    echo ""
-elif [ "$OS" = "Linux" ]; then
-    echo "Linux Notes:"
-    echo "  - If on O2 cluster, run setup-o2.sh instead for TMPDIR configuration"
-    echo ""
-fi

@@ -1,22 +1,19 @@
 #!/bin/bash
-# O2 Notification Helper Script
-# Sends desktop/phone notifications from O2 cluster using ntfy.sh
+# Notification Helper Functions
+# Sends desktop/phone notifications using ntfy.sh
 #
 # Installation:
 #   1. Set your ntfy topic: export NTFY_TOPIC="your-unique-topic-name"
-#   2. Source this file in ~/.bashrc: source /path/to/o2-notify.sh
+#   2. Source this file in your shell config: source /path/to/notify-helpers.sh
 #   3. Subscribe on your device:
 #      - Phone: Install ntfy app, subscribe to your topic
 #      - Desktop: Visit https://ntfy.sh/your-unique-topic-name
-#      - CLI: ntfy subscribe your-unique-topic-name
 #
 # Usage:
 #   notify "Job completed!"
 #   notify "Analysis done" "Title" high
 #   long_command && notify "Command finished"
-#
-#   In SLURM scripts:
-#   #SBATCH --wrap="python analysis.py && notify 'Analysis complete'"
+#   notifyme sleep 10  # Notify when command completes with timing
 
 # Configuration
 # Set your unique topic name - use something like your username + random string
