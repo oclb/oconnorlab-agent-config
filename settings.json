@@ -3,11 +3,23 @@
   "hooks": {
     "Notification": [
       {
-        "matcher": "",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"Claude Code - $(basename \"$PWD\")\" -message \"Task completed\""
+            "command": "~/Dropbox/GitHub/claude-config/claude-notify-hook.sh 'Claude Code' 'Awaiting your input'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/Dropbox/GitHub/claude-config/claude-notify-hook.sh 'Claude Code' 'Task completed'",
+            "timeout": 5
           }
         ]
       }
@@ -23,12 +35,12 @@
   "permissions": {
     "allowWithinAllow": {
       "WebFetch": [
-        "github.com",
+        "github.com/oclb",
+        "github.com/ericbuess/claude-code-docs",
         "harvardmed.atlassian.net",
         "docs.astral.sh",
-        "dev.to",
         "ntfy.sh",
-        "docs.ntfy.sh"
+        "docs.anthropic.com"
       ]
     }
   }

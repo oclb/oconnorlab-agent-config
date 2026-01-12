@@ -2,5 +2,30 @@
   "model": "opus",
   "pluginDirs": [
     "__REPO_DIR__/plugins"
-  ]
+  ],
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__REPO_DIR__/claude-notify-hook.sh 'Claude Code' 'Awaiting your input'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "__REPO_DIR__/claude-notify-hook.sh 'Claude Code' 'Task completed'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
 }
