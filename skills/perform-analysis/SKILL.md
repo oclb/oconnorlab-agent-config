@@ -8,9 +8,19 @@ version: 1.0.0
 
 Systematic framework for data analyses and experiments, from planning through execution to results presentation.
 
-## AFK Mode Behavior
+## Behavior Flags
 
-At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
+At the start, check `~/.claude/behavior.conf` for behavior flags.
+
+### Environment Detection
+
+Check the `Environment` flag:
+- **Environment=O2**: You are on the O2 cluster. For resource-intensive tasks (>16GB RAM, >4 hours, GPUs), use the **use-o2** skill to submit SLURM jobs.
+- **Environment=local**: Run analyses locally.
+
+### AFK Mode
+
+Check the `AFK` flag.
 
 **When AFK=true:**
 - Skip plan approval confirmations - proceed directly with the plan
@@ -72,12 +82,12 @@ Confidence: [High/Medium/Low]
 1. Identify needed datasets
 2. Locate files (search common locations if unknown)
 3. Verify access and format
-4. **For new/unfamiliar data:** Use the **sanity-check-data** skill
+4. **For new/unfamiliar data:** Use the **new-data** skill
 
 #### Tools
 1. Identify required tools/packages
 2. Check availability and versions
-3. **For unfamiliar tools:** Use the **learn-tool** skill
+3. **For unfamiliar tools:** Use the **new-software** skill
 
 ### Step 4: Make a Plan
 
@@ -122,8 +132,9 @@ Confidence: [High/Medium/Low]
 - Run in background if appropriate
 - Check progress periodically
 
-**For O2 cluster jobs:**
-- Use **use-o2** skill when: user mentions O2/cluster, needs >16GB RAM, >4 hours runtime, or GPUs
+**For O2 cluster (when Environment=O2):**
+- Use **use-o2** skill for resource-intensive tasks (>16GB RAM, >4 hours runtime, or GPUs)
+- Submit SLURM jobs and monitor progress periodically
 
 **Error handling:**
 - If AFK=true: Attempt autonomous fix (max 2 attempts per problem), then stop and report
@@ -195,8 +206,8 @@ Figures:
 
 ## Integration with Other Skills
 
-- **sanity-check-data**: Invoke when encountering new/unfamiliar data in Step 3
-- **learn-tool**: Invoke when needing unfamiliar software
+- **new-data**: Invoke when encountering new/unfamiliar data in Step 3
+- **new-software**: Invoke when needing unfamiliar software
 - **use-o2**: Invoke when analysis requires cluster computing
 
 ## References
