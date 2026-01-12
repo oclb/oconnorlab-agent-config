@@ -1,70 +1,70 @@
-# Claude Code Configuration for O'Connor Lab
+# Claude Code Configuration for Scientific Research
 
 This repository contains Claude Code configuration and skills customized for scientific research workflows, with special support for the Harvard O2 HPC cluster.
 
 ## Background
 
-**Claude Code** is an interactive CLI (command-line interface) tool that brings Claude AI directly into your terminal. It can read and edit files, run commands, search codebases, and assist with complex software engineering and data analysis tasks - all through conversational interaction.
+**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research over alternatives (like the agents that come with Cursor or Windsurf). 
 
-A Claude **skill** is a specialized prompt that extends Claude Code's capabilities with domain-specific knowledge and workflows. Skills can provide step-by-step procedures, integrate with specific tools, or customize Claude's behavior for particular tasks (like scientific analysis or cluster computing).
+In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/help how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research.
+
+Claude Code is traditionally used via its (amazing) CLI. It can also be used inside of an IDE or via a web app.
 
 ## What's Included
 
-- `CLAUDE.md` - Global behavioral configuration including environment detection
+- `global/CLAUDE.md` - Global behavioral configuration
 - `skills/` - Custom Claude Code skills for scientific research
-  - `help/` - Documentation and capability reference
+  - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `use-o2/` - O2 cluster job submission and resource management
-  - `perform-analysis/` - Systematic 8-step framework for data analyses and experiments
-  - `new-data/` - Dataset acquisition, validation, and exploration
-  - `new-software/` - Tool learning and setup assistance
-  - Additional skills for teaching, writing/editing, and document handling
-- `settings.json` - User-level Claude Code settings (model preferences, hooks, skills, etc.)
+  - `perform-analysis/` - Gives step-by-step instructions for performing an analysis, examining results, potentially iterating, and creating a display item
+  - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset 
+  - `new-software/` - Gives instructions for installing and learning a new library or software tool
+  - Additional skills for teaching, editing scientific writing, and editing .docx, .pptx, and .pdf file formats
+- `settings.json` - Custom Claude Code settings, in particular enabling notifications
 - `setup.sh` - Setup script for local machines (macOS/Linux)
 - `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
+- `o2-notify.sh` - Shell commands enabling local notifications from a remote server
 
 ## Quick start
 
-Claude Code requires configuration files at specific locations. This repository uses symlinks (sort of like shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths. 
+Claude Code requires configuration files to be found at specific locations. This repository uses symlinks (sort of like shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths. These symlinks are created by provided setup scripts.
 
-### For O2 Cluster (Recommended for compute-intensive work)
+### For O2 Cluster
 
-1. SSH into O2 and clone this repository:
+1. SSH into O2 and clone this repository at a chosen location:
    ```bash
-   ssh USERNAME@o2.hms.harvard.edu
-   cd ~
-   git clone https://github.com/USERNAME/claude-config.git
+   git clone https://github.com/oclb/claude-config.git
    ```
 
 2. Run the O2-specific setup script:
    ```bash
-   cd ~/claude-config
+   cd claude-config
    ./setup-o2.sh
    ```
 
-3. Start a new terminal session or run:
+3. This script edits your `.bashrc` file; make these changes apply to your current session:
    ```bash
    source ~/.bashrc
    ```
 
 The O2 setup script will:
-- Configure scratch directory for TMPDIR (required for O2)
-- Install sandbox dependencies (socat) via conda
+- Configure scratch directory for `TMPDIR` (required for O2)
+- Install sandbox dependencies (`socat`) via `conda`
 - Create symlinks for settings and skills
-- Set `Environment=O2` flag for automatic O2 skill integration
+- Set `Environment=O2` flag so that Claude will automatically know that it is working in O2, triggering it to use the `use-o2` skill.
 
-**O2 best practices:** Run Claude Code on a compute node in an interactive session. Inside of Claude Code, enable sandbox mode using the `/sandbox` command. Do not ever use the `--dangerously-skip-permissions` option.
+**O2 best practices:** Run Claude Code on a compute node in an interactive session; if you run it on a login node, it may use too many resources and get killed. Do not ever use the `--dangerously-skip-permissions` option. Instead, to reduce the number of times you need to approve tool usages, enable sandbox mode using the `/sandbox` command. For long-running Claude sessions, use `tmux` ([documentation](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1601700103/tmux+Keep+Linux+Sessions+Alive+so+you+can+go+back+to+the+same+terminal+window+from+anywhere+anytime)) so that the session persists if your computer sleeps or loses connection.
 
 ### For Local Machines (macOS/Linux)
 
-1. Clone this repository:
+1. Clone this repository at a chosen location:
    ```bash
-   cd ~/Dropbox/GitHub/  # or your preferred location
-   git clone https://github.com/USERNAME/claude-config.git
+   git clone https://github.com/oclb/claude-config.git
    ```
 
 2. Run the local setup script:
    ```bash
-   cd ~/Dropbox/GitHub/claude-config
+   cd claude-config
    ./setup.sh
    ```
 
@@ -76,12 +76,11 @@ The local setup script will:
 
 ## Usage
 
+
 ### Updating Settings
 
-Simply edit the `settings.json` file in this repository. Changes will be immediately available to Claude Code since it's symlinked.
-
 You can edit either:
-- The file in this repo: `~/Dropbox/GitHub/claude-config/settings.json`
+- The `settings.json` file in this repo:
 - The symlinked file: `~/.claude/settings.json` (they're the same)
 
 ### Note on Notifications
@@ -131,57 +130,6 @@ This configuration includes specialized skills for research workflows:
 - **Environment detection**: Automatically adapts behavior for O2 vs local environments
 - **AFK mode**: Optional autonomous operation mode for long-running tasks
 - **Terminal notifications**: Desktop alerts on task completion (macOS only)
-
-## Troubleshooting
-
-### Symlink Issues
-
-If the symlink breaks or points to the wrong location:
-
-1. Remove the broken symlink:
-   ```bash
-   rm ~/.claude/settings.json
-   ```
-
-2. Re-run the setup script:
-   ```bash
-   cd ~/Dropbox/GitHub/claude-config
-   ./setup.sh
-   ```
-
-### Settings Not Loading
-
-If Claude Code isn't picking up your settings:
-
-1. Verify the symlink exists and points to the correct location:
-   ```bash
-   ls -la ~/.claude/settings.json
-   ```
-
-2. Check file permissions:
-   ```bash
-   ls -l ~/Dropbox/GitHub/claude-config/settings.json
-   ```
-
-3. Restart your Claude Code session
-
-### Merge Conflicts
-
-If you make changes on both computers before syncing:
-
-1. Pull the latest changes:
-   ```bash
-   git pull
-   ```
-
-2. If there's a conflict, Git will mark it in the file
-3. Edit `settings.json` to resolve the conflict
-4. Commit the resolved version:
-   ```bash
-   git add settings.json
-   git commit -m "Resolve settings conflict"
-   git push
-   ```
 
 ## Additional Configuration Files
 

@@ -6,7 +6,7 @@ This document explains how to add your own personal settings and instructions wi
 
 The repository supports user-specific overrides that are automatically gitignored:
 
-- **`CLAUDE.user.md`** - Personal instructions for Claude Code (appended to CLAUDE.md)
+- **`global/CLAUDE.user.md`** - Personal instructions for Claude Code (appended to CLAUDE.md)
 - **`settings.user.json`** - Personal settings overrides (merged with base settings)
 
 These files are never committed to the repository, so you can customize freely without conflicts.
@@ -17,10 +17,10 @@ These files are never committed to the repository, so you can customize freely w
 
 1. Copy the example file:
    ```bash
-   cp CLAUDE.user.md.example CLAUDE.user.md
+   cp global/CLAUDE.user.md.example global/CLAUDE.user.md
    ```
 
-2. Edit `CLAUDE.user.md` with your personal instructions
+2. Edit `global/CLAUDE.user.md` with your personal instructions
 
 3. Claude Code will automatically read both `CLAUDE.md` and `CLAUDE.user.md`
 
@@ -129,7 +129,7 @@ This would run automatically in setup scripts.
 
 The `setup.sh` script:
 - Creates symlinks for CLAUDE.md and skills
-- Prompts you to create `CLAUDE.user.md` if it doesn't exist
+- Prompts you to create `global/CLAUDE.user.md` if it doesn't exist
 - Configures behavior.conf
 
 ### O2 Setup
@@ -153,7 +153,7 @@ The `setup-o2.sh` script:
 ### What NOT to Commit
 
 ❌ Don't commit:
-- `CLAUDE.user.md` - Personal instructions
+- `global/CLAUDE.user.md` - Personal instructions
 - `settings.user.json` - Personal overrides
 - `settings.json` - Machine-specific settings
 - `settings.local.json` - Generated merged settings
@@ -172,8 +172,8 @@ If you have existing personal settings in the repo:
 
 1. **Extract personal instructions:**
    ```bash
-   # Move your personal notes from CLAUDE.md to CLAUDE.user.md
-   vim CLAUDE.user.md
+   # Move your personal notes from CLAUDE.md to global/CLAUDE.user.md
+   vim global/CLAUDE.user.md
    ```
 
 2. **Extract personal settings:**
@@ -199,7 +199,7 @@ If you have existing personal settings in the repo:
 ### CLAUDE.user.md not being read
 
 Claude Code reads CLAUDE.md, which now instructs Claude to also check for CLAUDE.user.md. If it's not working:
-1. Verify the file exists: `ls -la $CONFIG_REPO/CLAUDE.user.md`
+1. Verify the file exists: `ls -la $CONFIG_REPO/global/CLAUDE.user.md`
 2. Check it's referenced in CLAUDE.md
 3. Restart your Claude Code session
 

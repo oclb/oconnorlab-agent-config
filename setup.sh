@@ -6,7 +6,7 @@
 # What it does:
 #   1. Creates ~/.claude directory
 #   2. Generates settings.json from template with correct paths
-#   3. Symlinks settings.json to ~/.claude/
+#   3. Symlinks CLAUDE.md, skills, and settings.json to ~/.claude/
 
 set -e
 
@@ -73,17 +73,32 @@ else
     echo "  Using existing: $SETTINGS_FILE"
 fi
 
-# Step 3: Add OS-specific notification hook
+# OS-specific notification handling
 if [ "$OS" = "Darwin" ] && command -v terminal-notifier &> /dev/null; then
     echo "  macOS detected with terminal-notifier - notifications enabled"
-    # Could add notification hook here if using template
 elif [ "$OS" = "Linux" ]; then
     echo "  Linux detected - notifications disabled (no terminal-notifier)"
 fi
 
+# Step 3: Set up CLAUDE.md symlink
+echo ""
+echo "Step 3: Setting up CLAUDE.md symlink..."
+if [ -f "$CLAUDE_DIR/CLAUDE.md" ] && [ ! -L "$CLAUDE_DIR/CLAUDE.md" ]; then
+    echo "  Backing up existing CLAUDE.md to CLAUDE.md.backup"
+    mv "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
+fi
+
+if [ -L "$CLAUDE_DIR/CLAUDE.md" ]; then
+    echo "  Removing existing CLAUDE.md symlink"
+    rm "$CLAUDE_DIR/CLAUDE.md"
+fi
+
+echo "  Creating symlink: $CLAUDE_DIR/CLAUDE.md -> $REPO_DIR/global/CLAUDE.md"
+ln -s "$REPO_DIR/global/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+
 # Step 4: Set up skills symlink
 echo ""
-echo "Step 3: Setting up skills symlink..."
+echo "Step 4: Setting up skills symlink..."
 if [ -d "$CLAUDE_DIR/skills" ] && [ ! -L "$CLAUDE_DIR/skills" ]; then
     echo "  Backing up existing skills directory to skills.backup"
     mv "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills.backup"
@@ -99,7 +114,7 @@ ln -s "$REPO_DIR/skills" "$CLAUDE_DIR/skills"
 
 # Step 5: Backup existing settings if they exist and aren't symlinks
 echo ""
-echo "Step 4: Setting up settings symlink..."
+echo "Step 5: Setting up settings symlink..."
 if [ -f "$CLAUDE_DIR/settings.json" ] && [ ! -L "$CLAUDE_DIR/settings.json" ]; then
     echo "  Backing up existing settings.json to settings.json.backup"
     mv "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.backup"
@@ -121,8 +136,9 @@ echo "Setup complete!"
 echo "======================================"
 echo ""
 echo "To verify, run:"
-echo "  ls -la ~/.claude/settings.json"
+echo "  ls -la ~/.claude/CLAUDE.md"
 echo "  ls -la ~/.claude/skills"
+echo "  ls -la ~/.claude/settings.json"
 echo ""
 
 # OS-specific notes

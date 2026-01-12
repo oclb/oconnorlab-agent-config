@@ -10,7 +10,7 @@ settings.local.json
 # User-specific overrides (not committed to repo)
 *.user.md
 *.user.json
-CLAUDE.user.md
+global/CLAUDE.user.md
 settings.user.json
 
 # Backup files

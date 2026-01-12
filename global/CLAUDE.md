@@ -8,7 +8,7 @@ The repo location is stored in `~/.claude/behavior.conf` as `CONFIG_REPO`. If yo
 
 ## User-Specific Configuration
 
-**IMPORTANT:** If the file `$CONFIG_REPO/CLAUDE.user.md` exists, read it AFTER reading this file. It contains user-specific instructions and preferences that override or extend these global settings. The user file is gitignored and won't cause conflicts when pulling from the repo.
+**IMPORTANT:** If the file `$CONFIG_REPO/global/CLAUDE.user.md` exists, read it AFTER reading this file. It contains user-specific instructions and preferences that override or extend these global settings. The user file is gitignored and won't cause conflicts when pulling from the repo.
 
 ## Behavior Flags
 

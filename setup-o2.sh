@@ -12,9 +12,10 @@
 #   2. Configures TMPDIR in .bashrc
 #   3. Installs sandbox dependencies (socat) via conda
 #   4. Creates ~/.claude directory
-#   5. Symlinks skills directory to ~/.claude/
-#   6. Generates settings.json from template
-#   7. Symlinks settings.json to ~/.claude/
+#   5. Symlinks CLAUDE.md to ~/.claude/
+#   6. Symlinks skills directory to ~/.claude/
+#   7. Generates settings.json from template
+#   8. Symlinks settings.json to ~/.claude/
 
 set -e
 
@@ -155,9 +156,25 @@ EOF
     echo "  Set Environment=O2"
 fi
 
-# Step 5: Set up skills symlink
+# Step 5: Set up CLAUDE.md symlink
 echo ""
-echo "Step 5: Setting up skills symlink..."
+echo "Step 5: Setting up CLAUDE.md symlink..."
+if [ -f "$CLAUDE_DIR/CLAUDE.md" ] && [ ! -L "$CLAUDE_DIR/CLAUDE.md" ]; then
+    echo "  Backing up existing CLAUDE.md to CLAUDE.md.backup"
+    mv "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
+fi
+
+if [ -L "$CLAUDE_DIR/CLAUDE.md" ]; then
+    echo "  Removing existing CLAUDE.md symlink"
+    rm "$CLAUDE_DIR/CLAUDE.md"
+fi
+
+echo "  Creating symlink: $CLAUDE_DIR/CLAUDE.md -> $REPO_DIR/global/CLAUDE.md"
+ln -s "$REPO_DIR/global/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+
+# Step 6: Set up skills symlink
+echo ""
+echo "Step 6: Setting up skills symlink..."
 if [ -d "$CLAUDE_DIR/skills" ] && [ ! -L "$CLAUDE_DIR/skills" ]; then
     echo "  Backing up existing skills directory to skills.backup"
     mv "$CLAUDE_DIR/skills" "$CLAUDE_DIR/skills.backup"
@@ -171,9 +188,9 @@ fi
 echo "  Creating symlink: $CLAUDE_DIR/skills -> $REPO_DIR/skills"
 ln -s "$REPO_DIR/skills" "$CLAUDE_DIR/skills"
 
-# Step 6: Generate settings.json from template
+# Step 7: Generate settings.json from template
 echo ""
-echo "Step 6: Generating settings.json..."
+echo "Step 7: Generating settings.json..."
 
 if [ -f "$REPO_DIR/settings.template.json" ]; then
     # Use template - substitute __REPO_DIR__ with actual path
@@ -187,9 +204,9 @@ else
     echo "  WARNING: settings.json may contain hardcoded paths"
 fi
 
-# Step 7: Backup and symlink settings.json
+# Step 8: Backup and symlink settings.json
 echo ""
-echo "Step 7: Linking settings.json..."
+echo "Step 8: Linking settings.json..."
 if [ -f "$CLAUDE_DIR/settings.json" ] && [ ! -L "$CLAUDE_DIR/settings.json" ]; then
     echo "  Backing up existing settings.json to settings.json.backup"
     mv "$CLAUDE_DIR/settings.json" "$CLAUDE_DIR/settings.json.backup"
@@ -213,19 +230,21 @@ echo "before using Claude Code."
 echo ""
 echo "Optional: Create user-specific configuration"
 echo "  To add personal instructions that won't be committed:"
-echo "    cp $REPO_DIR/CLAUDE.user.md.example $REPO_DIR/CLAUDE.user.md"
-echo "    vim $REPO_DIR/CLAUDE.user.md"
+echo "    cp $REPO_DIR/global/CLAUDE.user.md.example $REPO_DIR/global/CLAUDE.user.md"
+echo "    vim $REPO_DIR/global/CLAUDE.user.md"
 echo ""
 echo "  See $REPO_DIR/USER-CONFIG.md for details."
 echo ""
 echo "To verify setup:"
 echo "  1. Run: echo \$TMPDIR"
 echo "     Should show: $SCRATCH_BASE"
-echo "  2. Run: ls -la ~/.claude/settings.json"
+echo "  2. Run: ls -la ~/.claude/CLAUDE.md"
 echo "     Should show symlink to this repo"
 echo "  3. Run: ls -la ~/.claude/skills"
 echo "     Should show symlink to this repo"
-echo "  4. Start Claude Code and try: /learn-tool"
+echo "  4. Run: ls -la ~/.claude/settings.json"
+echo "     Should show symlink to this repo"
+echo "  5. Start Claude Code and try: /help"
 echo ""
 echo "To enable notifications:"
 echo "  1. Add to ~/.bashrc:"
