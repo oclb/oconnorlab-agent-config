@@ -8,6 +8,8 @@ You'll receive notifications in two scenarios:
 1. **Awaiting Input**: When Claude Code needs your input or permission
 2. **Task Completed**: When Claude Code finishes responding
 
+**Notifications include the conversation name** (directory name) so you can identify which project needs attention.
+
 ## How It Works
 
 ### Local (macOS)
@@ -26,6 +28,12 @@ The `claude-notify-hook.sh` script automatically detects your environment:
 - On O2: Uses ntfy.sh (requires `NTFY_TOPIC` to be set)
 - On macOS: Uses terminal-notifier or osascript
 - Fallback: Prints to stderr
+
+The script reads JSON input from Claude Code hooks via stdin to extract:
+- **Current working directory**: Used to show the conversation/project name
+- **Transcript path**: Available for future enhancements
+
+Notifications will appear as: **"Claude Code: project-name"** followed by the message.
 
 ## Setup
 

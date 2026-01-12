@@ -10,7 +10,32 @@
 #   - O2/Remote: Uses ntfy.sh
 #   - Fallback: Prints to stderr
 
-TITLE="${1:-Claude Code}"
+# Read hook input from stdin (JSON from Claude Code)
+HOOK_INPUT=$(cat)
+
+# Extract context from hook input
+if command -v jq &> /dev/null; then
+    CWD=$(echo "$HOOK_INPUT" | jq -r '.cwd // empty' 2>/dev/null)
+else
+    # Fallback without jq: simple grep/sed parsing
+    CWD=$(echo "$HOOK_INPUT" | grep -o '"cwd":"[^"]*"' | cut -d'"' -f4)
+fi
+
+# Get conversation name from current working directory
+if [ -n "$CWD" ]; then
+    CONVERSATION_NAME=$(basename "$CWD")
+else
+    CONVERSATION_NAME=$(basename "$PWD")
+fi
+
+# Build title with conversation name
+BASE_TITLE="${1:-Claude Code}"
+if [ "$CONVERSATION_NAME" != "/" ] && [ -n "$CONVERSATION_NAME" ]; then
+    TITLE="$BASE_TITLE: $CONVERSATION_NAME"
+else
+    TITLE="$BASE_TITLE"
+fi
+
 MESSAGE="${2:-Notification}"
 PRIORITY="${3:-default}"
 
