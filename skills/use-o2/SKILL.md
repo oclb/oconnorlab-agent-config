@@ -8,19 +8,40 @@ version: 1.0.0
 
 This skill helps you work with the O2 compute cluster at Harvard Medical School, using the SLURM workload manager for job submission and resource management.
 
+## Quick Reference: Node-Specific Behavior
+
+**When Claude Code starts on O2, first run `hostname` to detect node type.**
+
+| Node Type | Hostname Pattern | Compute OK? | Git Remote OK? |
+|-----------|------------------|-------------|----------------|
+| Login     | `login01`, `login02`, etc. | NO (use compute node) | YES |
+| Compute   | `compute-a-16-28`, etc. | YES | NO (no internet) |
+
+**Summary of Claude's behavior on O2:**
+
+- **On login nodes**: Can do git push/pull/fetch, but should NOT run compute-intensive operations. Suggest interactive session for heavy work.
+- **On compute nodes**: Can run analyses freely, but CANNOT do git push/pull/fetch. Local git operations (commit, add, status) work fine. Prompt user to run remote git commands from a login node.
+
 ## Understanding O2 Login vs Compute Nodes
 
 When operating on O2, be aware of whether you're on a login node or compute node.
 
 ### Detecting Node Type
 
-Run this command to check your current node:
+**IMPORTANT: When Claude Code starts on O2, immediately run `hostname` to detect the node type.** This determines what operations are safe to perform.
+
 ```bash
 hostname
 ```
 
 - **Login nodes**: Hostname starts with `login` (e.g., login01, login02, login03, login04, login05)
 - **Compute nodes**: Hostname starts with `compute` (e.g., compute-a-16-28, compute-e-16-155)
+
+You can also use this quick check:
+```bash
+# Returns "login" or "compute"
+hostname | cut -d'-' -f1
+```
 
 ### Best Practice: Use Compute Nodes for Resource-Intensive Work
 
@@ -35,7 +56,9 @@ Once you get the interactive session, your hostname will change from `login0X` t
 
 ### Guidelines for Login Nodes
 
-If you're on a login node, you can still use Claude Code for most tasks. Just be mindful of resource usage:
+If you're on a login node, you can still use Claude Code for most tasks. Just be mindful of resource usage.
+
+**IMPORTANT: On login nodes, Claude should AVOID running compute-intensive operations.** Login nodes are shared by all users and your processes may be killed if they consume too many resources.
 
 **Lightweight operations (fine on login nodes):**
 - Creating/editing SLURM submission scripts
@@ -43,14 +66,58 @@ If you're on a login node, you can still use Claude Code for most tasks. Just be
 - Navigating directories, viewing files
 - Small data explorations, quick tests
 - Installing packages, setting up environments
+- **Git operations including push/pull/fetch** (login nodes have internet access)
 
-**Resource-intensive operations (use compute nodes to avoid being killed):**
+**Resource-intensive operations (DO NOT run on login nodes - use compute nodes instead):**
 - Large data processing or analysis
-- Long-running computations
+- Long-running computations (>5 minutes)
 - Heavy compilation
 - Memory-intensive operations (>4GB)
+- Running analyses, models, or pipelines
+
+**If user requests compute-intensive work on a login node:**
+1. Suggest starting an interactive session: `srun -p interactive -t 0-4:00 -c 4 --mem=16G --pty /bin/bash`
+2. Or submit as a batch job if it doesn't need interactivity
 
 **Recommendation:** If unsure, check your current node with `hostname`. For any substantial computational work, consider starting an interactive session to avoid potential interruptions.
+
+### Network Restrictions on Compute Nodes
+
+**CRITICAL: Compute nodes have no direct internet access.** This means certain operations will fail on compute nodes.
+
+**Operations that DO NOT work on compute nodes:**
+- `git push` - Cannot reach remote repositories
+- `git pull` - Cannot reach remote repositories
+- `git fetch` - Cannot reach remote repositories
+- `git clone <remote-url>` - Cannot reach remote repositories
+- `pip install` from PyPI - No internet access
+- `conda install` from remote channels - No internet access
+- Any operation requiring external network access
+
+**Operations that WORK FINE on compute nodes:**
+- `git commit` - Local operation
+- `git add`, `git status`, `git diff`, `git log` - All local
+- `git branch`, `git checkout`, `git merge` - All local
+- `git stash`, `git reset` - All local
+- Running Python/R scripts with local packages
+- All file operations
+
+**What to do when git remote operations are needed:**
+
+If you need to push, pull, or sync with a remote repository while on a compute node:
+
+1. **Prompt the user**: Tell them they need to run the git remote command themselves from a login node:
+   ```
+   "I'm on a compute node which doesn't have internet access. To push your changes,
+   please run this command from a login node: git push origin <branch>"
+   ```
+
+2. **Alternative**: Suggest they exit back to a login node or open a new terminal on a login node for git operations.
+
+3. **For Claude Code sessions**: If the user needs to do git remote operations frequently, suggest running Claude Code from a login node instead of a compute node.
+
+**Workaround for package installation:**
+If packages need to be installed, do this on a login node BEFORE starting the compute session, or suggest the user run the install command from a login node.
 
 ## When This Skill Applies
 
@@ -627,6 +694,31 @@ slurmstepd: error: *** JOB 12345678 ON compute-a-16-163 CANCELLED AT 2024-01-10T
    - Profile code for bottlenecks
    - Use more cores (if parallelizable)
    - Use faster algorithms
+
+### Issue 7: Network/Git Operations Fail on Compute Node
+
+**Symptoms:**
+```
+fatal: unable to access 'https://github.com/...': Could not resolve host: github.com
+```
+or
+```
+ssh: Could not resolve hostname github.com: Name or service not known
+```
+
+**Cause:**
+Compute nodes do not have internet access. This is by design for security reasons.
+
+**Solution:**
+1. **Check your node type**: `hostname` - if it starts with `compute`, you're on a compute node
+2. **For git push/pull/fetch**: Run these commands from a login node instead
+3. **For package installation**: Install packages on a login node before starting your compute session
+4. **If running Claude Code**: Consider running Claude Code from a login node if you need frequent git remote operations
+
+**Workaround for Claude Code users:**
+- Claude Code can still make local git commits on compute nodes
+- For pushing changes, exit to a login node or open a separate terminal on a login node
+- Run `git push` manually from the login node
 
 ## Best Practices
 
