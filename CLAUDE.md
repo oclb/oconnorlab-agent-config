@@ -6,6 +6,10 @@ Your settings and skills are managed in a Git repository, symlinked to their sta
 
 The repo location is stored in `~/.claude/behavior.conf` as `CONFIG_REPO`. If you need to understand the configuration setup, modify settings at the source, or read documentation about available skills, check `$CONFIG_REPO/README.md`.
 
+## User-Specific Configuration
+
+**IMPORTANT:** If the file `$CONFIG_REPO/CLAUDE.user.md` exists, read it AFTER reading this file. It contains user-specific instructions and preferences that override or extend these global settings. The user file is gitignored and won't cause conflicts when pulling from the repo.
+
 ## Behavior Flags
 
 At the start of each session, read `~/.claude/behavior.conf` to check the current flag values. These flags modify how you should behave.
