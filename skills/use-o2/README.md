@@ -4,23 +4,17 @@ A Claude Code skill for working with the O2 high-performance computing cluster a
 
 ## What It Does
 
-When you ask Claude to run computationally intensive analyses, this skill automatically:
-- Determines if O2 is appropriate for the task
+When running a compute-intensive analysis on O2, this skill automatically:
+- Determines that it must submit a job or jobs
 - Chooses the right partition (short, medium, long, gpu, highmem, etc.)
 - Estimates resource requirements (memory, cores, time)
 - Creates properly formatted SLURM submission scripts
-- Submits jobs and provides monitoring instructions
-- Helps troubleshoot common issues
+- Submits jobs, periodically monitors progress, and provides progress updates
+- Edits project's `CLAUDE.md` file with information about resource requirements
 
 ## When to Use O2
 
-The skill activates when:
-- You explicitly mention "O2", "cluster", or "SLURM"
-- Analysis requires substantial resources:
-  - **Memory**: >16GB RAM
-  - **Runtime**: >4 hours
-  - **GPUs**: Any GPU computation
-  - **Parallelization**: Many cores needed
+Claude should automatically detect that it is running on O2 and use this skill when it needs to perform a compute-intensive task.
 
 ## O2 Cluster Overview
 
@@ -167,7 +161,7 @@ JOB3=$(sbatch --parsable --dependency=afterok:$JOB2 summarize.sh)
 
 ### Time Estimation
 
-Start conservative (1.5-2x expected time), then optimize based on `seff` output.
+For non-GPU jobs, estimate the highest-priority queue which can run the job, and request the maximum time limit for that queue. 
 
 ### Core Usage
 

@@ -1,5 +1,15 @@
 {
-  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:harvardmed.atlassian.net)",
+      "WebFetch(domain:docs.astral.sh)",
+      "WebFetch(domain:ntfy.sh)",
+      "WebFetch(domain:docs.ntfy.sh)",
+      "WebFetch(domain:docs.rc.fas.harvard.edu)"
+    ]
+  },
+  "model": "opus",
   "hooks": {
     "Notification": [
       {
@@ -23,16 +33,6 @@
           }
         ]
       }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:harvardmed.atlassian.net)",
-      "WebFetch(domain:docs.astral.sh)",
-      "WebFetch(domain:ntfy.sh)",
-      "WebFetch(domain:docs.ntfy.sh)",
-      "WebFetch(domain:docs.rc.fas.harvard.edu)"
     ]
   }
 }

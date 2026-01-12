@@ -4,17 +4,17 @@ This repository contains Claude Code configuration and skills customized for sci
 
 ## Background
 
-**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research over alternatives (like the agents that come with Cursor or Windsurf). 
+**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research compared with alternatives (like the agents that come with Cursor or Windsurf). 
 
-In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/help how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research.
+In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/help how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research. 
 
-Claude Code is traditionally used via its (amazing) CLI. It can also be used inside of an IDE or via a web app.
+Claude Code is traditionally used via its CLI. It can also be used inside of an IDE or via a web app.
 
 ## What's Included
 
 - `global/` - Global configuration files
   - `CLAUDE.md` - Behavioral configuration and instructions
-  - `settings.json` - Claude Code settings (model, hooks, permissions)
+  - `settings.json` - Claude Code settings (hooks, permissions)
 - `skills/` - Custom Claude Code skills for scientific research
   - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `use-o2/` - O2 cluster job submission and resource management
@@ -77,30 +77,20 @@ The local setup script will:
 
 ## Usage
 
-
-### Updating Settings
-
-You can edit either:
-- The source file: `global/settings.json` in this repo
-- The symlinked file: `~/.claude/settings.json` (they're the same)
-
-### Note on Notifications
-
-The `settings.json` includes notification hooks that trigger when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop.
-
-Setup scripts automatically configure your shell with:
-- `NTFY_TOPIC` environment variable (your unique notification channel)
-- Helper functions like `notify`, `test_notify`, `notifyme`
-
-To receive notifications:
-1. Install the ntfy app on your phone or visit `https://ntfy.sh/YOUR_TOPIC` in a browser
-2. Subscribe to your topic (shown during setup, typically `username_claude_notifications`)
-3. Test with `test_notify`
-
 ## Configuration Features
 
-### Scientific Research Skills
+### Using o2
+Claude detects when it running is on the O2 cluster and uses the `/use-o2` skill to submit SLURM jobs, monitor them, and retrieve results.
 
+### Notifications
+Notification hooks are triggered when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop. Setup scripts automatically configure your shell with:
+- `NTFY_TOPIC` environment variable (your unique notification channel)
+- Helper functions: `notify <msg>`, `test_notify`, `notifyme <long-running-command>`
+
+To receive notifications, run `test_notify`, and visit the URL on your browser. This works either locally or on O2.
+
+### Performing analyses
+The `/perform-analysis` skill is intended to improve Claude's ability to implement, run, and troubleshoot analyses autonomously. 
 This configuration includes specialized skills for research workflows:
 
 - **perform-analysis** - Systematic 8-step analysis framework
@@ -117,12 +107,6 @@ This configuration includes specialized skills for research workflows:
   - Computes descriptive statistics
   - Identifies data quality issues
   - Provides actionable recommendations
-
-- **use-o2** - O2 HPC cluster integration
-  - Submits SLURM jobs with appropriate resources
-  - Monitors job status and retrieves results
-  - Handles compute-intensive tasks automatically on O2
-  - Integrated with analysis workflows
 
 - **new-software** - Tool learning and setup
   - Searches documentation and best practices
