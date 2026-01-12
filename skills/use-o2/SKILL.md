@@ -8,19 +8,54 @@ version: 1.0.0
 
 This skill helps you work with the O2 compute cluster at Harvard Medical School, using the SLURM workload manager for job submission and resource management.
 
+## Environment Verification
+
+**Before using this skill, verify you are actually on O2:**
+
+1. Check `~/.claude/behavior.conf` for `Environment=O2`
+2. Verify hostname: `hostname` should show `login*` or `compute-*`
+3. Check for O2-specific paths: `/n/data1` should exist
+
+If not on O2, do NOT use this skill. Inform the user they need to be on O2.
+
+## What This Skill Does
+
+When running compute-intensive analysis on O2, this skill:
+1. Determines whether to submit job(s) or run directly (based on node type)
+2. Chooses the right partition (priority, short, medium, long, gpu, highmem)
+3. Estimates resource requirements (memory, cores, time)
+4. Creates properly formatted SLURM submission scripts
+5. Submits jobs, monitors progress with periodic checks, and reports status
+6. Records resource usage in project's `CLAUDE.md` for future reference
+
 ## Quick Reference: Node-Specific Behavior
 
-**When Claude Code starts on O2, first run `hostname` to detect node type.**
+**First, detect your node type with `hostname`.**
 
-| Node Type | Hostname Pattern | Compute OK? | Git Remote OK? |
-|-----------|------------------|-------------|----------------|
-| Login     | `login01`, `login02`, etc. | NO (use compute node) | YES |
-| Compute   | `compute-a-16-28`, etc. | YES | NO (no internet) |
+| Node Type | Hostname Pattern | Compute OK? | Internet? | Use For |
+|-----------|------------------|-------------|-----------|---------|
+| Login     | `login01`-`login05` | Light only | YES | Job submission, git push/pull, quick tests |
+| Compute   | `compute-*` | YES | NO | Running analyses directly or via jobs |
+| Transfer  | `transfer.rc.hms.harvard.edu` | NO | YES | Large file transfers to/from /n/files |
 
-**Summary of Claude's behavior on O2:**
+**Summary of Claude's behavior by node type:**
 
-- **On login nodes**: Can do git push/pull/fetch, but should NOT run compute-intensive operations. Suggest interactive session for heavy work.
-- **On compute nodes**: Can run analyses freely, but CANNOT do git push/pull/fetch. Local git operations (commit, add, status) work fine. Prompt user to run remote git commands from a login node.
+- **On login nodes**:
+  - Can do git push/pull/fetch (has internet)
+  - Should NOT run compute-intensive operations (>30s runtime, >4GB memory)
+  - For anything taking >30s: submit as a batch job instead
+  - Suggest interactive session for heavier work
+
+- **On compute nodes**:
+  - Can run analyses directly (no need to submit jobs for non-parallel work)
+  - CANNOT do git push/pull/fetch (no internet) - prompt user to run from login node
+  - For parallel/long-running work: still submit as jobs for better resource management
+  - Local git operations (commit, add, status) work fine
+
+- **On transfer nodes**:
+  - Use for large data transfers (rsync, scp) to/from /n/files or /n/standby
+  - Cannot submit jobs or run modules
+  - Access via: `ssh transfer.rc.hms.harvard.edu`
 
 ## Understanding O2 Login vs Compute Nodes
 
@@ -220,26 +255,29 @@ O2 has several partitions with different purposes and limits:
 
 **Main partitions:**
 
-| Partition | Use Case | Time Limit | Notes |
-|-----------|----------|------------|-------|
-| `short` | Jobs <12 hours | 12 hours | Default for most jobs |
-| `medium` | Jobs 12 hours - 5 days | 5 days | Longer running jobs |
-| `long` | Jobs >5 days | 30 days | Request access from RC |
-| `interactive` | Interactive work | 12 hours | 1-2 jobs at a time, max 20 cores |
-| `highmem` | Memory >200GB | Varies | For memory-intensive jobs |
-| `mpi` | MPI/distributed jobs | Varies | Multi-node parallel jobs |
-| `gpu` | GPU computation | Varies | CUDA/GPU workloads |
-| `priority` | Urgent high-priority | Varies | 1-2 jobs, limited use |
+| Partition | Use Case | Time Limit | Max Cores | Notes |
+|-----------|----------|------------|-----------|-------|
+| `priority` | Single urgent job | 5 days | 20 | **Use for single jobs** - dispatched first, max 2 concurrent |
+| `short` | Jobs <12 hours | 12 hours | 20 | Default for most jobs |
+| `medium` | Jobs 12h - 5 days | 5 days | 20 | Longer running jobs |
+| `long` | Jobs >5 days | 30 days | 20 | Requires RC access |
+| `interactive` | Interactive work | 12 hours | 20 | 1-2 concurrent, for debugging/testing |
+| `highmem` | Memory >200GB | Varies | Varies | Memory-intensive jobs |
+| `gpu` | GPU computation | Varies | Varies | CUDA/GPU workloads |
+| `mpi` | Multi-node MPI | Varies | >20 | Distributed parallel jobs |
+
+**Priority partition advantage:** Jobs in `priority` partition are dispatched before jobs in short/medium/long, even if those have higher overall priority. Use `priority` when running a single important job.
 
 **Decision guide:**
 ```
+Single important job? → priority (max 2 concurrent)
 Runtime <12 hours? → short
 Runtime 12h-5 days? → medium
 Runtime >5 days? → long (need access)
 Memory >200GB? → highmem
 Need GPU? → gpu
-Need MPI? → mpi
-Interactive session? → interactive
+Need >20 cores (MPI)? → mpi
+Interactive debugging? → interactive
 ```
 
 ### Step 3: Estimate Resource Requirements
@@ -248,9 +286,12 @@ Interactive session? → interactive
 
 **1. Time (`-t` or `--time`)**
 - Format: `D-HH:MM` (days-hours:minutes) or `HH:MM:SS`
-- Examples: `0-03:00` (3 hours), `2-00:00` (2 days), `30:00` (30 minutes)
-- **Be conservative**: Overestimate by ~20%
+- Examples: `0-03:00` (3 hours), `2-00:00` (2 days), `0-00:30` (30 minutes)
+- **Strategy for non-GPU jobs**: Request the maximum time for the highest-priority partition that can run your job
+  - If job will likely take <12h → use `priority` or `short`, request `0-12:00`
+  - If job will likely take 12h-5d → use `medium`, request `5-00:00`
 - Job killed if exceeds time limit
+- GPU jobs: estimate more carefully (GPU queue competition is higher)
 
 **2. Memory (`--mem` or `--mem-per-cpu`)**
 - Total memory: `--mem=8G` (8 gigabytes)
@@ -270,15 +311,35 @@ Interactive session? → interactive
 - Specific GPU type: `--gres=gpu:tesla:1`
 - Only on GPU partitions
 
-**Example estimations:**
+**Resource estimation strategies:**
 
-| Task | Time | Memory | Cores | Partition |
-|------|------|--------|-------|-----------|
-| GWAS (10K samples) | 2 hours | 16GB | 4 | short |
-| RNA-seq alignment | 6 hours | 32GB | 8 | short |
-| Deep learning | 24 hours | 64GB | 4 | gpu |
-| Large matrix ops | 3 days | 256GB | 16 | highmem |
-| Simulation (1000 reps) | 8 hours | 8GB | 20 | short |
+1. **Memory**: Estimate based on data size
+   - Rule of thumb: 2-3x the size of data loaded into memory
+   - For dataframes/matrices: rows × columns × 8 bytes × 2 (overhead)
+   - Add 20-30% buffer for safety
+
+2. **Time**: Start conservative, then optimize
+   - First run: estimate generously (2x expected)
+   - Check `seff` output after completion
+   - Record actual times in project's CLAUDE.md for future reference
+   - Scale linearly for larger datasets (10x data ≈ 10x time for most operations)
+
+3. **Cores**: Only request what you'll use
+   - Single-threaded code: 1 core
+   - Check if tool supports `-j`, `--threads`, `--cores`
+   - Python: `multiprocessing`, `joblib` (check `n_jobs` parameter)
+   - R: `parallel`, `foreach`, `future`
+   - Request cores = parallelism level
+
+**Recording resource usage:**
+After jobs complete, record actual resource usage in the project's CLAUDE.md:
+```markdown
+## Resource History
+| Analysis | Actual Time | Actual Memory | Cores | Notes |
+|----------|-------------|---------------|-------|-------|
+| GWAS 10K samples | 45 min | 12GB | 4 | plink --threads 4 |
+```
+This helps estimate future similar analyses.
 
 ### Step 4: Write a SLURM Submission Script
 
@@ -395,20 +456,42 @@ srun -p interactive -t 0-04:00 -c 4 --mem=16G --pty /bin/bash
 
 ### Step 6: Monitor Jobs
 
-**Check job status:**
+**Claude's job monitoring protocol:**
+
+After submitting jobs, Claude should actively monitor them using `sleep` commands with progressive intervals:
+
+1. **Initial check** (30 seconds after submission): Verify job started
+2. **Early checks**: 1 min, 2 min, 5 min intervals
+3. **Regular checks**: 10 min, 15 min, 30 min intervals
+4. **Long-running**: Every 30 min thereafter
+
+**What to check at each interval:**
 ```bash
-# Your jobs
-squeue -u $USER
+# Check job status
+squeue -u $USER -o "%.18i %.9P %.30j %.8T %.10M %.6D %R"
 
-# Specific job
-squeue -j 12345678
+# For running jobs, check output file for progress
+tail -20 <jobid>.out 2>/dev/null
 
-# All jobs (summary)
-O2squeue  # O2-specific, shows more detail
-
-# Detailed job info
-scontrol show job 12345678
+# Check if any jobs completed or failed
+sacct -u $USER --starttime=now-1hour --format=JobID,JobName,State,ExitCode,Elapsed
 ```
+
+**Report on progress:**
+- Are jobs pending (PD), running (R), or completed?
+- Any failures? Check exit codes and error files
+- If possible, estimate time remaining based on progress in output file
+- For job arrays: how many tasks completed vs pending?
+
+**Handling failures:**
+- If a job fails, immediately check the error file: `cat <jobid>.err`
+- Diagnose the issue (OOM, time limit, missing file, etc.)
+- Fix and resubmit, or report to user if unclear
+
+**Handling partial completion (job arrays):**
+- If some tasks finish while others are long-running, inspect partial results
+- Check if early results reveal issues (wrong output, unexpected values)
+- If issues detected that affect all remaining jobs, cancel them: `scancel <jobid>`
 
 **Check job efficiency (after completion):**
 ```bash
@@ -418,17 +501,15 @@ seff 12345678
 This shows:
 - CPU efficiency (are you using all cores?)
 - Memory efficiency (did you request too much?)
-- Helps optimize future jobs
+- Record this info in project's CLAUDE.md for future reference
 
-**Common squeue output columns:**
-- `JOBID`: Job identifier
-- `PARTITION`: Which partition
-- `NAME`: Job name
-- `USER`: Your username
-- `ST`: State (PD=pending, R=running, CG=completing)
-- `TIME`: Time running
-- `NODES`: Number of nodes
-- `NODELIST(REASON)`: Where running or why waiting
+**Common squeue states:**
+- `PD`: Pending (waiting for resources)
+- `R`: Running
+- `CG`: Completing
+- `CD`: Completed
+- `F`: Failed
+- `CA`: Cancelled
 
 ### Step 7: Manage Running Jobs
 
@@ -492,6 +573,20 @@ Memory Efficiency: 88.75% of 16.0 GB
 - CPU efficiency <50%: Not using all cores (code not parallel?)
 - Memory efficiency <30%: Over-requested memory
 - Memory efficiency >95%: Might have hit limit, could have failed
+
+**Record resource usage in project's CLAUDE.md:**
+
+After jobs complete, add actual resource usage to the project's CLAUDE.md file:
+
+```markdown
+## O2 Resource History
+
+| Analysis | Date | Job ID | Time (actual/requested) | Memory (actual/requested) | Cores | Notes |
+|----------|------|--------|-------------------------|---------------------------|-------|-------|
+| GWAS chr1 | 2024-01-15 | 12345678 | 45m / 4h | 12GB / 32GB | 4 | Can reduce memory next time |
+```
+
+This enables better estimates for future similar analyses (e.g., 10x larger dataset → ~10x more resources).
 
 ## Common Workflows
 

@@ -128,11 +128,13 @@ Validates datasets by examining:
 
 ### use-o2 (SLURM Integration)
 
-Automatically determines:
-- Appropriate partition (short, medium, long, gpu, highmem)
-- Resource requirements (memory, cores, time)
-- Creates submission scripts
-- Provides monitoring commands
+Verifies O2 environment, detects node type (login/compute/transfer), then:
+- Chooses partition (priority for single jobs, short, medium, long, gpu, highmem)
+- Estimates resources based on data size; records actual usage in project CLAUDE.md
+- Creates submission scripts; uses priority partition for single important jobs
+- Monitors jobs with progressive sleep intervals (30s, 1m, 2m, 5m, ..., 30m)
+- On compute nodes: runs simple non-parallel tasks directly
+- On login nodes: submits jobs for anything >30s
 
 ## Notifications
 
