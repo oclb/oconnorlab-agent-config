@@ -156,27 +156,5 @@ export -f notify_with_time
 export -f test_notify
 export -f notifyme
 
-# Print helpful message on first source
-if [ -z "$O2_NOTIFY_LOADED" ]; then
-    export O2_NOTIFY_LOADED=1
-
-    if [ -z "$NTFY_TOPIC" ]; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "O2 Notification System Loaded"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "⚠️  Setup required! Add to your ~/.bashrc:"
-        echo ""
-        echo "  export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
-        echo ""
-        echo "Then subscribe on your device(s):"
-        echo "  • Phone: Install ntfy app from App Store/Play Store"
-        echo "  • Desktop: Visit https://ntfy.sh/$(whoami)_o2_notifications"
-        echo ""
-        echo "Test with: test_notify"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    else
-        echo "✓ O2 Notifications: Ready (topic: $NTFY_TOPIC)"
-        echo "  Test: test_notify | Use: notify \"message\""
-    fi
-fi
+# Mark as loaded (silent - no output on login)
+export O2_NOTIFY_LOADED=1
