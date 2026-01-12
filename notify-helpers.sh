@@ -24,13 +24,13 @@ NTFY_SERVER="${NTFY_SERVER:-https://ntfy.sh}"
 # Notification function
 notify() {
     local message="$1"
-    local title="${2:-O2 Notification}"
+    local title="${2:-Notification}"
     local priority="${3:-default}"  # low, default, high, urgent
     local tags="${4:-computer,checkered_flag}"
 
     # Check if topic is set
     if [ -z "$NTFY_TOPIC" ]; then
-        echo "ERROR: NTFY_TOPIC not set. Add to ~/.bashrc:"
+        echo "ERROR: NTFY_TOPIC not set. Add to your shell config:"
         echo "  export NTFY_TOPIC=\"your-unique-topic-name\""
         return 1
     fi
@@ -118,16 +118,16 @@ test_notify() {
 
     if [ -z "$NTFY_TOPIC" ]; then
         echo "ERROR: NTFY_TOPIC not set!"
-        echo "Add this to your ~/.bashrc:"
-        echo "  export NTFY_TOPIC=\"$(whoami)_o2_notifications\""
+        echo "Add this to your shell config:"
+        echo "  export NTFY_TOPIC=\"$(whoami)_claude_notifications\""
         echo ""
         echo "Then subscribe on your device:"
         echo "  Phone: Install ntfy app, subscribe to topic"
-        echo "  Browser: Visit $NTFY_SERVER/$(whoami)_o2_notifications"
+        echo "  Browser: Visit $NTFY_SERVER/$(whoami)_claude_notifications"
         return 1
     fi
 
-    notify "Test notification from O2 - $(hostname)" \
+    notify "Test notification from $(hostname)" \
            "Test Notification" \
            "default" \
            "bell,test_tube"
@@ -146,12 +146,15 @@ notifyme() {
     notify_with_time "$@"
 }
 
-# Export functions so they're available in subshells
-export -f notify
-export -f notify_job_complete
-export -f notify_with_time
-export -f test_notify
-export -f notifyme
+# Export functions so they're available in subshells (bash only)
+# zsh automatically makes functions available without export -f
+if [ -n "$BASH_VERSION" ]; then
+    export -f notify
+    export -f notify_job_complete
+    export -f notify_with_time
+    export -f test_notify
+    export -f notifyme
+fi
 
 # Mark as loaded (silent - no output on login)
-export O2_NOTIFY_LOADED=1
+export CLAUDE_NOTIFY_LOADED=1
