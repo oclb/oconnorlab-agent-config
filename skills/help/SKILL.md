@@ -25,8 +25,8 @@ Use when the user:
 **Clone or update the Claude Code documentation:**
 
 ```bash
-# Create temp directory for docs
-DOCS_DIR="/tmp/claude/claude-code-docs"
+# Create temp directory for docs (use TMPDIR if set, e.g., on O2 cluster)
+DOCS_DIR="${TMPDIR:-/tmp/claude}/claude-code-docs"
 
 # Clone if not exists, otherwise pull latest
 if [ -d "$DOCS_DIR" ]; then
@@ -144,7 +144,7 @@ Provide the full Scientific Research Overview above.
 
 ### For "How do I use hooks?"
 
-1. Search the docs: `grep -r "hook" /tmp/claude/claude-code-docs/docs/`
+1. Search the docs in `$DOCS_DIR/docs/`
 2. Read `hooks.md`
 3. Provide explanation with examples from the docs
 4. Mention that this config already has a notification hook configured
