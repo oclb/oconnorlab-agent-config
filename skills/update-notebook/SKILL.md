@@ -151,6 +151,16 @@ git commit -m "notebook: sync retrospective entries and update project context"
 
 When encountering a project for the first time:
 
+### Opening Message
+
+Start with a welcoming introduction:
+
+> "I can see this is the first time using Claude Code in this project. I'll walk you through setting up a lab notebook to track your work. This will help me understand your project and maintain context across sessions.
+>
+> I'll ask you some questions about the project, then create documentation in a `notebook/` directory. Let's start!"
+
+### Step 1: Gather Project Context
+
 1. **Ask about existing write-ups:**
    > "Is there an existing write-up I can reference? This could be a Word doc, PDF, README, or any document describing the project goals, methods, or findings."
 
@@ -159,26 +169,69 @@ When encountering a project for the first time:
    - Use it to build an informed CLAUDE.md
    - Extract: research questions, key findings, methods used, current status
 
-2. **Create notebook structure:**
-   ```bash
-   mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
-   ```
+2. **Ask clarifying questions - don't guess:**
+   - If you encounter acronyms, project names, or terminology you're unsure about, **ask the user**
+   - Don't guess what something means - wrong guesses are worse than asking
+   - Example: "What does 'KNEE' stand for in this project?"
 
-3. **Don't try to reconstruct full history:**
-   - Ask about current state and recent important work
-   - Create entries only for analyses the user describes
-   - Focus on what's needed for going forward
+### Step 2: Create Notebook Structure
 
-4. **Initialize CLAUDE.md project section** (if not present):
-   - Current research questions
-   - Key context Claude needs to know
-   - Recent important findings
-   - (Use write-up content if available)
+```bash
+mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
+```
+
+### Step 3: Document Datasets
+
+**Prompt the user about datasets:**
+> "What datasets are you using in this project? For each one, I'd like to know:
+> - Where is it located?
+> - Where did it come from (downloaded, generated, provided)?
+> - Any known issues or quirks?"
+
+For each dataset mentioned, create `notebook/data/<dataset-name>.md`:
+- Location and source
+- Basic characteristics (if known)
+- Any issues mentioned by user
+
+### Step 4: Document Software/Tools
+
+**Prompt the user about specialized software:**
+> "Are there any specialized tools, libraries, or software specific to this project that I should know about? (I don't need to know about standard tools like Python, PyTorch, pandas, etc. - just project-specific or unusual dependencies.)"
+
+**Skip documentation for:**
+- Standard, well-known tools (Python, R, PyTorch, TensorFlow, pandas, numpy, etc.)
+- Common CLI tools
+- Anything Claude would know from training
+
+**Do document:**
+- Project-specific packages or custom code
+- Obscure or domain-specific tools
+- Tools with non-obvious configuration or usage patterns
+- Anything with known issues or limitations in this project
+
+### Step 5: Document Analyses
+
+**Ask about completed analyses:**
+> "Have there been any analyses or experiments completed in this project? What were the key findings?"
+
+Create retrospective entries for analyses the user describes.
+
+### Step 6: Initialize CLAUDE.md
+
+Based on all gathered information:
+- Current research questions
+- Key context Claude needs to know
+- Available datasets and their locations
+- Any specialized tools being used
+- Recent important findings
+
+**Remember:** Only include what you learned from the user or documents. Don't invent details.
 
 ## Best Practices
 
-1. **Ask, don't assume** - Don't guess what happened; ask the user
+1. **Ask, don't guess** - If you're unsure about anything (acronyms, terminology, what something means), ask the user. Wrong guesses create confusion.
 2. **Brief is better** - Retrospective entries should be concise
 3. **Mark retrospective clearly** - Distinguish from real-time entries
 4. **Focus on context** - Goal is to not be misled, not to have complete history
 5. **Respect user's time** - Don't ask about every small change
+6. **Document data and software** - These are as important as analyses for project context
