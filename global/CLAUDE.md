@@ -67,3 +67,63 @@ The file uses simple `KEY=value` format:
 2. For each flag defined above, check if it exists in behavior.conf
 3. If a flag is missing from behavior.conf (or the file doesn't exist), use the Default from the table above
 4. Adjust your behavior according to the flag definitions
+
+## Logging Methodological Changes
+
+When you make changes to the codebase (not analyses, but the actual software/methods being developed), log them to `notebook/methods/`.
+
+### What to Log
+
+Log all meaningful changes to the codebase:
+- Feature additions (major and minor)
+- Algorithm or methodology changes
+- Bug fixes
+- API changes or interface modifications
+- Performance improvements
+- Refactoring with rationale
+
+Even minor changes get logged - the notebook is the complete record. The filtering happens when deciding whether to update CLAUDE.md, not here.
+
+### Log Format
+
+Create `notebook/methods/YYYY-MM-DD-<brief-description>.md`:
+
+```markdown
+# <Brief Description>
+
+**Date:** YYYY-MM-DD
+**Commit:** <commit hash if available>
+
+## What Changed
+[Description - more detail than a commit message]
+
+## Why
+[Motivation for the change]
+
+## Impact
+[What this affects - analyses, outputs, compatibility]
+```
+
+**Commit the entry:**
+```bash
+mkdir -p notebook/methods
+git add notebook/methods/
+git commit -m "methods: <brief description>"
+```
+
+### Updating Project CLAUDE.md
+
+After logging a method change, consider whether the project's CLAUDE.md needs updating.
+
+**Ask the user** if the change seems significant:
+- New capability that affects how the project works
+- Breaking change that affects existing workflows
+- Important finding about the method's behavior
+
+**Don't ask** for clearly minor changes:
+- Small bug fixes
+- Trivial features
+- Incremental improvements
+- Routine maintenance
+
+When in doubt about importance, lean toward not asking - the notebook entry provides the record.

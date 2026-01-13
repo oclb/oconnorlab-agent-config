@@ -111,7 +111,7 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 
 ### perform-analysis (8-Step Framework + Lab Notebook)
 
-0. **Setup** - Create git branch, initialize notebook entry
+0. **Setup** - Initialize notebook entry, retrieve related analyses
 1. **Understand Motivation** - Why is this question being asked?
 2. **Set Expectations** - What results do you expect?
 3. **Verify Resources** - Check data and tools are available
@@ -121,7 +121,7 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 7. **Document Choices** - Explain decisions and challenges
 8. **Finalize** - Complete notebook, commit, evaluate for CLAUDE.md
 
-Each step writes to the notebook incrementally. Scripts are archived frozen for replication.
+Each step writes to the notebook incrementally. Git commits preserve script history.
 
 ### new-data (Data Validation)
 
@@ -159,28 +159,32 @@ The lab notebook provides archival tracking of analyses, separate from the curat
 project/
 ├── CLAUDE.md                         # Key findings, current directions
 ├── notebook/
-│   └── analyses/
-│       └── <analysis-name>/          # One directory per analysis
-│           ├── README.md             # Analysis log (all versions)
-│           ├── run_analysis_v0.py    # Frozen scripts (never updated)
-│           ├── run_analysis_v1.py    # New version if revised
-│           └── outputs/              # Results, figures, data
+│   ├── analyses/                     # Analysis logs and scripts
+│   │   └── <analysis-name>/
+│   │       ├── README.md
+│   │       ├── <script>.py
+│   │       └── outputs/
+│   ├── data/                         # Dataset documentation
+│   │   └── <dataset-name>.md         # Location, source, characteristics, issues
+│   ├── software/                     # External software documentation
+│   │   └── <tool-name>.md            # Installation, docs URL, issues
+│   └── methods/                      # Methodological changes to codebase
+│       └── YYYY-MM-DD-<description>.md
 ```
 
 ### How It Works
 
 **During `/perform-analysis`:**
-1. Claude creates a git branch for the analysis
-2. Generates a specific, descriptive name (or uses user-provided)
+1. Generates a specific, descriptive name (or uses user-provided)
+2. Retrieves context from 0-3 related past analyses
 3. Writes to notebook incrementally after each step
-4. Archives scripts (frozen, versioned) alongside outputs
-5. Commits each version; prints merge command at end
-6. Updates CLAUDE.md only for important findings
+4. Commits each version to current branch
+5. Updates CLAUDE.md only for important findings
 
 **Version management:**
-- Same analysis, fixing error → new version (v0 → v1)
-- All versions in single README.md, separate script files
-- Scripts are never updated - kept for replication
+- v0 often a pilot (subset data), v1 the full run
+- All versions in single README.md
+- Scripts can be modified - git tracks history
 
 **CLAUDE.md curation:**
 - Add: Important findings, working solutions, current directions

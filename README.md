@@ -18,7 +18,8 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
 - `skills/` - Custom Claude Code skills for scientific research
   - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `use-o2/` - O2 cluster job submission and resource management
-  - `perform-analysis/` - Gives step-by-step instructions for performing an analysis, examining results, potentially iterating, and creating a display item
+  - `perform-analysis/` - Systematic analysis framework with lab notebook integration
+  - `update-notebook/` - Sync notebook when work is done outside Claude Code
   - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset
   - `new-software/` - Gives instructions for installing and learning a new library or software tool
   - Additional skills for teaching, editing scientific writing, and editing .docx, .pptx, and .pdf file formats
@@ -90,17 +91,33 @@ Notification hooks are triggered when Claude needs input or completes a task. No
 To receive notifications, run `test_notify`, and visit the URL on your browser. This works either locally or on O2.
 
 ### Performing analyses
-The `/perform-analysis` skill is intended to improve Claude's ability to implement, run, and troubleshoot analyses autonomously. 
-This configuration includes specialized skills for research workflows:
+The `/perform-analysis` skill is intended to improve Claude's ability to design, run, troubleshoot, and log analyses. 
+It:
+- Determines motivation and expected results
+- Retrieves context from related past analyses
+- Determines if it has all of the context, data, and tools that it needs
+- Makes a plan
+  - Presents plan to user for approval (except in `afk` mode)
+  - For long-running analyses, uses pilot runs and tracks progress
+  - On o2, uses SLURM
+- Troubleshoots iteratively
+- Names the analysis, tracks versions, and logs it in the `notebook/` directory
 
-- **perform-analysis** - Systematic 8-step analysis framework
-  - Understands research questions and sets expectations
-  - Verifies data and computational resources
-  - Creates detailed analysis plans
-  - Executes analysis with progress tracking
-  - Documents all results, decisions, and output files
-  - Automatically integrates with O2 cluster when appropriate
+### Lab Notebook
 
+The lab notebook system (`notebook/analyses/`) provides archival tracking of all analyses, separate from `CLAUDE.md` which stays focused on current context. This two-tiered system follows the "progressive disclosure" pattern: instead of giving agents every piece of context they might need, start by giving context they will definitely need, and let them find additional context themselves using bash to navigate the filesystem.
+
+**How the notebook works:**
+- Each analysis gets its own directory with a README (log), scripts, and outputs
+- Claude writes to the notebook incrementally during analysis, not just at the end
+- When starting a new analysis, Claude retrieves 0-3 related past analyses for context
+- Git commits track each analysis version and script history
+
+**How CLAUDE.md works:** Stores essential context on the goals of the project, its current state, available tools/software and their locations, and available datasets and their locations
+
+**Managing the notebook:** The notebook is automatically updated when you use the `/perform-analysis` skill. It is also updated when you use the `/new-data` and `/new-software` skills. To manage it manually, use the `/update-notebook` skill, particularly the first time you use Claude within an existing project and when you've performed significant analyses outside of Claude Code. Claude will review git history, ask you about changes, read project files (like a draft manuscript), and create retrospective entries.
+
+### Additional skills
 - **new-data** - Dataset handling and validation
   - Downloads and acquires datasets from various sources
   - Validates data format and structure
@@ -116,6 +133,7 @@ This configuration includes specialized skills for research workflows:
 
 - **Additional skills**: Teaching mode, scientific writing revision, document handling (PDF, DOCX, PPTX)
 
+
 ### Behavioral Configuration
 
 Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
@@ -127,13 +145,15 @@ Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
 
 ## Additional Configuration Files
 
+### User-specific and project-specific instructions
+
+At the beginning of every conversation, Claude Code reads the `CLAUDE.md` file from both `~/.claude` and from the project's root directory. You can add project-specific instructions to the latter; however, the former is managed by this repository, so if you customize it, your changes could cause a merge conflict. If you have custom instructions that you want to apply to all of your projects on a machine, create a file `global/CLAUDE.user.md` (within this repo). There is an example file `global/CLAUDE.user.md.example` that you can use as a template. Claude Code will automatically read this file.
+
 ### Project-Specific Settings
 
-For project-specific settings that should be shared with your team:
+For project-specific settings that should be shared with your team or across machines:
 - Create `.claude/settings.json` in your project repository
 - These settings take precedence over user settings
-
-### Local Project Settings
 
 For personal project-specific settings (not shared with team):
 - Create `.claude/settings.local.json` in your project
@@ -157,6 +177,6 @@ MCP (Model Context Protocol) server configurations can be added to `settings.jso
 - [O2 Research Computing Portal](https://rc.hms.harvard.edu/)
 
 ### Getting Help
+- For Claude Code questions: Run the `/help` skill or check Claude Code documentation
 - For configuration issues: Check this README or open an issue in the repository
-- For Claude Code questions: Run `/help` skill or check Claude Code documentation
 - For O2 cluster issues: Contact RC help (rchelp@hms.harvard.edu)
