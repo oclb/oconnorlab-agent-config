@@ -72,9 +72,9 @@ else
     fi
 fi
 
-# Step 2: Add TMPDIR to shell config if not already present
+# Step 2: Add TMPDIR and CLAUDE_CODE_TMPDIR to shell config if not already present
 echo ""
-echo "Step 2: Configuring TMPDIR..."
+echo "Step 2: Configuring TMPDIR and CLAUDE_CODE_TMPDIR..."
 if grep -q "export TMPDIR=/n/scratch" "$SHELL_CONFIG" 2>/dev/null; then
     echo "  TMPDIR already configured in $SHELL_CONFIG"
 else
@@ -84,9 +84,20 @@ else
     echo "  Added TMPDIR to $SHELL_CONFIG"
 fi
 
+# Add CLAUDE_CODE_TMPDIR if not already present
+if grep -q "export CLAUDE_CODE_TMPDIR=" "$SHELL_CONFIG" 2>/dev/null; then
+    echo "  CLAUDE_CODE_TMPDIR already configured in $SHELL_CONFIG"
+else
+    echo "# Claude Code: Tell Claude Code to use TMPDIR for temporary files" >> "$SHELL_CONFIG"
+    echo 'export CLAUDE_CODE_TMPDIR=$TMPDIR' >> "$SHELL_CONFIG"
+    echo "  Added CLAUDE_CODE_TMPDIR to $SHELL_CONFIG"
+fi
+
 # Export for current session
 export TMPDIR="$SCRATCH_BASE"
+export CLAUDE_CODE_TMPDIR="$TMPDIR"
 echo "  TMPDIR set to: $TMPDIR"
+echo "  CLAUDE_CODE_TMPDIR set to: $CLAUDE_CODE_TMPDIR"
 
 # Step 3: Install sandbox dependencies (socat) via conda
 echo ""
