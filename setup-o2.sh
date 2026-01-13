@@ -167,15 +167,22 @@ if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
     else
         echo "Environment=O2" >> "$CLAUDE_DIR/behavior.conf"
     fi
+    # Only add NewUser if it doesn't exist (preserve user's choice)
+    if ! grep -q "^NewUser=" "$CLAUDE_DIR/behavior.conf"; then
+        echo "NewUser=true" >> "$CLAUDE_DIR/behavior.conf"
+        echo "  Set NewUser=true in behavior.conf (first-time setup)"
+    fi
     echo "  Set CONFIG_REPO=$REPO_DIR in behavior.conf"
     echo "  Set Environment=O2 in behavior.conf"
 else
     cat > "$CLAUDE_DIR/behavior.conf" <<EOF
 CONFIG_REPO=$REPO_DIR
 Environment=O2
+NewUser=true
 EOF
     echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
     echo "  Set Environment=O2"
+    echo "  Set NewUser=true (first-time setup)"
 fi
 
 # Helper function to create symlink with backup

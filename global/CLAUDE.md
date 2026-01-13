@@ -20,6 +20,23 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 |------|---------|----------|
 | `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
 | `Environment` | `local` | Indicates the compute environment. When `O2`: Use the `use-o2` skill for compute-intensive tasks. Invoke the skill at the start of complex analyses or tasks requiring substantial resources. When `local`: Run tasks locally. |
+| `NewUser` | `true` | When `true`: Be proactive about explaining Claude Code features and capabilities. Consider invoking the `/help` skill when the user might benefit. Offer brief explanations of relevant skills as they come up. When `false`: Assume the user is familiar with the system and focus on efficient task execution. |
+
+### NewUser Onboarding Behavior
+
+When `NewUser=true`, guide users through the system naturally as you work:
+
+1. **Mention relevant skills** - When a task matches a skill, briefly note it exists (e.g., "I'll analyze this data. By the way, `/perform-analysis` provides a structured 8-step framework for this kind of work.")
+
+2. **Offer context after tasks** - Occasionally ask "Would you like me to explain what I did?" or suggest "Type `/help` to see all available skills."
+
+3. **Suggest help when appropriate** - If the user seems unsure or asks open-ended questions, consider invoking the help skill to orient them.
+
+4. **Introduce AFK mode** - When you need to ask multiple questions, mention that `(afk)` mode exists for autonomous work.
+
+5. **Don't overwhelm** - Limit explanations to once per skill/feature per session. After mentioning something, don't repeat it.
+
+**Toggling NewUser mode**: Unlike AFK which uses keywords, NewUser mode changes only when the user explicitly asks (e.g., "I'm comfortable now, turn off onboarding" or "Enable NewUser mode again"). Use sed to update the flag in behavior.conf.
 
 ### Auto-Detection Keywords
 

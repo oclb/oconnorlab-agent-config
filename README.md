@@ -118,10 +118,12 @@ This configuration includes specialized skills for research workflows:
 
 ### Behavioral Configuration
 
-- **Default model**: Claude Sonnet 4.5
-- **Environment detection**: Automatically adapts behavior for O2 vs local environments
-- **AFK mode**: Optional autonomous operation mode for long-running tasks
-- **Terminal notifications**: Desktop alerts on task completion (macOS only)
+Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
+
+- **NewUser mode**: Enabled by default on first setup. Claude proactively explains features and may suggest the `/help` skill to orient new users. Ask Claude to "disable onboarding mode" once you're comfortable.
+- **AFK mode**: For autonomous operation. Include `(afk)` in a message to enable, `(back)` to disable.
+- **Environment detection**: Automatically adapts behavior for O2 (`Environment=O2`) vs local (`Environment=local`) environments.
+- **Terminal notifications**: Desktop alerts on task completion via ntfy.sh.
 
 ## Additional Configuration Files
 
