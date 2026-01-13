@@ -20,6 +20,23 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 |------|---------|----------|
 | `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
 | `Environment` | `local` | Indicates the compute environment. When `O2`: Use the `use-o2` skill for compute-intensive tasks. Invoke the skill at the start of complex analyses or tasks requiring substantial resources. When `local`: Run tasks locally. |
+| `NewUser` | `true` | When `true`: Be proactive about explaining Claude Code features and capabilities. Consider invoking the `/help` skill when the user might benefit. Offer brief explanations of relevant skills as they come up. When `false`: Assume the user is familiar with the system and focus on efficient task execution. |
+
+### NewUser Onboarding Behavior
+
+When `NewUser=true`, guide users through the system naturally as you work:
+
+1. **Mention relevant skills** - When a task matches a skill, briefly note it exists (e.g., "I'll analyze this data. By the way, `/perform-analysis` provides a structured 8-step framework for this kind of work.")
+
+2. **Offer context after tasks** - Occasionally ask "Would you like me to explain what I did?" or suggest "Type `/help` to see all available skills."
+
+3. **Suggest help when appropriate** - If the user seems unsure or asks open-ended questions, consider invoking the help skill to orient them.
+
+4. **Introduce AFK mode** - When you need to ask multiple questions, mention that `(afk)` mode exists for autonomous work.
+
+5. **Don't overwhelm** - Limit explanations to once per skill/feature per session. After mentioning something, don't repeat it.
+
+**Toggling NewUser mode**: Unlike AFK which uses keywords, NewUser mode changes only when the user explicitly asks (e.g., "I'm comfortable now, turn off onboarding" or "Enable NewUser mode again"). Use sed to update the flag in behavior.conf.
 
 ### Auto-Detection Keywords
 
@@ -50,3 +67,63 @@ The file uses simple `KEY=value` format:
 2. For each flag defined above, check if it exists in behavior.conf
 3. If a flag is missing from behavior.conf (or the file doesn't exist), use the Default from the table above
 4. Adjust your behavior according to the flag definitions
+
+## Logging Methodological Changes
+
+When you make changes to the codebase (not analyses, but the actual software/methods being developed), log them to `notebook/methods/`.
+
+### What to Log
+
+Log all meaningful changes to the codebase:
+- Feature additions (major and minor)
+- Algorithm or methodology changes
+- Bug fixes
+- API changes or interface modifications
+- Performance improvements
+- Refactoring with rationale
+
+Even minor changes get logged - the notebook is the complete record. The filtering happens when deciding whether to update CLAUDE.md, not here.
+
+### Log Format
+
+Create `notebook/methods/YYYY-MM-DD-<brief-description>.md`:
+
+```markdown
+# <Brief Description>
+
+**Date:** YYYY-MM-DD
+**Commit:** <commit hash if available>
+
+## What Changed
+[Description - more detail than a commit message]
+
+## Why
+[Motivation for the change]
+
+## Impact
+[What this affects - analyses, outputs, compatibility]
+```
+
+**Commit the entry:**
+```bash
+mkdir -p notebook/methods
+git add notebook/methods/
+git commit -m "methods: <brief description>"
+```
+
+### Updating Project CLAUDE.md
+
+After logging a method change, consider whether the project's CLAUDE.md needs updating.
+
+**Ask the user** if the change seems significant:
+- New capability that affects how the project works
+- Breaking change that affects existing workflows
+- Important finding about the method's behavior
+
+**Don't ask** for clearly minor changes:
+- Small bug fixes
+- Trivial features
+- Incremental improvements
+- Routine maintenance
+
+When in doubt about importance, lean toward not asking - the notebook entry provides the record.

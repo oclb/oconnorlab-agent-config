@@ -8,6 +8,17 @@ version: 1.0.0
 
 Quickly learn and set up new tools, libraries, and frameworks by finding documentation, installing them, and verifying they work correctly.
 
+## Notebook Integration
+
+This skill writes to `notebook/software/` to track external tools used in the project.
+
+**Before starting:** Check if software is already documented:
+```bash
+ls notebook/software/ 2>/dev/null | grep -i "<tool-name>"
+```
+
+If an entry exists, read it to see what's already known. You may just need to update version info or add new issues.
+
 ## AFK Mode Behavior
 
 At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
@@ -117,6 +128,47 @@ Next Steps:
 ```
 
 **In AFK mode:** Include a "Choices Made" section documenting installation decisions.
+
+### 5. Write to Notebook
+
+**Create or update `notebook/software/<tool-name>.md`:**
+
+```markdown
+# <Tool Name>
+
+## Installation
+- **Location:** `/path/to/installation` or `pip package`
+- **Version:** X.Y.Z
+- **Installed:** YYYY-MM-DD
+
+## Documentation
+- **Official docs:** [URL]
+- **API reference:** [URL if applicable]
+- **Quick start:** [URL to getting started guide]
+
+## Usage in This Project
+[Brief note on what we use this tool for]
+- Primary use: [e.g., "differential expression analysis"]
+- Key functions: [e.g., "`DESeq()`, `results()`"]
+
+## Known Issues / Limitations
+[Any bugs, gotchas, or limitations discovered]
+- [e.g., "Requires R >= 4.0"]
+- [e.g., "Memory-intensive for >50k genes"]
+- [e.g., "Output format changed in v2.0"]
+```
+
+**Important:**
+- Do NOT replicate documentation (it goes stale)
+- DO record issues/bugs/limitations you encounter
+- Link to specific docs sections relevant to your usage
+
+**Commit the notebook entry:**
+```bash
+mkdir -p notebook/software
+git add notebook/software/<tool-name>.md
+git commit -m "software: add <tool-name> documentation"
+```
 
 ## Best Practices
 
