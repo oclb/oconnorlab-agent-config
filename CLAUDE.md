@@ -26,7 +26,8 @@ claude-config/
 │   └── settings.json         # Claude Code settings (hooks, permissions, model)
 ├── skills/                    # Custom skills for scientific research
 │   ├── help/                 # Documentation and help system
-│   ├── use-o2/               # O2 cluster job submission
+│   ├── remote-o2/            # Remote O2 access from local machine
+│   ├── use-o2/               # O2 cluster job submission (when on O2)
 │   ├── perform-analysis/     # 8-step analysis framework with notebook integration
 │   ├── update-notebook/      # Sync notebook for external work
 │   ├── new-data/             # Data validation and exploration
@@ -39,6 +40,7 @@ claude-config/
 │   └── skill-creator/        # Guide for creating new skills
 ├── hooks/                     # Shell scripts for Claude Code hooks
 │   └── notify.sh             # Cross-platform notification hook
+├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 ├── notify-helpers.sh          # Shell functions for notifications
 ├── setup.sh                   # Setup script for local machines
 └── setup-o2.sh               # Setup script for O2 cluster
@@ -88,7 +90,8 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | `/update-notebook` | "sync notebook", "what's changed" | Sync notebook for work done outside Claude |
 | `/new-data` | "validate data", "check this dataset" | Data validation and exploration |
 | `/new-software` | "learn [tool]", "set up [library]" | Tool installation and learning |
-| `/use-o2` | "submit to O2", resource-intensive tasks | SLURM job submission on O2 |
+| `/remote-o2` | "run on O2" (from local), auto-triggers for heavy compute | Remote O2 access via SSH+tmux |
+| `/use-o2` | "submit to O2", resource-intensive tasks | SLURM job submission (when on O2) |
 | `/teaching-mode` | "teach me", "explain how" | Educational explanations with replication steps |
 | `/revise-scientific-writing` | "revise manuscript", "edit abstract" | Scientific writing improvement |
 | `/help` | "what can you do", questions about Claude Code | Documentation and capability overview |
@@ -132,9 +135,19 @@ Validates datasets by examining:
 - Missing values
 - Domain-specific requirements (e.g., expression data, VCF files)
 
+### remote-o2 (Remote O2 Access)
+
+Enables Claude Code to access O2 from a local machine via SSH multiplexing + tmux:
+- **First-time setup**: Collects username, lab directory, scratch directory; generates setup scripts
+- **Connection management**: Checks SSH master socket; prompts reconnection when needed (Duo auth)
+- **Command execution**: Sends commands via `tmux send-keys`, captures output with sentinel-based completion
+- **Auto-triggers**: When `Environment=local` but O2 resources are needed
+
+Stores config in `~/.claude/behavior.conf`: `O2_USER`, `O2_LAB_DIR`, `O2_SCRATCH_DIR`, `O2_SOCKET`, `O2_REMOTE_SETUP`
+
 ### use-o2 (SLURM Integration)
 
-Verifies O2 environment, detects node type (login/compute/transfer), then:
+For use when already on O2 (SSH'd in or via `/remote-o2`). Verifies O2 environment, detects node type (login/compute/transfer), then:
 - Chooses partition (priority for single jobs, short, medium, long, gpu, highmem)
 - Estimates resources based on data size; records actual usage in project CLAUDE.md
 - Creates submission scripts; uses priority partition for single important jobs
@@ -227,6 +240,7 @@ notify_job_complete $?              # Notify job success/failure
 | `global/CLAUDE.md` | Behavioral instructions Claude follows |
 | `global/settings.json` | Model, permissions, hooks configuration |
 | `~/.claude/behavior.conf` | Runtime flags (created by setup scripts) |
+| `o2-scripts/` | Generated scripts for remote O2 access (gitignored) |
 | `skills/<name>/SKILL.md` | Skill prompt definition |
 | `skills/<name>/README.md` | Skill documentation |
 | `hooks/notify.sh` | Cross-platform notification hook |

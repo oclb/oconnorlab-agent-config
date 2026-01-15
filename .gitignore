@@ -13,3 +13,6 @@ global/CLAUDE.user.md
 .idea/
 *.swp
 *.swo
+
+# Generated scripts (user-specific, created by /remote-o2 skill)
+o2-scripts/
