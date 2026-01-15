@@ -41,17 +41,16 @@ grep "^O2_" ~/.claude/behavior.conf
 Ask the user for:
 
 1. **O2 username** (required)
-   - Example: `lukeo`
+   - Ask: "What is your O2 username?"
 
 2. **Lab directory** (required)
-   - Permanent storage for code and results
-   - Example: `/n/data1/hms/dbmi/xxx/lukeo`
-   - This is where project files live
+   - Ask: "What should Claude use as the top-level directory in which to store permanent files? (For example, `/n/data1/hms/dbmi/oconnor/lab/your_name/`)"
+   - This is where project code and results live
 
 3. **Scratch directory** (optional, has default)
    - Temporary storage for large files
-   - Default: `/n/scratch/users/{first_letter}/{username}`
-   - Example: `/n/scratch/users/l/lukeo`
+   - Default: `/n/scratch/users/{first_letter_of_username}/{username}` (derived from answer to question 1)
+   - Example: if username is `lukeo`, default is `/n/scratch/users/l/lukeo`
 
 ### 1.2 Get CONFIG_REPO Path
 
