@@ -1,6 +1,6 @@
 # Claude Code Configuration for Scientific Research
 
-This repository contains Claude Code configuration and skills customized for scientific research workflows, with special support for the Harvard O2 HPC cluster.
+This repository contains Claude Code configuration and skills customized for scientific research workflows, including remote access to the Harvard O2 HPC cluster.
 
 ## Background
 
@@ -17,7 +17,8 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
   - `settings.json` - Claude Code settings (hooks, permissions)
 - `skills/` - Custom Claude Code skills for scientific research
   - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
-  - `use-o2/` - O2 cluster job submission and resource management
+  - `remote-o2/` - Remote O2 cluster access via SSH
+  - `use-o2/` - SLURM reference material (used by remote-o2)
   - `perform-analysis/` - Systematic analysis framework with lab notebook integration
   - `update-notebook/` - Sync notebook when work is done outside Claude Code
   - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset
@@ -25,39 +26,10 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
   - Additional skills for teaching, editing scientific writing, and editing .docx, .pptx, and .pdf file formats
 - `hooks/` - Shell scripts for Claude Code hooks (notifications)
 - `setup.sh` - Setup script for local machines (macOS/Linux)
-- `setup-o2.sh` - Setup script specifically configured for the O2 cluster environment
 
 ## Quick start
 
-Claude Code requires configuration files to be found at specific locations. This repository uses symlinks (sort of like shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths. These symlinks are created by provided setup scripts.
-
-### For O2 Cluster
-
-1. SSH into O2 and clone this repository at a chosen location:
-   ```bash
-   git clone https://github.com/oclb/claude-config.git
-   ```
-
-2. Run the O2-specific setup script:
-   ```bash
-   cd claude-config
-   ./setup-o2.sh
-   ```
-
-3. This script edits your `.bashrc` file; make these changes apply to your current session:
-   ```bash
-   source ~/.bashrc
-   ```
-
-The O2 setup script will:
-- Configure scratch directory for `TMPDIR` (required for O2)
-- Install sandbox dependencies (`socat`) via `conda`
-- Create symlinks for settings and skills
-- Set `Environment=O2` flag so that Claude will automatically know that it is working in O2, triggering it to use the `use-o2` skill.
-
-**O2 best practices:** Run Claude Code on a compute node in an interactive session; if you run it on a login node, it may use too many resources and get killed. Do not ever use the `--dangerously-skip-permissions` option. Instead, to reduce the number of times you need to approve tool usages, enable sandbox mode using the `/sandbox` command. For long-running Claude sessions, use `tmux` ([documentation](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1601700103/tmux+Keep+Linux+Sessions+Alive+so+you+can+go+back+to+the+same+terminal+window+from+anywhere+anytime)) so that the session persists if your computer sleeps or loses connection.
-
-### For Local Machines (macOS/Linux)
+Claude Code requires configuration files to be found at specific locations. This repository uses symlinks to keep the actual files in a synced location while Claude Code reads them from the expected paths.
 
 1. Clone this repository at a chosen location:
    ```bash
@@ -76,19 +48,19 @@ The local setup script will:
 - Create symlinks for settings and skills
 - Set `Environment=local` flag for local execution
 
-## Usage
-
 ## Configuration Features
 
-### Using o2
-Claude detects when it running is on the O2 cluster and uses the `/use-o2` skill to submit SLURM jobs, monitor them, and retrieve results.
+### Remote O2 Access
+Use the `/remote-o2` skill to access the O2 cluster from your local machine. Claude will guide you through first-time setup (SSH configuration, connection scripts), then execute commands on O2, submit SLURM jobs, and monitor progress.
+
+**Note:** Off-campus, each command triggers a Duo push. Work from harvard-secure wifi to avoid this overhead.
 
 ### Notifications
 Notification hooks are triggered when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop. Setup scripts automatically configure your shell with:
 - `NTFY_TOPIC` environment variable (your unique notification channel)
 - Helper functions: `notify <msg>`, `test_notify`, `notifyme <long-running-command>`
 
-To receive notifications, run `test_notify`, and visit the URL on your browser. This works either locally or on O2.
+To receive notifications, run `test_notify`, and visit the URL on your browser.
 
 ### Performing analyses
 The `/perform-analysis` skill is intended to improve Claude's ability to design, run, troubleshoot, and log analyses. 
@@ -99,7 +71,7 @@ It:
 - Makes a plan
   - Presents plan to user for approval (except in `afk` mode)
   - For long-running analyses, uses pilot runs and tracks progress
-  - On o2, uses SLURM
+  - For resource-intensive work, uses O2 cluster via `/remote-o2`
 - Troubleshoots iteratively
 - Names the analysis, tracks versions, and logs it in the `notebook/` directory
 
@@ -140,7 +112,7 @@ Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
 
 - **NewUser mode**: Enabled by default on first setup. Claude proactively explains features and may suggest the `/help` skill to orient new users. Ask Claude to "disable onboarding mode" once you're comfortable.
 - **AFK mode**: For autonomous operation. Include `(afk)` in a message to enable, `(back)` to disable.
-- **Environment detection**: Automatically adapts behavior for O2 (`Environment=O2`) vs local (`Environment=local`) environments.
+- **O2 cluster access**: Use `/remote-o2` for cluster computing; Claude handles connection and SLURM job submission.
 - **Terminal notifications**: Desktop alerts on task completion via ntfy.sh.
 
 ## Additional Configuration Files

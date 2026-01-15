@@ -55,8 +55,8 @@ For long-running analyses, Claude will:
 
 ### Cluster Integration
 
-When running on the O2 cluster:
-- Detects its environment and invokes `use-o2` skill
+For resource-intensive analyses:
+- Invokes `remote-o2` skill to access O2 cluster
 - Estimates resource requirements and submits SLURM jobs
 - Monitors long-running jobs and reports progress periodically
 

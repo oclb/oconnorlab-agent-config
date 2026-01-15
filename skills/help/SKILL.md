@@ -105,7 +105,8 @@ This configuration includes specialized skills for scientific research:
 | **perform-analysis** | Systematic 8-step framework for data analyses and experiments. Understands motivation, verifies resources, creates plans, executes analysis with progress tracking, and documents all results and choices made. |
 | **sanity-check-data** | Comprehensive dataset validation and exploration. Downloads/acquires data, examines format and structure, computes statistics, checks for issues, validates with domain-specific rules, and provides actionable recommendations. |
 | **learn-tool** | Quickly learn and set up new tools, libraries, and frameworks. Searches documentation, handles installation, runs sanity checks, and provides usage examples. |
-| **use-o2** | Submit jobs to Harvard's O2 HPC cluster using SLURM. Helps estimate resources, write submission scripts, monitor jobs, and troubleshoot issues. |
+| **remote-o2** | Access Harvard's O2 HPC cluster remotely via SSH. Handles connection setup, command execution, and SLURM job submission. |
+| **use-o2** | SLURM reference material (partitions, resources, job scripts). Used by remote-o2 for cluster knowledge. |
 | **docx** | Create, edit, and analyze Word documents with support for tracked changes, comments, and formatting preservation. |
 | **pdf** | PDF manipulation including text extraction, form filling, merging/splitting, and programmatic generation. |
 | **pptx** | Create and edit PowerPoint presentations with layout support, speaker notes, and content modification. |
@@ -113,16 +114,16 @@ This configuration includes specialized skills for scientific research:
 | **teaching-mode** | Educational explanations that walk through concepts step-by-step, showing how to replicate analyses. |
 | **skill-creator** | Guide for creating new skills to extend Claude Code's capabilities. |
 
-### Running on O2 Cluster
+### Accessing O2 Cluster
 
-Claude Code can be run on Harvard's O2 HPC cluster for computational work. Key points:
+Use the `/remote-o2` skill to access Harvard's O2 HPC cluster from your local machine:
 
-- **Setup**: Run `setup-o2.sh` from the config repository to configure TMPDIR, install sandbox dependencies, and create symlinks
-- **Sandbox Mode**: Claude Code runs commands in a sandboxed environment by default for safety. On O2, the setup script installs `socat` via conda to enable sandbox functionality. Some operations may require disabling sandbox mode (Claude will prompt when needed)
-- **TMPDIR**: O2 has limited space in `/tmp`; the setup script configures TMPDIR to use your scratch space
-- **Job Submission**: Use the `use-o2` skill for help with SLURM job submission, resource estimation, and monitoring
+- **First-time setup**: Claude will guide you through SSH configuration and connection scripts
+- **Connection**: Establishes SSH connection with tmux for persistent sessions
+- **Command execution**: Runs commands on O2, submits SLURM jobs, monitors progress
+- **Duo authentication**: Each command triggers one Duo push (work from harvard-secure wifi to avoid)
 
-See the `use-o2` skill documentation for detailed SLURM usage, partition selection, and best practices.
+See the `remote-o2` skill for detailed setup and usage.
 
 ### AFK Mode
 
@@ -180,16 +181,16 @@ Provide the full Scientific Research Overview above.
 
 List the skills table from the overview, with brief descriptions.
 
-### For "How do I run on O2?"
+### For "How do I access O2?"
 
-1. Read the `use-o2` skill documentation
-2. Explain the setup process (`setup-o2.sh`)
-3. Cover sandbox mode and TMPDIR configuration
-4. Point to the skill for detailed SLURM help
+1. Invoke `/remote-o2` to begin setup
+2. Explain the SSH connection approach
+3. Cover Duo authentication behavior (one push per command off-campus)
+4. Point to use-o2 for SLURM reference material
 
 ## Integration
 
 This skill integrates with:
 - **learn-tool**: For learning about Claude Code features
-- **use-o2**: For cluster-specific help
+- **remote-o2**: For cluster access and SLURM help
 - **skill-creator**: For extending capabilities

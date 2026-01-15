@@ -12,11 +12,9 @@ Systematic framework for data analyses and experiments, from planning through ex
 
 At the start, check `~/.claude/behavior.conf` for behavior flags.
 
-### Environment Detection
+### Resource-Intensive Tasks
 
-Check the `Environment` flag:
-- **Environment=O2**: You are on the O2 cluster. For resource-intensive tasks (>16GB RAM, >4 hours, GPUs), use the **use-o2** skill to submit SLURM jobs.
-- **Environment=local**: Run analyses locally.
+For resource-intensive tasks (>16GB RAM, >4 hours, GPUs), use the **remote-o2** skill to submit SLURM jobs to the O2 cluster.
 
 ### AFK Mode
 
@@ -283,9 +281,9 @@ If the analysis is expected to take **>1 minute**, plan a pilot first:
 - Run in background if appropriate
 - Check progress periodically
 
-**For O2 cluster (when Environment=O2):**
-- Use **use-o2** skill for resource-intensive tasks (>16GB RAM, >4 hours runtime, or GPUs)
-- Submit SLURM jobs and monitor progress periodically
+**For O2 cluster (resource-intensive tasks):**
+- Use **remote-o2** skill to access O2 and submit SLURM jobs
+- Monitor progress periodically
 
 **Error handling:**
 - If AFK=true: Attempt autonomous fix (max 2 attempts per problem), then stop and report
@@ -444,7 +442,7 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
 
 - **new-data**: Invoke when encountering new/unfamiliar data in Step 3
 - **new-software**: Invoke when needing unfamiliar software
-- **use-o2**: Invoke when analysis requires cluster computing
+- **remote-o2**: Invoke when analysis requires O2 cluster computing
 - **update-notebook**: Invoke to sync notebook when work was done outside Claude Code
 
 ## References

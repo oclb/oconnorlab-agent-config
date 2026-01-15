@@ -18,16 +18,17 @@ This skill enables Claude Code to access the O2 cluster remotely from a local ma
 ## When This Skill Applies
 
 **Auto-trigger when:**
-- User mentions "O2", "cluster", or "SLURM" while `Environment=local`
+- User mentions "O2", "cluster", or "SLURM"
 - Analysis requires substantial resources (>16GB RAM, >4 hours, GPUs)
 - User explicitly invokes `/remote-o2`
 
-**Check environment first:**
-```bash
-grep "^Environment=" ~/.claude/behavior.conf
-```
-- If `Environment=O2`: You're already on O2. Use `/use-o2` skill instead.
-- If `Environment=local`: Continue with this skill.
+## SLURM Reference
+
+For SLURM knowledge (partitions, resource estimation, job scripts, monitoring), refer to the **use-o2** skill which contains cluster reference material:
+- Partition selection (priority, short, medium, long, gpu, highmem)
+- Resource estimation strategies
+- SLURM script templates
+- Job monitoring and troubleshooting
 
 ## Step 1: Check Setup Status
 

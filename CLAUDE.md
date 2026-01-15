@@ -1,12 +1,12 @@
 # Claude Code Configuration Repository
 
-This repository customizes Claude Code for scientific research workflows. It contains skills, behavioral settings, hooks, and setup scripts for both local machines and the Harvard O2 HPC cluster.
+This repository customizes Claude Code for scientific research workflows. It contains skills, behavioral settings, hooks, and setup scripts.
 
 ## Quick Reference
 
 **What this repo provides:**
 - Custom skills for research: data analysis, data validation, tool learning, scientific writing
-- O2 cluster integration with automatic SLURM job submission
+- O2 cluster access via remote SSH connection
 - Behavioral flags (AFK mode, environment detection)
 - Push notifications via ntfy.sh
 
@@ -26,8 +26,8 @@ claude-config/
 │   └── settings.json         # Claude Code settings (hooks, permissions, model)
 ├── skills/                    # Custom skills for scientific research
 │   ├── help/                 # Documentation and help system
-│   ├── remote-o2/            # Remote O2 access from local machine
-│   ├── use-o2/               # O2 cluster job submission (when on O2)
+│   ├── remote-o2/            # Remote O2 access via SSH
+│   ├── use-o2/               # SLURM reference (used by remote-o2)
 │   ├── perform-analysis/     # 8-step analysis framework with notebook integration
 │   ├── update-notebook/      # Sync notebook for external work
 │   ├── new-data/             # Data validation and exploration
@@ -42,15 +42,14 @@ claude-config/
 │   └── notify.sh             # Cross-platform notification hook
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 ├── notify-helpers.sh          # Shell functions for notifications
-├── setup.sh                   # Setup script for local machines
-└── setup-o2.sh               # Setup script for O2 cluster
+└── setup.sh                   # Setup script for local machines
 ```
 
 ## How It Works
 
 ### Setup and Symlinks
 
-Running `setup.sh` (local) or `setup-o2.sh` (cluster) creates symlinks:
+Running `setup.sh` creates symlinks:
 
 ```
 ~/.claude/CLAUDE.md      → global/CLAUDE.md
@@ -68,7 +67,7 @@ Claude reads `~/.claude/behavior.conf` at session start:
 | Flag | Values | Effect |
 |------|--------|--------|
 | `AFK` | `true`/`false` | When true, work autonomously without asking questions |
-| `Environment` | `local`/`O2` | Local execution vs. SLURM job submission |
+| `Environment` | `local` | Always local; use `/remote-o2` for cluster access |
 | `NewUser` | `true`/`false` | When true, proactively explain features and suggest `/help` |
 | `CONFIG_REPO` | Path | Location of this repo (for `/help` skill) |
 
@@ -90,8 +89,8 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | `/update-notebook` | "sync notebook", "what's changed" | Sync notebook for work done outside Claude |
 | `/new-data` | "validate data", "check this dataset" | Data validation and exploration |
 | `/new-software` | "learn [tool]", "set up [library]" | Tool installation and learning |
-| `/remote-o2` | "run on O2" (from local), auto-triggers for heavy compute | Remote O2 access via SSH+tmux |
-| `/use-o2` | "submit to O2", resource-intensive tasks | SLURM job submission (when on O2) |
+| `/remote-o2` | "run on O2", auto-triggers for heavy compute | Remote O2 access via SSH+tmux |
+| `/use-o2` | (reference skill) | SLURM reference material for remote-o2 |
 | `/teaching-mode` | "teach me", "explain how" | Educational explanations with replication steps |
 | `/revise-scientific-writing` | "revise manuscript", "edit abstract" | Scientific writing improvement |
 | `/help` | "what can you do", questions about Claude Code | Documentation and capability overview |
@@ -137,23 +136,21 @@ Validates datasets by examining:
 
 ### remote-o2 (Remote O2 Access)
 
-Enables Claude Code to access O2 from a local machine via SSH multiplexing + tmux:
+Enables Claude Code to access O2 from a local machine via SSH + tmux:
 - **First-time setup**: Collects username, lab directory, scratch directory; generates setup scripts
-- **Connection management**: Checks SSH master socket; prompts reconnection when needed (Duo auth)
-- **Command execution**: Sends commands via `tmux send-keys`, captures output with sentinel-based completion
-- **Auto-triggers**: When `Environment=local` but O2 resources are needed
+- **Connection management**: Establishes SSH connection; prompts reconnection when needed (Duo auth)
+- **Command execution**: Sends commands via `tmux send-keys`, captures output
+- **Duo behavior**: Each command = 1 Duo push off-campus; use harvard-secure wifi to avoid
 
 Stores config in `~/.claude/behavior.conf`: `O2_USER`, `O2_LAB_DIR`, `O2_SCRATCH_DIR`, `O2_SOCKET`, `O2_REMOTE_SETUP`
 
-### use-o2 (SLURM Integration)
+### use-o2 (SLURM Reference)
 
-For use when already on O2 (SSH'd in or via `/remote-o2`). Verifies O2 environment, detects node type (login/compute/transfer), then:
-- Chooses partition (priority for single jobs, short, medium, long, gpu, highmem)
-- Estimates resources based on data size; records actual usage in project CLAUDE.md
-- Creates submission scripts; uses priority partition for single important jobs
-- Monitors jobs with progressive sleep intervals (30s, 1m, 2m, 5m, ..., 30m)
-- On compute nodes: runs simple non-parallel tasks directly
-- On login nodes: submits jobs for anything >30s
+Reference material for O2 cluster and SLURM (used by remote-o2):
+- Partition selection (priority, short, medium, long, gpu, highmem)
+- Resource estimation strategies
+- SLURM script templates
+- Job monitoring and troubleshooting
 
 ## Lab Notebook System
 

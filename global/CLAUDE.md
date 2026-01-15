@@ -19,7 +19,7 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 | Flag | Default | Behavior |
 |------|---------|----------|
 | `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
-| `Environment` | `local` | Indicates the compute environment. When `O2`: Use the `use-o2` skill for compute-intensive tasks. Invoke the skill at the start of complex analyses or tasks requiring substantial resources. When `local`: Run tasks locally. |
+| `Environment` | `local` | Always `local`. For O2 cluster access, use the `/remote-o2` skill which connects via SSH. |
 | `NewUser` | `true` | When `true`: Be proactive about explaining Claude Code features and capabilities. Consider invoking the `/help` skill when the user might benefit. Offer brief explanations of relevant skills as they come up. When `false`: Assume the user is familiar with the system and focus on efficient task execution. |
 
 ### NewUser Onboarding Behavior
@@ -59,7 +59,7 @@ The file uses simple `KEY=value` format:
 - Blank lines are ignored
 - Flag names are case-sensitive
 - Boolean flags use `true` or `false`
-- String flags use their defined values (e.g., `Environment=local` or `Environment=O2`)
+- String flags use their defined values (e.g., `Environment=local`)
 
 ### How to Apply Flags
 
