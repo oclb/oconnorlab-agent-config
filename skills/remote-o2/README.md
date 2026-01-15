@@ -12,20 +12,28 @@ This skill enables Claude Code to execute commands on O2 without you having to S
 - Integrates with `/use-o2` for SLURM job submission
 - Auto-triggers when O2 resources are needed
 
+## Important: Duo Authentication Behavior
+
+**Off-campus:** O2 is configured to trigger Duo authentication per SSH *session*, not just per connection. This means each SSH command Claude runs results in 1 Duo push to your phone.
+
+To minimize Duo pushes, this skill uses `o2-run.sh` - a helper script that wraps command execution into a single SSH session. Each command Claude runs = 1 Duo push.
+
+**On Harvard network:** When connected to **harvard-secure wifi** or the campus network, the Duo per-session overhead may not occur. If frequent Duo pushes are annoying, consider working from the office.
+
 ## How It Works
 
 ```
 Local Machine                          O2 Cluster
-┌─────────────┐     SSH Master        ┌─────────────┐
+┌─────────────┐     SSH + tmux        ┌─────────────┐
 │ Claude Code │ ──────────────────────│ tmux session│
-│             │     (Duo once)        │   "claude"  │
+│             │   (1 Duo per cmd)     │   "claude"  │
 │ /remote-o2  │ ←────────────────────→│             │
 └─────────────┘     Commands/Output   └─────────────┘
 ```
 
-1. **SSH master connection** - Authenticated once with Duo, stays open
-2. **tmux session** - Persistent shell on O2 that survives disconnects
-3. **Command execution** - Claude sends commands via `tmux send-keys`, captures output via `tmux capture-pane`
+1. **SSH connection** - Each command wrapped in single SSH session
+2. **tmux session** - Persistent shell on O2 for command execution
+3. **o2-run.sh** - Helper script that sends command, polls for completion, captures output - all in one SSH call
 
 ## Setup
 
@@ -34,11 +42,13 @@ Local Machine                          O2 Cluster
 When you first invoke `/remote-o2`, Claude will:
 
 1. Ask for your O2 username and directories
-2. Generate two scripts in `<config-repo>/o2-scripts/`:
+2. Create/update your `~/.ssh/config` with O2 settings
+3. Generate scripts in `<config-repo>/o2-scripts/`:
    - `o2-setup.sh` - One-time setup to run on O2
    - `connect-o2.sh` - Local script to establish connection
+   - `o2-run.sh` - Helper for command execution (minimizes Duo pushes)
 
-3. Guide you through running them
+4. Guide you through running the setup
 
 ### Each Session
 
@@ -49,9 +59,9 @@ At the start of a work session, run the connect script:
 ```
 
 This:
-- Establishes the SSH master connection (Duo prompt)
+- Establishes the SSH master connection (1 Duo prompt)
 - Starts/reattaches the tmux session on O2
-- Connection persists until you close it or your laptop sleeps
+- **Note:** Off-campus, each subsequent command still triggers 1 Duo push (O2 server behavior)
 
 ## Usage
 
@@ -193,10 +203,10 @@ If an analysis requires O2 resources:
 
 ## Limitations
 
-- **Duo authentication** - Required once per session (unavoidable)
-- **Output capture** - Limited by tmux scrollback; very large outputs redirect to file
+- **Duo authentication (off-campus)** - Each command = 1 Duo push. Work from office (harvard-secure wifi) to avoid this.
+- **Output capture** - Very large outputs are automatically captured via temp files in scratch
 - **Interactive programs** - Programs requiring TTY interaction may not work well
-- **Network dependency** - Connection dies if network drops (but tmux preserves work)
+- **Network dependency** - Connection dies if network drops (but tmux preserves work on O2)
 
 ## Security Notes
 

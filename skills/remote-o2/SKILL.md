@@ -2,12 +2,18 @@
 name: remote-o2
 description: This skill should be used when the user asks to "submit to O2", "run on O2", "use the cluster", "submit a SLURM job", mentions O2 or compute cluster job submission, or when an analysis requires substantial computational resources (>16GB RAM, >4 hours runtime, or GPUs).
 user_invocable: true
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Remote O2 Access Skill
 
 This skill enables Claude Code to access the O2 cluster remotely from a local machine via SSH multiplexing and tmux. It handles setup, connection management, and command execution.
+
+## Important: Duo Authentication Behavior
+
+**Off-campus:** O2 triggers Duo authentication per SSH *session* (not per connection). Each SSH command = 1 Duo push. To minimize pushes, all commands are wrapped into single SSH sessions using the `o2-run.sh` helper script.
+
+**On-campus (Harvard network):** When connected to harvard-secure wifi or the campus network, the Duo per-session overhead may not occur. Users who want to avoid frequent Duo pushes can work from the office.
 
 ## When This Skill Applies
 
@@ -168,7 +174,69 @@ sed -i '' "s|__USER__|$O2_USER|g" "$CONFIG_REPO/o2-scripts/connect-o2.sh"
 chmod +x "$CONFIG_REPO/o2-scripts/connect-o2.sh"
 ```
 
-### 1.4 Instruct User to Run Setup
+### 1.4 Create SSH Config
+
+Create or update `~/.ssh/config` to enable multiplexing:
+
+```bash
+# Create SSH config if it doesn't exist
+if [ ! -f ~/.ssh/config ]; then
+    cat > ~/.ssh/config << 'EOF'
+Host o2.hms.harvard.edu o2
+    HostName o2.hms.harvard.edu
+    User __USER__
+    ControlMaster auto
+    ControlPath /tmp/o2-socket
+    ControlPersist 12h
+EOF
+    sed -i '' "s|__USER__|$O2_USER|g" ~/.ssh/config
+    chmod 600 ~/.ssh/config
+fi
+```
+
+### 1.5 Generate o2-run.sh Helper
+
+This script wraps command execution into a single SSH session (= 1 Duo push):
+
+```bash
+cat > "$CONFIG_REPO/o2-scripts/o2-run.sh" << 'EOF'
+#!/bin/bash
+# Execute a command on O2 via tmux, capturing output cleanly
+# Usage: o2-run.sh "command to run" [timeout_seconds]
+#
+# IMPORTANT: O2 triggers Duo authentication per SSH session (when off-campus).
+# This script wraps send + poll + capture into ONE SSH session = ONE Duo push.
+
+set -e
+
+CMD="$1"
+TIMEOUT="${2:-120}"
+
+SCRATCH_DIR=$(grep "^O2_SCRATCH_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
+OUTPUT_FILE="${SCRATCH_DIR}/claude-tmp/output_$$.txt"
+SENTINEL="__DONE_$$__"
+
+ssh o2.hms.harvard.edu "
+    tmux send-keys -t claude '{ $CMD; } > $OUTPUT_FILE 2>&1; echo $SENTINEL' Enter
+    ELAPSED=0
+    while [ \$ELAPSED -lt $TIMEOUT ]; do
+        sleep 2
+        ELAPSED=\$((ELAPSED + 2))
+        if tmux capture-pane -t claude -p | grep -q '$SENTINEL'; then
+            cat $OUTPUT_FILE 2>/dev/null
+            rm -f $OUTPUT_FILE
+            exit 0
+        fi
+    done
+    echo 'TIMEOUT after $TIMEOUT seconds'
+    cat $OUTPUT_FILE 2>/dev/null
+    exit 1
+"
+EOF
+chmod +x "$CONFIG_REPO/o2-scripts/o2-run.sh"
+```
+
+### 1.6 Instruct User to Run Setup
 
 Tell the user:
 
@@ -184,7 +252,7 @@ I've created the setup scripts. Please run these two commands:
 Let me know when both are done.
 ```
 
-### 1.5 Update behavior.conf
+### 1.7 Update behavior.conf
 
 After user confirms setup is complete:
 
@@ -230,72 +298,55 @@ ssh -S "$O2_SOCKET" o2.hms.harvard.edu "tmux has-session -t claude 2>/dev/null &
 
 ## Command Execution
 
-### Basic Command Pattern
+### Primary Method: o2-run.sh
 
-Use sentinel-based completion detection:
+**Always use o2-run.sh** for command execution. It wraps everything into a single SSH session (= 1 Duo push when off-campus):
 
 ```bash
-# Read config
-O2_SOCKET=$(grep "^O2_SOCKET=" ~/.claude/behavior.conf | cut -d'=' -f2)
-O2_LAB_DIR=$(grep "^O2_LAB_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
+# Get config repo path
+CONFIG_REPO=$(grep "^CONFIG_REPO=" ~/.claude/behavior.conf | cut -d'=' -f2)
 
-# Generate unique sentinel
-SENTINEL="__CLAUDE_DONE_${RANDOM}_$(date +%s)__"
+# Run a command on O2
+$CONFIG_REPO/o2-scripts/o2-run.sh "hostname && date"
 
-# Send command (cd to lab dir first)
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu \
-    "tmux send-keys -t claude 'cd $O2_LAB_DIR/claude-projects && YOUR_COMMAND_HERE; echo $SENTINEL' Enter"
-
-# Poll for completion (with timeout)
-MAX_WAIT=300  # 5 minutes default
-ELAPSED=0
-while [ $ELAPSED -lt $MAX_WAIT ]; do
-    sleep 2
-    ELAPSED=$((ELAPSED + 2))
-    OUTPUT=$(ssh -S "$O2_SOCKET" o2.hms.harvard.edu "tmux capture-pane -t claude -p -S -100")
-    if echo "$OUTPUT" | grep -q "$SENTINEL"; then
-        break
-    fi
-done
-
-# Display output (excluding sentinel line)
-echo "$OUTPUT" | grep -v "$SENTINEL"
+# With custom timeout (default 120s)
+$CONFIG_REPO/o2-scripts/o2-run.sh "long_running_command" 600
 ```
 
-### Large Output Pattern
+The script:
+1. Sends command to tmux session
+2. Redirects output to a temp file in scratch
+3. Polls for completion
+4. Returns clean output
+5. All in ONE SSH session
 
-For commands with substantial output, redirect to scratch:
+### Direct SSH (when necessary)
+
+For operations that don't fit the o2-run.sh pattern (interactive sessions, special cases), you can use direct SSH. **Each call = 1 Duo push off-campus.**
 
 ```bash
-O2_SCRATCH_DIR=$(grep "^O2_SCRATCH_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
-OUTPUT_FILE="$O2_SCRATCH_DIR/claude-tmp/output_$(date +%s).txt"
-
-# Send command with output redirection
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu \
-    "tmux send-keys -t claude 'YOUR_COMMAND_HERE > $OUTPUT_FILE 2>&1; echo $SENTINEL' Enter"
-
-# After sentinel detected, read the file
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu "cat $OUTPUT_FILE"
-
-# Clean up
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu "rm -f $OUTPUT_FILE"
+# Single command
+ssh o2.hms.harvard.edu "tmux send-keys -t claude 'command' Enter; sleep 2; tmux capture-pane -t claude -p"
 ```
 
 ### File Transfer Pattern
 
-**Upload file to O2:**
-```bash
-scp -o "ControlPath=$O2_SOCKET" local_file.py ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/
-```
+File transfers use scp (each = 1 Duo push off-campus, unavoidable):
 
-**Download file from O2:**
 ```bash
-scp -o "ControlPath=$O2_SOCKET" ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/results.csv ./
+O2_USER=$(grep "^O2_USER=" ~/.claude/behavior.conf | cut -d'=' -f2)
+O2_LAB_DIR=$(grep "^O2_LAB_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
+
+# Upload file to O2
+scp local_file.py ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/
+
+# Download file from O2
+scp ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/results.csv ./
 ```
 
 ### Multi-line Script Pattern
 
-For complex scripts, write to a temp file and execute:
+For complex scripts, write locally, upload, then execute:
 
 ```bash
 # Write script locally
@@ -305,10 +356,12 @@ cd /path/to/project
 python analysis.py --input data.csv
 SCRIPT
 
-# Upload and execute
-scp -o "ControlPath=$O2_SOCKET" /tmp/claude/o2_script.sh ${O2_USER}@o2.hms.harvard.edu:$O2_SCRATCH_DIR/claude-tmp/
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu \
-    "tmux send-keys -t claude 'bash $O2_SCRATCH_DIR/claude-tmp/o2_script.sh; echo $SENTINEL' Enter"
+# Upload (1 Duo push)
+O2_SCRATCH_DIR=$(grep "^O2_SCRATCH_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
+scp /tmp/claude/o2_script.sh ${O2_USER}@o2.hms.harvard.edu:$O2_SCRATCH_DIR/claude-tmp/
+
+# Execute via o2-run.sh (1 Duo push)
+$CONFIG_REPO/o2-scripts/o2-run.sh "bash $O2_SCRATCH_DIR/claude-tmp/o2_script.sh"
 ```
 
 ## Compute Resource Decisions
@@ -396,11 +449,13 @@ If output is truncated by capture-pane:
 
 ## Quick Reference
 
-| Action | Command |
-|--------|---------|
-| Check connection | `ssh -S $socket -O check o2` |
-| Send command | `ssh -S $socket o2 "tmux send-keys -t claude 'cmd' Enter"` |
-| Capture output | `ssh -S $socket o2 "tmux capture-pane -t claude -p -S -100"` |
-| Upload file | `scp -o "ControlPath=$socket" file user@o2:path/` |
-| Download file | `scp -o "ControlPath=$socket" user@o2:path/file ./` |
-| Kill connection | `ssh -S $socket -O exit o2` |
+| Action | Command | Duo pushes (off-campus) |
+|--------|---------|------------------------|
+| Run command | `$CONFIG_REPO/o2-scripts/o2-run.sh "cmd"` | 1 |
+| Check connection | `ssh -O check o2.hms.harvard.edu` | 0 |
+| Upload file | `scp file user@o2:path/` | 1 |
+| Download file | `scp user@o2:path/file ./` | 1 |
+| Reconnect | `$CONFIG_REPO/o2-scripts/connect-o2.sh` | 1 |
+| Kill connection | `ssh -O exit o2.hms.harvard.edu` | 0 |
+
+**Note:** On Harvard network (harvard-secure wifi), Duo overhead may not occur.
