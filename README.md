@@ -16,6 +16,7 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
   - `CLAUDE.md` - Behavioral configuration and instructions
   - `settings.json` - Claude Code settings (hooks, permissions)
 - `skills/` - Custom Claude Code skills for scientific research
+  - `init-project/` - Initialize a project with notebook system and permissions
   - `support/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `remote-o2/` - Remote O2 cluster access via SSH
   - `use-o2/` - SLURM reference material (used by remote-o2)
@@ -46,12 +47,19 @@ Claude Code requires configuration files to be found at specific locations. This
    cd claude
    ./setup.sh
    ```
+   This will create symlinks, configure notifications, and set up permissions.
 
-The local setup script will:
-- Create the `~/.claude/` directory if it doesn't exist
-- Backup any existing configuration files
-- Create symlinks for settings and skills
-- Set `Environment=local` flag for local execution
+3. Go to your project directory and start Claude Code:
+   ```bash
+   cd ~/my-project
+   claude
+   ```
+
+4. Initialize your project (first time only):
+   ```
+   /init-project
+   ```
+   This creates the notebook system, sets up permissions, and optionally creates GitHub remotes.
 
 ## Configuration Features
 
@@ -84,17 +92,31 @@ It:
 
 ### Lab Notebook
 
-The lab notebook system (`notebook/analyses/`) provides archival tracking of all analyses, separate from `CLAUDE.md` which stays focused on current context. This two-tiered system follows the "progressive disclosure" pattern: instead of giving agents every piece of context they might need, start by giving context they will definitely need, and let them find additional context themselves using bash to navigate the filesystem.
+The notebook is a **separate git repository** inside your project, keeping your main repo clean while preserving full analysis history. Run `/init-project` to set this up automatically.
 
-**How the notebook works:**
-- Each analysis gets its own directory with a README (log), scripts, and outputs
-- Claude writes to the notebook incrementally during analysis, not just at the end
-- When starting a new analysis, Claude retrieves 0-3 related past analyses for context
-- Git commits track each analysis version and script history
+```
+my-project/           # Main repo (your code)
+├── .gitignore        # Contains: notebook/
+├── CLAUDE.md
+└── notebook/         # Separate repo (analysis logs)
+    ├── .git/
+    ├── INDEX.md
+    ├── analyses/
+    └── methods/
+```
 
-**How CLAUDE.md works:** Stores essential context on the goals of the project, its current state, available tools/software and their locations, and available datasets and their locations
+**Why separate repos?**
+- Main repo git log stays clean (only code changes)
+- Notebook can have different backup/sharing rules
+- Easy to share code without sharing exploratory work
 
-**Managing the notebook:** The notebook is automatically updated when you use the `/perform-analysis` skill. It is also updated when you use the `/new-data` and `/new-software` skills. To manage it manually, use the `/update-notebook` skill, particularly the first time you use Claude within an existing project and when you've performed significant analyses outside of Claude Code. Claude will review git history, ask you about changes, read project files (like a draft manuscript), and create retrospective entries.
+**How it works:**
+- Each analysis gets its own directory with a README, scripts, and outputs
+- Claude writes to the notebook incrementally during analysis
+- When starting a new analysis, Claude retrieves related past analyses for context
+- Commits go to the notebook repo; pushes to its own GitHub remote
+
+**Managing the notebook:** Use `/perform-analysis` for new analyses, `/update-notebook` to sync work done outside Claude Code.
 
 ### Additional skills
 - **new-data** - Dataset handling and validation
