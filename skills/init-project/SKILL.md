@@ -232,7 +232,126 @@ If the project has existing git history (more than just the commits we made):
 
 If yes, invoke the `/update-notebook` skill.
 
-### Phase 6: Summary
+### Phase 6: O2 Cluster Setup (Optional)
+
+Ask the user:
+
+> **O2 Cluster Access (Recommended)**
+>
+> Set up this project on O2 for running compute-intensive analyses?
+> This enables the workflow: local edit → push → O2 pull → sbatch
+>
+> - **Yes, set up O2** (recommended for projects with heavy compute)
+> - **No, skip** (can set up later)
+
+If yes, proceed with O2 setup:
+
+**6.1 Check O2 access configuration**
+
+Check `~/.claude/behavior.conf` for `O2_USER`. If not set, invoke `/remote-o2` skill first to establish O2 connection.
+
+**6.2 Check GitHub SSH key on O2**
+
+Via the O2 tmux session, check if SSH key exists:
+
+```bash
+# On O2
+ls ~/.ssh/id_ed25519.pub 2>/dev/null
+```
+
+If key doesn't exist, set it up:
+
+**6.2.1 Get user's GitHub email**
+
+> What email address is associated with your GitHub account?
+
+**6.2.2 Generate SSH key on O2**
+
+```bash
+# On O2
+ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/id_ed25519 -N ""
+```
+
+**6.2.3 Display public key and guide user**
+
+```bash
+# On O2
+cat ~/.ssh/id_ed25519.pub
+```
+
+Display to user:
+
+> **Add this SSH key to GitHub**
+>
+> 1. Copy the key above (starts with `ssh-ed25519`)
+> 2. Go to: https://github.com/settings/keys
+> 3. Click "New SSH key"
+> 4. Title: "O2 Cluster"
+> 5. Paste the key and click "Add SSH key"
+>
+> Let me know when done.
+
+**6.2.4 Test GitHub connection**
+
+```bash
+# On O2
+ssh -T git@github.com
+```
+
+Should see: "Hi <username>! You've successfully authenticated..."
+
+If it fails, troubleshoot (may need to accept GitHub's host key first).
+
+**6.3 Clone project on O2**
+
+**6.3.1 Determine O2 project location**
+
+Check if `O2_LAB_DIR` is set in behavior.conf. If so, suggest:
+
+> Where should I clone this project on O2?
+> Suggested: `<O2_LAB_DIR>/projects/<repo-name>`
+
+Get user confirmation or custom path.
+
+**6.3.2 Get SSH URLs**
+
+```bash
+# Local - get SSH URLs for both repos
+git remote get-url origin | sed 's|https://github.com/|git@github.com:|'
+git -C notebook remote get-url origin | sed 's|https://github.com/|git@github.com:|'
+```
+
+**6.3.3 Clone repos on O2**
+
+```bash
+# On O2
+mkdir -p <project-path>
+cd <project-path>
+git clone git@github.com:<user>/<repo>.git .
+git clone git@github.com:<user>/<repo>-notebook.git notebook
+```
+
+**6.3.4 Store O2 project path**
+
+Add to `~/.claude/behavior.conf`:
+```
+O2_PROJECT_<REPO_NAME>=<path-on-o2>
+```
+
+This enables future `/remote-o2` invocations to know where the project lives on O2.
+
+**6.4 Verify setup**
+
+```bash
+# On O2
+cd <project-path>
+git status
+git -C notebook status
+```
+
+Both should show clean working directories.
+
+### Phase 7: Summary
 
 Display completion message:
 
@@ -242,11 +361,20 @@ Display completion message:
 > - Notebook remote: `https://github.com/<account>/<repo>-notebook` (or "local only")
 > - Permissions: `.claude/settings.json`
 > - Project context: `CLAUDE.md`
+> - O2 clone: `<path-on-o2>` (or "not configured")
 >
 > **Next steps:**
 > - Edit `CLAUDE.md` to add project-specific context
 > - Use `/perform-analysis` to run and log analyses
 > - Use `/new-data` when working with new datasets
+>
+> **O2 workflow** (if configured):
+> ```
+> # Push changes locally
+> git push && git -C notebook push
+>
+> # Then use /remote-o2 to pull and run on O2
+> ```
 
 ---
 
