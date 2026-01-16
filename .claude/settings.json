@@ -5,7 +5,10 @@
       "Edit(/notebook/**)",
       "Write(/notebook/**)",
       "Bash(mkdir -p notebook:*)",
-      "Bash(git -C notebook *)"
+      "Bash(git -C notebook *)",
+      "Bash(ls notebook:*)",
+      "Bash(cp * notebook/*)",
+      "Bash(mv * notebook/*)"
     ]
   }
 }

@@ -162,11 +162,16 @@ Create `.claude/settings.json`:
       "Edit(/notebook/**)",
       "Write(/notebook/**)",
       "Bash(mkdir -p notebook:*)",
-      "Bash(git -C notebook *)"
+      "Bash(git -C notebook *)",
+      "Bash(ls notebook:*)",
+      "Bash(cp * notebook/*)",
+      "Bash(mv * notebook/*)"
     ]
   }
 }
 ```
+
+Note: `cp` and `mv` patterns require ` notebook/` (with space) in the command, ensuring notebook is the destination, not just the source.
 
 Commit:
 ```bash
