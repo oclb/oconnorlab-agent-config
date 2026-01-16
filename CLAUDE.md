@@ -170,7 +170,8 @@ project/
 ├── CLAUDE.md                         # Key findings, current directions
 ├── notebook/
 │   ├── INDEX.md                      # Quick-reference summary of all memories
-│   ├── TODO.md                       # Persistent task list across sessions
+│   ├── TODO.md                       # Active tasks
+│   ├── DONE.md                       # Completed tasks (archival)
 │   ├── analyses/                     # Analysis logs and scripts
 │   │   └── <analysis-name>/
 │   │       ├── README.md
@@ -224,13 +225,11 @@ Skills that create memories update the index in the same commit. Retrieval reads
 
 ### Persistent To-Do List
 
-`notebook/TODO.md` tracks tasks across sessions:
-- Items have numbers (#1, #2, ...) and names
-- Can link to related notebook entries via `Context:` field
-- Completed items link to their results via `Result:` field
-- Each add/complete/edit triggers a git commit
+Two files track tasks across sessions:
+- `notebook/TODO.md` - Active tasks (kept small)
+- `notebook/DONE.md` - Completed tasks with full original record + result
 
-When starting work on a todo with a `Context:` link, Claude reads the linked notebook entry for background.
+Items have numbers (#1, #2, ...) and can link to related notebook entries via `Context:` field. When starting work on a todo with a `Context:` link, Claude reads the linked notebook entry for background.
 
 ## Notifications
 

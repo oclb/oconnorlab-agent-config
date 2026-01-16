@@ -176,7 +176,9 @@ When in doubt about importance, lean toward not asking - the notebook entry prov
 
 ## Persistent To-Do List
 
-Track tasks across sessions in `notebook/TODO.md`. This complements the session-scoped TodoWrite tool with persistent storage.
+Track tasks across sessions using two files:
+- `notebook/TODO.md` - Active tasks (kept small)
+- `notebook/DONE.md` - Completed tasks (archival record)
 
 ### When to Use
 
@@ -184,12 +186,11 @@ Track tasks across sessions in `notebook/TODO.md`. This complements the session-
 - User asks to "show todos", "what's on my list", "what needs doing"
 - User asks to "work on todo #N" or "do the X task"
 
-### File Format
+### File Formats
 
+**notebook/TODO.md** (active tasks):
 ```markdown
-# To-Do List
-
-## Active
+# To-Do
 
 - [ ] #1 **Task name** - Brief description
   - Context: `notebook/analyses/related-analysis` (if applicable)
@@ -197,18 +198,23 @@ Track tasks across sessions in `notebook/TODO.md`. This complements the session-
 
 - [ ] #2 **Another task** - Description
   - Added: YYYY-MM-DD
+```
 
-## Completed
+**notebook/DONE.md** (completed tasks):
+```markdown
+# Completed
 
-- [x] #0 **Example task** - What was done
+- [x] #0 **Example task** - Original description preserved
+  - Context: `notebook/analyses/related-analysis` (if it had one)
+  - Added: YYYY-MM-DD
   - Completed: YYYY-MM-DD
-  - Result: `notebook/analyses/resulting-analysis` (if applicable)
+  - Result: `notebook/analyses/resulting-analysis`
 ```
 
 ### Behaviors
 
 **Adding a todo:**
-1. Assign the next available number (incrementing, never reuse)
+1. Assign the next available number (incrementing, never reuse - check both TODO.md and DONE.md)
 2. If the todo arises from a conversation about an analysis or other notebook entry, add a `Context:` line linking to it
 3. Commit: `git add notebook/TODO.md && git commit -m "todo: add #N - <task name>"`
 
@@ -217,25 +223,26 @@ Track tasks across sessions in `notebook/TODO.md`. This complements the session-
 2. If it has a `Context:` link, read that notebook entry for background
 3. Make a plan for the task
 4. Execute the work
-5. When complete, move the item to the Completed section with:
-   - `Completed:` date
-   - `Result:` link if the work created a notebook entry (analysis, method, etc.)
-6. Commit: `git add notebook/TODO.md && git commit -m "todo: complete #N - <task name>"`
+5. When complete, move the entire item to DONE.md with:
+   - All original fields preserved
+   - `Completed:` date added
+   - `Result:` link if the work created a notebook entry
+6. Commit: `git add notebook/TODO.md notebook/DONE.md && git commit -m "todo: complete #N - <task name>"`
 
 **Editing a todo:**
 1. Update the description or context as needed
 2. Commit: `git add notebook/TODO.md && git commit -m "todo: update #N - <brief change>"`
 
 **Deleting a todo (without completing):**
-1. Remove the item entirely (don't move to Completed)
+1. Remove the item entirely (don't move to DONE.md)
 2. Commit: `git add notebook/TODO.md && git commit -m "todo: remove #N - <reason>"`
 
 ### Integration with Notebook
 
-Most completed todos should result in a persistent record:
+Most completed todos should result in a persistent record elsewhere:
 - Analysis task → `notebook/analyses/` entry via `/perform-analysis`
 - Method change → `notebook/methods/` entry
 - Software setup → `notebook/software/` entry
 - Data exploration → `notebook/data/` entry
 
-The `Result:` link in completed todos connects the task to its outcome, creating a traceable history.
+The `Result:` link in DONE.md connects the task to its outcome for traceability.
