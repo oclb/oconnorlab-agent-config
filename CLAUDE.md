@@ -169,6 +169,7 @@ The lab notebook provides archival tracking of analyses, separate from the curat
 project/
 ├── CLAUDE.md                         # Key findings, current directions
 ├── notebook/
+│   ├── TODO.md                       # Persistent task list across sessions
 │   ├── analyses/                     # Analysis logs and scripts
 │   │   └── <analysis-name>/
 │   │       ├── README.md
@@ -208,6 +209,16 @@ When work is done outside Claude Code, use `/update-notebook` to:
 2. Ask about recent analyses and findings
 3. Create retrospective notebook entries
 4. Update CLAUDE.md with current context
+
+### Persistent To-Do List
+
+`notebook/TODO.md` tracks tasks across sessions:
+- Items have numbers (#1, #2, ...) and names
+- Can link to related notebook entries via `Context:` field
+- Completed items link to their results via `Result:` field
+- Each add/complete/edit triggers a git commit
+
+When starting work on a todo with a `Context:` link, Claude reads the linked notebook entry for background.
 
 ## Notifications
 
