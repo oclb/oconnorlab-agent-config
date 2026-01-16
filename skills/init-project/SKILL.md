@@ -286,7 +286,11 @@ When `gh` CLI is not available, display:
 > 2. Open https://github.com/login/device in your browser
 > 3. Enter the code and authorize
 >
-> Once you see "✓ Logged in as <username>", authentication is complete.
+> Once you see "✓ Logged in as <username>", run one more command to configure git:
+> ```bash
+> gh auth setup-git
+> ```
+> This enables git to use your GitHub credentials automatically.
 >
 > Once complete, run `/init-project` again.
 
