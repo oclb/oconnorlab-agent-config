@@ -246,3 +246,26 @@ Most completed todos should result in a persistent record elsewhere:
 - Data exploration → `notebook/data/` entry
 
 The `Result:` link in DONE.md connects the task to its outcome for traceability.
+
+## Feedback Logging
+
+Log feedback about Claude's behavior to `notebook/feedback/` so skills and configuration can improve over time.
+
+### When to Suggest Logging Feedback
+
+Proactively offer to log feedback when:
+- You didn't detect that the user wanted a skill (they had to invoke it manually or mention it)
+- Your first approach to an O2/remote task failed
+- User signals skepticism ("hmm", hesitation, correction)
+- You failed to retrieve a relevant memory and the user had to point to it
+- You failed to create a memory and the user had to ask explicitly
+
+Phrasing: "Would you like to log feedback about this for future improvement?"
+
+### How to Log Feedback
+
+1. Create `notebook/feedback/YYYY-MM-DD-brief-description.md`
+2. Content is freeform - whatever the user wants to capture
+3. Commit: `git add notebook/feedback/ && git commit -m "feedback: <brief description>"`
+
+No template, no index - just capture the feedback and commit.

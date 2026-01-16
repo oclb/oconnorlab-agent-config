@@ -1,8 +1,5 @@
 # To-Do
 
-- [ ] #2 **Self-improvement feedback mechanism** - Create notebook/feedback/ for logging when skills work well, fail, or need adjustment; structured format with What Happened, What Should Have Happened, Suggested Fix
-  - Added: 2026-01-16
-
 - [ ] #3 **Methods logging activation** - Add explicit triggers/reminders to relevant skills so methods logging actually happens; infrastructure exists but is underutilized
   - Added: 2026-01-16
 
