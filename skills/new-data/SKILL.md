@@ -238,10 +238,16 @@ See [references/domain-checks.md](references/domain-checks.md) for tool-specific
 - **Ready for analysis:** [Yes / Needs preprocessing]
 ```
 
+**Update notebook/INDEX.md:**
+Add a row to the Data table:
+```
+| <dataset-name> | <location> | <source> | <Good/Fair/Poor> |
+```
+
 **Commit the notebook entry:**
 ```bash
 mkdir -p notebook/data
-git add notebook/data/<dataset-name>.md
+git add notebook/data/<dataset-name>.md notebook/INDEX.md
 git commit -m "data: add <dataset-name> documentation"
 ```
 

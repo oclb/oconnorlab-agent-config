@@ -169,6 +169,7 @@ The lab notebook provides archival tracking of analyses, separate from the curat
 project/
 ├── CLAUDE.md                         # Key findings, current directions
 ├── notebook/
+│   ├── INDEX.md                      # Quick-reference summary of all memories
 │   ├── TODO.md                       # Persistent task list across sessions
 │   ├── analyses/                     # Analysis logs and scripts
 │   │   └── <analysis-name>/
@@ -186,11 +187,12 @@ project/
 ### How It Works
 
 **During `/perform-analysis`:**
-1. Generates a specific, descriptive name (or uses user-provided)
-2. Retrieves context from 0-3 related past analyses
+1. Reads `notebook/INDEX.md` for quick retrieval of related memories
+2. Generates a specific, descriptive name (or uses user-provided)
 3. Writes to notebook incrementally after each step
-4. Commits each version to current branch
-5. Updates CLAUDE.md only for important findings
+4. Updates INDEX.md with summary row on completion
+5. Commits each version to current branch
+6. Updates CLAUDE.md only for important findings
 
 **Version management:**
 - v0 often a pilot (subset data), v1 the full run
@@ -209,6 +211,16 @@ When work is done outside Claude Code, use `/update-notebook` to:
 2. Ask about recent analyses and findings
 3. Create retrospective notebook entries
 4. Update CLAUDE.md with current context
+
+### Notebook Index
+
+`notebook/INDEX.md` provides quick-reference summaries of all memories:
+- **Analyses**: ID, summary, date, tags
+- **Data**: ID, location, source, status
+- **Software**: ID, version, purpose
+- **Methods**: date, change, impact
+
+Skills that create memories update the index in the same commit. Retrieval reads the index first, then full entries only for relevant items.
 
 ### Persistent To-Do List
 

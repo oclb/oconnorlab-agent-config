@@ -68,6 +68,51 @@ The file uses simple `KEY=value` format:
 3. If a flag is missing from behavior.conf (or the file doesn't exist), use the Default from the table above
 4. Adjust your behavior according to the flag definitions
 
+## Notebook Index
+
+Maintain `notebook/INDEX.md` as a quick-reference summary of all project memories. This enables faster retrieval than scanning individual files.
+
+### Index Format
+
+```markdown
+# Notebook Index
+
+## Analyses
+| ID | Summary | Date | Tags |
+|----|---------|------|------|
+
+## Data
+| ID | Location | Source | Status |
+|----|----------|--------|--------|
+
+## Software
+| ID | Version | Purpose |
+|----|---------|---------|
+
+## Methods
+| Date | Change | Impact |
+|------|--------|--------|
+```
+
+### When to Update
+
+Update the index whenever you create or modify a notebook entry:
+- After completing an analysis → add row to Analyses
+- After documenting a dataset → add row to Data
+- After documenting software → add row to Software
+- After logging a method change → add row to Methods
+
+**Commit with the entry:** Include index updates in the same commit as the notebook entry.
+
+### Using the Index for Retrieval
+
+When starting work that might relate to past memories:
+1. Read `notebook/INDEX.md` first (fast scan)
+2. Identify relevant entries by ID, tags, or summary
+3. Read full entries only for those that seem relevant
+
+This is more efficient than reading every README.md.
+
 ## Logging Methodological Changes
 
 When you make changes to the codebase (not analyses, but the actual software/methods being developed), log them to `notebook/methods/`.
@@ -104,10 +149,11 @@ Create `notebook/methods/YYYY-MM-DD-<brief-description>.md`:
 [What this affects - analyses, outputs, compatibility]
 ```
 
-**Commit the entry:**
+**Commit the entry (including index update):**
 ```bash
 mkdir -p notebook/methods
-git add notebook/methods/
+# Add row to notebook/INDEX.md Methods table
+git add notebook/methods/ notebook/INDEX.md
 git commit -m "methods: <brief description>"
 ```
 

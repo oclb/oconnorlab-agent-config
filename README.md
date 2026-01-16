@@ -29,16 +29,21 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
 
 ## Quick start
 
-Claude Code requires configuration files to be found at specific locations. This repository uses symlinks to keep the actual files in a synced location while Claude Code reads them from the expected paths.
+Claude Code requires configuration files to be found at specific locations. This repository uses symlinks (shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths.
+
+0. Install Claude Code if you haven't already: on macOS, 
+  ```bash
+  brew install claude
+  ```
 
 1. Clone this repository at a chosen location:
    ```bash
-   git clone https://github.com/oclb/claude-config.git
+   git clone https://github.com/oclb/claude.git
    ```
 
 2. Run the local setup script:
    ```bash
-   cd claude-config
+   cd claude
    ./setup.sh
    ```
 
@@ -51,9 +56,9 @@ The local setup script will:
 ## Configuration Features
 
 ### Remote O2 Access
-Use the `/remote-o2` skill to access the O2 cluster from your local machine. Claude will guide you through first-time setup (SSH configuration, connection scripts), then execute commands on O2, submit SLURM jobs, and monitor progress.
+Use the `/remote-o2` skill to access the O2 cluster from your local machine. The first time you run `/remote-o2`, Claude will guide you through setup (SSH configuration, connection scripts), then execute commands on O2, submit SLURM jobs, and monitor progress.
 
-**Note:** Off-campus, each command triggers a Duo push. Work from harvard-secure wifi to avoid this overhead.
+**Note:** Off-campus, every interaction between Claude and O2 triggers a Duo push which you must approve. Connect to the harvard-secure wifi or ethernet to avoid this.
 
 ### Notifications
 Notification hooks are triggered when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop. Setup scripts automatically configure your shell with:

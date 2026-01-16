@@ -109,30 +109,30 @@ Follow these 8 steps systematically.
 
 **Before starting the analysis:**
 
-1. **Retrieve related analyses from notebook:**
+1. **Retrieve related memories from notebook:**
 
    ```bash
-   ls -ltr notebook/analyses/ 2>/dev/null || echo "No notebook yet"
+   cat notebook/INDEX.md 2>/dev/null || echo "No notebook index yet"
    ```
 
-   Scan the list and identify **0-3 related analyses** based on:
-   - Similar data types or sources
-   - Similar methods or statistical approaches
+   Scan the index and identify **0-3 related entries** (analyses, data, methods) based on:
+   - Similar data types or sources (check Data section)
+   - Similar methods or statistical approaches (check Analyses, Methods sections)
    - Same research question or related hypotheses
-   - Recent analyses in the same project area
+   - Recent work in the same project area
 
-   **For each related analysis, read its README.md** to gather:
+   **For each related entry, read its full documentation** to gather:
 
-   | Context Type | How It Helps |
-   |--------------|--------------|
-   | **Scripts** | Copy/adapt similar analysis scripts |
-   | **Resource usage** | Predict O2 partition, memory, runtime |
-   | **Findings** | Check if new results are concordant with previous |
-   | **Challenges** | Avoid repeating past mistakes |
+   | Memory Type | How It Helps |
+   |-------------|--------------|
+   | **Analyses** | Scripts to adapt, resource estimates, findings for concordance, challenges to avoid |
+   | **Data** | Dataset characteristics, known issues, validation status |
+   | **Methods** | Recent codebase changes that might affect analysis |
+   | **Software** | Tool versions, known limitations, usage patterns |
 
-   If no related analyses exist (new project area), proceed without prior context.
+   If no related entries exist (new project area), proceed without prior context.
 
-   **Note in your working context** which analyses you referenced and why.
+   **Note in your working context** which entries you referenced and why.
 
 2. **Determine analysis name:**
    - Use user-provided name if given
@@ -368,13 +368,20 @@ Challenges:
    - Fill in Scripts section with script filenames
    - Update Status from "In Progress" to "Complete"
 
-3. **Git commit:**
+3. **Update notebook/INDEX.md:**
+   Add a row to the Analyses table:
+   ```
+   | <analysis-name> | <one-line summary of key finding> | YYYY-MM-DD | <tags> |
+   ```
+   Tags should be 2-4 keywords (e.g., `survival, tcga, tp53`).
+
+4. **Git commit:**
    ```bash
-   git add notebook/analyses/<analysis-name>/
+   git add notebook/analyses/<analysis-name>/ notebook/INDEX.md
    git commit -m "analysis: <analysis-name> v0 - <brief description of what was done>"
    ```
 
-4. **Evaluate for CLAUDE.md update:**
+5. **Evaluate for CLAUDE.md update:**
 
    Ask: Is this finding important enough for CLAUDE.md?
 

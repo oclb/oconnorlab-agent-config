@@ -163,10 +163,16 @@ Next Steps:
 - DO record issues/bugs/limitations you encounter
 - Link to specific docs sections relevant to your usage
 
+**Update notebook/INDEX.md:**
+Add a row to the Software table:
+```
+| <tool-name> | <version> | <primary use in this project> |
+```
+
 **Commit the notebook entry:**
 ```bash
 mkdir -p notebook/software
-git add notebook/software/<tool-name>.md
+git add notebook/software/<tool-name>.md notebook/INDEX.md
 git commit -m "software: add <tool-name> documentation"
 ```
 

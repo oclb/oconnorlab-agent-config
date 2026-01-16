@@ -120,8 +120,12 @@ For analyses done outside Claude Code, create notebook entries:
    - Mark uncertainties: "Exact parameters unknown"
    - Keep entries brief - the goal is context, not reconstruction
 
-### Step 5: Update CLAUDE.md
+### Step 5: Update INDEX.md and CLAUDE.md
 
+**Update notebook/INDEX.md:**
+For each retrospective entry created, add a row to the appropriate table (Analyses, Data, Software, Methods).
+
+**Update CLAUDE.md:**
 Based on the sync conversation:
 
 1. **Add new context:**
@@ -178,6 +182,27 @@ Start with a welcoming introduction:
 
 ```bash
 mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
+```
+
+**Initialize INDEX.md:**
+```markdown
+# Notebook Index
+
+## Analyses
+| ID | Summary | Date | Tags |
+|----|---------|------|------|
+
+## Data
+| ID | Location | Source | Status |
+|----|----------|--------|--------|
+
+## Software
+| ID | Version | Purpose |
+|----|---------|---------|
+
+## Methods
+| Date | Change | Impact |
+|------|--------|--------|
 ```
 
 ### Step 3: Document Datasets
