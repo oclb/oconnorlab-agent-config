@@ -83,6 +83,12 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 
 ## Available Skills
 
+### Setup Skills
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/init-project` | First time with a project | Initialize project with notebook, permissions, CLAUDE.md |
+
 ### Core Research Skills
 
 | Skill | Trigger | Purpose |
@@ -158,32 +164,47 @@ Reference material for O2 cluster and SLURM (used by remote-o2):
 
 The lab notebook provides archival tracking of analyses, separate from the curated CLAUDE.md.
 
+### Two-Repo Architecture
+
+The notebook is a **separate git repository** inside the project, gitignored from the main repo:
+
+```
+project/                              # Main git repo
+├── .git/
+├── .gitignore                        # Contains: notebook/
+├── CLAUDE.md                         # Key findings, current directions
+├── .claude/settings.json             # Project permissions
+├── src/                              # Your code
+└── notebook/                         # Separate git repo (gitignored)
+    ├── .git/
+    ├── INDEX.md                      # Quick-reference summary
+    ├── TODO.md                       # Active tasks
+    ├── DONE.md                       # Completed tasks
+    ├── analyses/                     # Analysis logs and scripts
+    │   └── <analysis-name>/
+    │       ├── README.md
+    │       ├── <script>.py
+    │       └── outputs/
+    ├── methods/                      # Features, bugfixes, data, tools, decisions
+    │   └── YYYY-MM-DD-<description>.md
+    └── feedback/                     # Self-improvement feedback
+        └── YYYY-MM-DD-<description>.md
+```
+
+**Why separate repos?**
+- Main repo git log stays clean (only code changes)
+- Notebook can have different backup/sharing rules
+- Prevents repo bloat from analysis outputs
+- Easy to share code without sharing exploratory work
+
+**Setup:** Run `/init-project` to create this structure automatically.
+
 ### Two-Tier Context System
 
 | Layer | Location | Purpose | Lifecycle |
 |-------|----------|---------|-----------|
-| **Notebook** | `notebook/analyses/` | Complete archival record | Append-only, grows forever |
-| **CLAUDE.md** | Project root | Curated active context | Actively pruned, current-relevant only |
-
-### Notebook Structure
-
-```
-project/
-├── CLAUDE.md                         # Key findings, current directions
-├── notebook/
-│   ├── INDEX.md                      # Quick-reference summary of all memories
-│   ├── TODO.md                       # Active tasks
-│   ├── DONE.md                       # Completed tasks (archival)
-│   ├── analyses/                     # Analysis logs and scripts
-│   │   └── <analysis-name>/
-│   │       ├── README.md
-│   │       ├── <script>.py
-│   │       └── outputs/
-│   ├── methods/                      # Everything else: features, bugfixes, data, tools, decisions
-│   │   └── YYYY-MM-DD-<description>.md
-│   └── feedback/                     # Self-improvement feedback
-│       └── YYYY-MM-DD-<description>.md
-```
+| **Notebook** | `notebook/` (separate repo) | Complete archival record | Append-only, grows forever |
+| **CLAUDE.md** | Project root (main repo) | Curated active context | Actively pruned, current-relevant only |
 
 ### How It Works
 
@@ -192,8 +213,9 @@ project/
 2. Generates a specific, descriptive name (or uses user-provided)
 3. Writes to notebook incrementally after each step
 4. Updates INDEX.md with summary row on completion
-5. Commits each version to current branch
-6. Updates CLAUDE.md only for important findings
+5. Commits to **notebook repo**: `git -C notebook add . && git -C notebook commit`
+6. Pushes to notebook remote (if configured)
+7. Updates CLAUDE.md only for important findings (committed to main repo)
 
 **Version management:**
 - v0 often a pilot (subset data), v1 the full run
