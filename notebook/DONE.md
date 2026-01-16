@@ -1,5 +1,10 @@
 # Completed
 
+- [x] #3 **Methods logging activation** - Consolidated data/, software/, methods/ into single methods/ memory system; expanded triggers to include features, bugfixes, datasets, tools, decisions
+  - Added: 2026-01-16
+  - Completed: 2026-01-16
+  - Result: `global/CLAUDE.md` (Methods Memory section), updated skills: new-data, new-software, update-notebook, perform-analysis; updated project CLAUDE.md and notebook/INDEX.md
+
 - [x] #2 **Self-improvement feedback mechanism** - Create notebook/feedback/ for logging when skills work well, fail, or need adjustment
   - Added: 2026-01-16
   - Completed: 2026-01-16

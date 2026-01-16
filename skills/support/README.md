@@ -4,7 +4,7 @@ Provides help and documentation about Claude Code and this configuration's capab
 
 ## Usage
 
-Invoke with `/help` or ask questions like:
+Invoke with `/support` or ask questions like:
 - "What can you do?"
 - "What skills are available?"
 - "How do I use hooks?"

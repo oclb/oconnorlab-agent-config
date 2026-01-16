@@ -1,5 +1,5 @@
 ---
-name: help
+name: support
 description: This skill should be used when the user asks about Claude Code itself, wants to know what skills are available, asks "what can you do", "how do I use X feature", needs help with Claude Code configuration, or wants an overview of capabilities for scientific research.
 version: 1.0.0
 ---
@@ -30,7 +30,7 @@ When `NewUser=true` in behavior.conf, consider invoking this skill proactively:
 When triggering proactively, keep it brief:
 - Don't dump the full overview unless asked
 - Mention 1-2 relevant skills for their current work
-- Suggest they can ask for more with `/help`
+- Suggest they can ask for more with `/support`
 
 ## Process
 
@@ -146,7 +146,7 @@ NewUser mode is enabled by default when you first set up Claude Code. When enabl
 
 - Claude proactively mentions relevant skills as they become useful
 - Offers brief explanations of what it's doing
-- May suggest the `/help` command for more information
+- May suggest the `/support` command for more information
 - Introduces features like AFK mode when appropriate
 
 **Disabling NewUser mode**: Once you're comfortable with the system, ask Claude to "disable onboarding mode" or "turn off NewUser mode". Claude will update behavior.conf and switch to more efficient, less explanatory responses.

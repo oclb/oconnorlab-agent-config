@@ -25,7 +25,7 @@ claude-config/
 │   ├── CLAUDE.user.md        # User-specific overrides (gitignored)
 │   └── settings.json         # Claude Code settings (hooks, permissions, model)
 ├── skills/                    # Custom skills for scientific research
-│   ├── help/                 # Documentation and help system
+│   ├── support/              # Documentation and help system
 │   ├── remote-o2/            # Remote O2 access via SSH
 │   ├── use-o2/               # SLURM reference (used by remote-o2)
 │   ├── perform-analysis/     # 8-step analysis framework with notebook integration
@@ -68,8 +68,8 @@ Claude reads `~/.claude/behavior.conf` at session start:
 |------|--------|--------|
 | `AFK` | `true`/`false` | When true, work autonomously without asking questions |
 | `Environment` | `local` | Always local; use `/remote-o2` for cluster access |
-| `NewUser` | `true`/`false` | When true, proactively explain features and suggest `/help` |
-| `CONFIG_REPO` | Path | Location of this repo (for `/help` skill) |
+| `NewUser` | `true`/`false` | When true, proactively explain features and suggest `/support` |
+| `CONFIG_REPO` | Path | Location of this repo (for `/support` skill) |
 
 Toggle AFK by including `(afk)` or `(back)` in a message. Toggle NewUser by explicitly asking Claude to enable/disable onboarding mode.
 
@@ -93,7 +93,7 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | `/use-o2` | (reference skill) | SLURM reference material for remote-o2 |
 | `/teaching-mode` | "teach me", "explain how" | Educational explanations with replication steps |
 | `/revise-scientific-writing` | "revise manuscript", "edit abstract" | Scientific writing improvement |
-| `/help` | "what can you do", questions about Claude Code | Documentation and capability overview |
+| `/support` | "what can you do", questions about Claude Code | Documentation and capability overview |
 
 ### Document Skills
 
@@ -177,11 +177,7 @@ project/
 │   │       ├── README.md
 │   │       ├── <script>.py
 │   │       └── outputs/
-│   ├── data/                         # Dataset documentation
-│   │   └── <dataset-name>.md         # Location, source, characteristics, issues
-│   ├── software/                     # External software documentation
-│   │   └── <tool-name>.md            # Installation, docs URL, issues
-│   ├── methods/                      # Methodological changes to codebase
+│   ├── methods/                      # Everything else: features, bugfixes, data, tools, decisions
 │   │   └── YYYY-MM-DD-<description>.md
 │   └── feedback/                     # Self-improvement feedback
 │       └── YYYY-MM-DD-<description>.md
@@ -219,9 +215,7 @@ When work is done outside Claude Code, use `/update-notebook` to:
 
 `notebook/INDEX.md` provides quick-reference summaries of all memories:
 - **Analyses**: ID, summary, date, tags
-- **Data**: ID, location, source, status
-- **Software**: ID, version, purpose
-- **Methods**: date, change, impact
+- **Methods**: date, type (feature/bugfix/data/tool/decision), summary
 
 Skills that create memories update the index in the same commit. Retrieval reads the index first, then full entries only for relevant items.
 

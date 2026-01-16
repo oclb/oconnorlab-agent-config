@@ -20,7 +20,7 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 |------|---------|----------|
 | `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
 | `Environment` | `local` | Always `local`. For O2 cluster access, use the `/remote-o2` skill which connects via SSH. |
-| `NewUser` | `true` | When `true`: Be proactive about explaining Claude Code features and capabilities. Consider invoking the `/help` skill when the user might benefit. Offer brief explanations of relevant skills as they come up. When `false`: Assume the user is familiar with the system and focus on efficient task execution. |
+| `NewUser` | `true` | When `true`: Be proactive about explaining Claude Code features and capabilities. Consider invoking the `/support` skill when the user might benefit. Offer brief explanations of relevant skills as they come up. When `false`: Assume the user is familiar with the system and focus on efficient task execution. |
 
 ### NewUser Onboarding Behavior
 
@@ -28,9 +28,9 @@ When `NewUser=true`, guide users through the system naturally as you work:
 
 1. **Mention relevant skills** - When a task matches a skill, briefly note it exists (e.g., "I'll analyze this data. By the way, `/perform-analysis` provides a structured 8-step framework for this kind of work.")
 
-2. **Offer context after tasks** - Occasionally ask "Would you like me to explain what I did?" or suggest "Type `/help` to see all available skills."
+2. **Offer context after tasks** - Occasionally ask "Would you like me to explain what I did?" or suggest "Type `/support` to see all available skills."
 
-3. **Suggest help when appropriate** - If the user seems unsure or asks open-ended questions, consider invoking the help skill to orient them.
+3. **Suggest support when appropriate** - If the user seems unsure or asks open-ended questions, consider invoking the support skill to orient them.
 
 4. **Introduce AFK mode** - When you need to ask multiple questions, mention that `(afk)` mode exists for autonomous work.
 
@@ -81,26 +81,16 @@ Maintain `notebook/INDEX.md` as a quick-reference summary of all project memorie
 | ID | Summary | Date | Tags |
 |----|---------|------|------|
 
-## Data
-| ID | Location | Source | Status |
-|----|----------|--------|--------|
-
-## Software
-| ID | Version | Purpose |
-|----|---------|---------|
-
 ## Methods
-| Date | Change | Impact |
-|------|--------|--------|
+| Date | Type | Summary |
+|------|------|---------|
 ```
 
 ### When to Update
 
 Update the index whenever you create or modify a notebook entry:
 - After completing an analysis → add row to Analyses
-- After documenting a dataset → add row to Data
-- After documenting software → add row to Software
-- After logging a method change → add row to Methods
+- After creating a methods memory → add row to Methods
 
 **Commit with the entry:** Include index updates in the same commit as the notebook entry.
 
@@ -113,21 +103,21 @@ When starting work that might relate to past memories:
 
 This is more efficient than reading every README.md.
 
-## Logging Methodological Changes
+## Methods Memory
 
-When you make changes to the codebase (not analyses, but the actual software/methods being developed), log them to `notebook/methods/`.
+The `notebook/methods/` directory is the unified memory system for everything except formal analyses. It captures knowledge about the codebase, tools, data, and methodological decisions.
 
-### What to Log
+### When to Create a Methods Memory
 
-Log all meaningful changes to the codebase:
-- Feature additions (major and minor)
-- Algorithm or methodology changes
-- Bug fixes
-- API changes or interface modifications
-- Performance improvements
-- Refactoring with rationale
+**Proactively create a memory when you:**
 
-Even minor changes get logged - the notebook is the complete record. The filtering happens when deciding whether to update CLAUDE.md, not here.
+1. **Implement a new feature** - Document what was built and why
+2. **Fix a software issue** - Document the bug, root cause, and fix
+3. **Touch a new dataset** - Document location, source, characteristics, issues
+4. **Discuss a methodological idea** - If a conversation clarifies how something should work, or decides an approach, capture it
+5. **Set up or learn a new tool** - Document installation, usage, and any gotchas
+
+**The goal is to not lose knowledge.** If you learned something that would be useful for future work, write it down.
 
 ### Log Format
 
@@ -137,17 +127,25 @@ Create `notebook/methods/YYYY-MM-DD-<brief-description>.md`:
 # <Brief Description>
 
 **Date:** YYYY-MM-DD
+**Type:** [feature | bugfix | data | tool | decision]
 **Commit:** <commit hash if available>
 
-## What Changed
-[Description - more detail than a commit message]
+## Summary
+[One paragraph explaining what this is about]
 
-## Why
-[Motivation for the change]
+## Details
+[Additional context - what was done, why, how]
 
-## Impact
-[What this affects - analyses, outputs, compatibility]
+## Notes
+[Any gotchas, limitations, or things to remember]
 ```
+
+**Type field values:**
+- `feature` - New functionality implemented
+- `bugfix` - Bug identified and fixed
+- `data` - Dataset documented (location, source, characteristics, issues)
+- `tool` - External tool or library set up
+- `decision` - Methodological decision or approach clarified
 
 **Commit the entry (including index update):**
 ```bash
@@ -159,20 +157,21 @@ git commit -m "methods: <brief description>"
 
 ### Updating Project CLAUDE.md
 
-After logging a method change, consider whether the project's CLAUDE.md needs updating.
+After creating a methods memory, consider whether the project's CLAUDE.md needs updating.
 
-**Ask the user** if the change seems significant:
+**Add to CLAUDE.md if:**
 - New capability that affects how the project works
 - Breaking change that affects existing workflows
 - Important finding about the method's behavior
+- Key dataset that analyses depend on
 
-**Don't ask** for clearly minor changes:
+**Don't add for:**
 - Small bug fixes
-- Trivial features
+- Routine tool installations
 - Incremental improvements
-- Routine maintenance
+- Exploratory decisions that might change
 
-When in doubt about importance, lean toward not asking - the notebook entry provides the record.
+When in doubt, lean toward not adding - the notebook has the record.
 
 ## Persistent To-Do List
 
@@ -241,9 +240,7 @@ Track tasks across sessions using two files:
 
 Most completed todos should result in a persistent record elsewhere:
 - Analysis task → `notebook/analyses/` entry via `/perform-analysis`
-- Method change → `notebook/methods/` entry
-- Software setup → `notebook/software/` entry
-- Data exploration → `notebook/data/` entry
+- Everything else → `notebook/methods/` entry (features, bugfixes, data, tools, decisions)
 
 The `Result:` link in DONE.md connects the task to its outcome for traceability.
 

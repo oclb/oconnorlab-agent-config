@@ -6,7 +6,7 @@ This repository contains Claude Code configuration and skills customized for sci
 
 **Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research compared with alternatives (like the agents that come with Cursor or Windsurf). 
 
-In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/help how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research. 
+In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/support how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research. 
 
 Claude Code is traditionally used via its CLI. It can also be used inside of an IDE or via a web app.
 
@@ -16,7 +16,7 @@ Claude Code is traditionally used via its CLI. It can also be used inside of an 
   - `CLAUDE.md` - Behavioral configuration and instructions
   - `settings.json` - Claude Code settings (hooks, permissions)
 - `skills/` - Custom Claude Code skills for scientific research
-  - `help/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
+  - `support/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
   - `remote-o2/` - Remote O2 cluster access via SSH
   - `use-o2/` - SLURM reference material (used by remote-o2)
   - `perform-analysis/` - Systematic analysis framework with lab notebook integration
@@ -117,7 +117,7 @@ The lab notebook system (`notebook/analyses/`) provides archival tracking of all
 
 Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
 
-- **NewUser mode**: Enabled by default on first setup. Claude proactively explains features and may suggest the `/help` skill to orient new users. Ask Claude to "disable onboarding mode" once you're comfortable.
+- **NewUser mode**: Enabled by default on first setup. Claude proactively explains features and may suggest the `/support` skill to orient new users. Ask Claude to "disable onboarding mode" once you're comfortable.
 - **AFK mode**: For autonomous operation. Include `(afk)` in a message to enable, `(back)` to disable.
 - **O2 cluster access**: Use `/remote-o2` for cluster computing; Claude handles connection and SLURM job submission.
 - **Terminal notifications**: Desktop alerts on task completion via ntfy.sh.
@@ -156,6 +156,6 @@ MCP (Model Context Protocol) server configurations can be added to `settings.jso
 - [O2 Research Computing Portal](https://rc.hms.harvard.edu/)
 
 ### Getting Help
-- For Claude Code questions: Run the `/help` skill or check Claude Code documentation
+- For Claude Code questions: Run the `/support` skill or check Claude Code documentation
 - For configuration issues: Check this README or open an issue in the repository
 - For O2 cluster issues: Contact RC help (rchelp@hms.harvard.edu)

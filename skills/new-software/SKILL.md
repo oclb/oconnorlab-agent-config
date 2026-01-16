@@ -10,11 +10,11 @@ Quickly learn and set up new tools, libraries, and frameworks by finding documen
 
 ## Notebook Integration
 
-This skill writes to `notebook/software/` to track external tools used in the project.
+This skill writes to `notebook/methods/` to track external tools used in the project (as `type: tool` entries).
 
 **Before starting:** Check if software is already documented:
 ```bash
-ls notebook/software/ 2>/dev/null | grep -i "<tool-name>"
+ls notebook/methods/ 2>/dev/null | grep -i "<tool-name>"
 ```
 
 If an entry exists, read it to see what's already known. You may just need to update version info or add new issues.
@@ -131,27 +131,25 @@ Next Steps:
 
 ### 5. Write to Notebook
 
-**Create or update `notebook/software/<tool-name>.md`:**
+**Create or update `notebook/methods/YYYY-MM-DD-<tool-name>.md`:**
 
 ```markdown
 # <Tool Name>
 
-## Installation
-- **Location:** `/path/to/installation` or `pip package`
+**Date:** YYYY-MM-DD
+**Type:** tool
+**Commit:** N/A
+
+## Summary
+[One sentence: what this tool is and why we're using it]
+
+## Details
 - **Version:** X.Y.Z
-- **Installed:** YYYY-MM-DD
-
-## Documentation
+- **Installation:** [pip/npm/brew/etc.]
 - **Official docs:** [URL]
-- **API reference:** [URL if applicable]
-- **Quick start:** [URL to getting started guide]
+- **Primary use:** [e.g., "differential expression analysis"]
 
-## Usage in This Project
-[Brief note on what we use this tool for]
-- Primary use: [e.g., "differential expression analysis"]
-- Key functions: [e.g., "`DESeq()`, `results()`"]
-
-## Known Issues / Limitations
+## Notes
 [Any bugs, gotchas, or limitations discovered]
 - [e.g., "Requires R >= 4.0"]
 - [e.g., "Memory-intensive for >50k genes"]
@@ -164,16 +162,16 @@ Next Steps:
 - Link to specific docs sections relevant to your usage
 
 **Update notebook/INDEX.md:**
-Add a row to the Software table:
+Add a row to the Methods table:
 ```
-| <tool-name> | <version> | <primary use in this project> |
+| YYYY-MM-DD | tool | <tool-name> v<version>: <primary use> |
 ```
 
 **Commit the notebook entry:**
 ```bash
-mkdir -p notebook/software
-git add notebook/software/<tool-name>.md notebook/INDEX.md
-git commit -m "software: add <tool-name> documentation"
+mkdir -p notebook/methods
+git add notebook/methods/YYYY-MM-DD-<tool-name>.md notebook/INDEX.md
+git commit -m "methods: document <tool-name> setup"
 ```
 
 ## Best Practices

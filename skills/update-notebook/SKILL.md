@@ -17,9 +17,7 @@ Synchronizes the lab notebook when work has been done outside Claude Code, or on
 
 The lab notebook (`notebook/`) is the archival record of the project:
 - `analyses/` - Analysis logs, scripts, and outputs
-- `data/` - Dataset documentation
-- `software/` - External tool documentation
-- `methods/` - Codebase change log
+- `methods/` - Everything else: features, bugfixes, datasets, tools, decisions
 
 When users work outside Claude Code, the notebook can become out of sync. This skill:
 
@@ -123,7 +121,7 @@ For analyses done outside Claude Code, create notebook entries:
 ### Step 5: Update INDEX.md and CLAUDE.md
 
 **Update notebook/INDEX.md:**
-For each retrospective entry created, add a row to the appropriate table (Analyses, Data, Software, Methods).
+For each retrospective entry created, add a row to the appropriate table (Analyses or Methods).
 
 **Update CLAUDE.md:**
 Based on the sync conversation:
@@ -181,7 +179,7 @@ Start with a welcoming introduction:
 ### Step 2: Create Notebook Structure
 
 ```bash
-mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
+mkdir -p notebook/analyses notebook/methods
 ```
 
 **Initialize INDEX.md:**
@@ -192,20 +190,12 @@ mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
 | ID | Summary | Date | Tags |
 |----|---------|------|------|
 
-## Data
-| ID | Location | Source | Status |
-|----|----------|--------|--------|
-
-## Software
-| ID | Version | Purpose |
-|----|---------|---------|
-
 ## Methods
-| Date | Change | Impact |
-|------|--------|--------|
+| Date | Type | Summary |
+|------|------|---------|
 ```
 
-### Step 3: Document Datasets
+### Step 3: Document Datasets and Tools
 
 **Prompt the user about datasets:**
 > "What datasets are you using in this project? For each one, I'd like to know:
@@ -213,35 +203,27 @@ mkdir -p notebook/analyses notebook/data notebook/software notebook/methods
 > - Where did it come from (downloaded, generated, provided)?
 > - Any known issues or quirks?"
 
-For each dataset mentioned, create `notebook/data/<dataset-name>.md`:
-- Location and source
-- Basic characteristics (if known)
-- Any issues mentioned by user
-
-### Step 4: Document Software/Tools
-
 **Prompt the user about specialized software:**
 > "Are there any specialized tools, libraries, or software specific to this project that I should know about? (I don't need to know about standard tools like Python, PyTorch, pandas, etc. - just project-specific or unusual dependencies.)"
 
-**Skip documentation for:**
+For each dataset or tool mentioned, create a methods entry `notebook/methods/YYYY-MM-DD-<name>.md` with:
+- `Type: data` or `Type: tool`
+- Location and source (for data) or version and docs URL (for tools)
+- Any issues or gotchas mentioned by user
+
+**Skip tool documentation for:**
 - Standard, well-known tools (Python, R, PyTorch, TensorFlow, pandas, numpy, etc.)
 - Common CLI tools
 - Anything Claude would know from training
 
-**Do document:**
-- Project-specific packages or custom code
-- Obscure or domain-specific tools
-- Tools with non-obvious configuration or usage patterns
-- Anything with known issues or limitations in this project
-
-### Step 5: Document Analyses
+### Step 4: Document Analyses
 
 **Ask about completed analyses:**
 > "Have there been any analyses or experiments completed in this project? What were the key findings?"
 
 Create retrospective entries for analyses the user describes.
 
-### Step 6: Initialize CLAUDE.md
+### Step 5: Initialize CLAUDE.md
 
 Based on all gathered information:
 - Current research questions
@@ -259,4 +241,4 @@ Based on all gathered information:
 3. **Mark retrospective clearly** - Distinguish from real-time entries
 4. **Focus on context** - Goal is to not be misled, not to have complete history
 5. **Respect user's time** - Don't ask about every small change
-6. **Document data and software** - These are as important as analyses for project context
+6. **Document datasets and tools** - These are as important as analyses for project context

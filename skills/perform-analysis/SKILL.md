@@ -59,11 +59,7 @@ project/
 │   │       ├── README.md             # Analysis log (all versions)
 │   │       ├── <script>.py           # Analysis scripts (git tracks history)
 │   │       └── outputs/              # Results, figures, data
-│   ├── data/                         # Dataset documentation
-│   │   └── <dataset-name>.md         # Location, source, characteristics, issues
-│   ├── software/                     # External software documentation
-│   │   └── <software-name>.md        # Installation, docs URL, issues
-│   └── methods/                      # Methodological changes to codebase
+│   └── methods/                      # Everything else: features, bugfixes, data, tools, decisions
 │       └── YYYY-MM-DD-<description>.md
 ```
 
@@ -126,9 +122,7 @@ Follow these 8 steps systematically.
    | Memory Type | How It Helps |
    |-------------|--------------|
    | **Analyses** | Scripts to adapt, resource estimates, findings for concordance, challenges to avoid |
-   | **Data** | Dataset characteristics, known issues, validation status |
-   | **Methods** | Recent codebase changes that might affect analysis |
-   | **Software** | Tool versions, known limitations, usage patterns |
+   | **Methods** | Dataset characteristics, tool versions, recent codebase changes, known limitations |
 
    If no related entries exist (new project area), proceed without prior context.
 

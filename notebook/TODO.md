@@ -1,8 +1,5 @@
 # To-Do
 
-- [ ] #3 **Methods logging activation** - Add explicit triggers/reminders to relevant skills so methods logging actually happens; infrastructure exists but is underutilized
-  - Added: 2026-01-16
-
 - [ ] #4 **Project structure template** - Document recommended project structure separating software, notebook, and scripts; consider /init-project skill
   - Added: 2026-01-16
 
