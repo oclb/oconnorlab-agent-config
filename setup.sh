@@ -156,6 +156,26 @@ else
     echo "  Added notification helpers to $SHELL_CONFIG"
 fi
 
+# Step 4: Create settings.local.json with user-specific permissions
+echo ""
+echo "Step 4: Creating local settings with user-specific permissions..."
+
+LOCAL_SETTINGS="$CLAUDE_DIR/settings.local.json"
+
+# Create settings.local.json with O2 script permissions
+cat > "$LOCAL_SETTINGS" <<EOF
+{
+  "permissions": {
+    "allow": [
+      "Bash($REPO_DIR/o2-scripts/o2-run.sh:*)",
+      "Bash($REPO_DIR/o2-scripts/connect-o2.sh:*)",
+      "Bash($REPO_DIR/o2-scripts/o2-setup.sh:*)"
+    ]
+  }
+}
+EOF
+echo "  Created $LOCAL_SETTINGS with O2 script permissions"
+
 echo ""
 echo "======================================"
 echo "Setup complete!"

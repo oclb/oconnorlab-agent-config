@@ -40,6 +40,8 @@ claude-config/
 │   └── skill-creator/        # Guide for creating new skills
 ├── hooks/                     # Shell scripts for Claude Code hooks
 │   └── notify.sh             # Cross-platform notification hook
+├── templates/                 # Templates for project setup
+│   └── project-settings.json # Project permissions template (notebook access)
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 ├── notify-helpers.sh          # Shell functions for notifications
 └── setup.sh                   # Setup script for local machines
@@ -263,8 +265,10 @@ notify_job_complete $?              # Notify job success/failure
 | File | Purpose |
 |------|---------|
 | `global/CLAUDE.md` | Behavioral instructions Claude follows |
-| `global/settings.json` | Model, permissions, hooks configuration |
+| `global/settings.json` | Model, permissions, hooks configuration (git-tracked) |
+| `~/.claude/settings.local.json` | User-specific permissions (created by setup.sh) |
 | `~/.claude/behavior.conf` | Runtime flags (created by setup scripts) |
+| `templates/project-settings.json` | Template for project notebook permissions |
 | `o2-scripts/` | Generated scripts for remote O2 access (gitignored) |
 | `skills/<name>/SKILL.md` | Skill prompt definition |
 | `skills/<name>/README.md` | Skill documentation |
@@ -285,6 +289,51 @@ skills/my-skill/
 ```
 
 Use `/skill-creator` for guided skill creation or manually create the directory with both files.
+
+## Permissions
+
+Claude Code uses a layered permission system. This repo configures permissions at multiple levels:
+
+### Permission Layers (highest to lowest precedence)
+
+1. **Project local** - `.claude/settings.local.json` (gitignored, user-specific)
+2. **Project shared** - `.claude/settings.json` (committed, shared with team)
+3. **User local** - `~/.claude/settings.local.json` (user-specific)
+4. **User global** - `~/.claude/settings.json` (symlinked to `global/settings.json`)
+
+### What This Repo Configures
+
+**Global settings** (`global/settings.json`):
+- `Read`/`Edit` for `~/.claude/behavior.conf` (behavioral flags)
+- `WebFetch` for allowed domains (GitHub, O2 docs, ntfy.sh)
+
+**User local settings** (`~/.claude/settings.local.json`, created by `setup.sh`):
+- `Bash` permissions for O2 scripts (user-specific paths)
+
+### Project Setup
+
+For projects using the notebook system, copy the template to enable notebook permissions:
+
+```bash
+mkdir -p .claude
+cp $CONFIG_REPO/templates/project-settings.json .claude/settings.json
+```
+
+This pre-approves:
+- `Read`/`Edit`/`Write` for `notebook/**`
+- `Bash` for notebook-related git commits
+
+### Permission Syntax Reference
+
+| Pattern | Meaning |
+|---------|---------|
+| `Read(/path/**)` | Read files under path (relative to settings file) |
+| `Read(~/path)` | Read from home directory |
+| `Read(//absolute/path)` | Read from absolute filesystem path |
+| `Edit(/notebook/**)` | Edit files in notebook directory |
+| `Bash(command:*)` | Allow bash commands starting with "command" |
+| `Bash(*pattern*)` | Allow bash commands containing "pattern" |
+| `WebFetch(domain:example.com)` | Allow fetching from domain |
 
 ## Resources
 

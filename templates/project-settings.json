@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/notebook/**)",
+      "Edit(/notebook/**)",
+      "Write(/notebook/**)",
+      "Bash(mkdir -p notebook:*)",
+      "Bash(git add notebook:*)",
+      "Bash(git commit -m *notebook*:*)",
+      "Bash(git commit -m *todo*:*)",
+      "Bash(git commit -m *methods*:*)",
+      "Bash(git commit -m *feedback*:*)"
+    ]
+  }
+}
