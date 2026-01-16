@@ -161,7 +161,6 @@ Create `.claude/settings.json`:
       "Read(/notebook/**)",
       "Edit(/notebook/**)",
       "Write(/notebook/**)",
-      "Bash(cd notebook && git *)",
       "Bash(mkdir -p notebook:*)",
       "Bash(git -C notebook *)"
     ]
