@@ -11,3 +11,9 @@
 
 - [ ] #7 **Configure default permissions** - Configure default permissions
   - Added: 2026-01-16
+
+- [ ] #8 **Iterate on new-user flag** - Iterate on new-user flag
+  - Added: 2026-01-16
+
+- [ ] #9 **Test teaching-mode skill** - Test teaching-mode skill
+  - Added: 2026-01-16
