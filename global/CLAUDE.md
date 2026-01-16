@@ -68,6 +68,41 @@ The file uses simple `KEY=value` format:
 3. If a flag is missing from behavior.conf (or the file doesn't exist), use the Default from the table above
 4. Adjust your behavior according to the flag definitions
 
+## Notebook System
+
+The notebook is a **separate git repository** inside the project directory, gitignored from the main repo. This keeps the main repo clean while preserving full notebook history.
+
+### Detecting Notebook Setup
+
+Before any notebook operation, check if the notebook is a separate repo:
+
+```bash
+# Check if notebook exists and is a git repo
+if [ -d "notebook/.git" ]; then
+    # Notebook is separate repo - use git -C notebook
+    git -C notebook add ...
+    git -C notebook commit -m "..."
+    # Push if remote exists
+    if git -C notebook remote | grep -q origin; then
+        git -C notebook push
+    fi
+else
+    # Notebook not set up - suggest /init-project
+    # Or fall back to main repo commits for backward compatibility
+fi
+```
+
+### Notebook Commit Pattern
+
+For all notebook operations, use this pattern:
+
+```bash
+git -C notebook add <files>
+git -C notebook commit -m "<message>"
+# Push if remote configured
+git -C notebook remote | grep -q origin && git -C notebook push
+```
+
 ## Notebook Index
 
 Maintain `notebook/INDEX.md` as a quick-reference summary of all project memories. This enables faster retrieval than scanning individual files.
@@ -151,8 +186,9 @@ Create `notebook/methods/YYYY-MM-DD-<brief-description>.md`:
 ```bash
 mkdir -p notebook/methods
 # Add row to notebook/INDEX.md Methods table
-git add notebook/methods/ notebook/INDEX.md
-git commit -m "methods: <brief description>"
+git -C notebook add methods/ INDEX.md
+git -C notebook commit -m "methods: <brief description>"
+git -C notebook remote | grep -q origin && git -C notebook push
 ```
 
 ### Updating Project CLAUDE.md
@@ -215,7 +251,11 @@ Track tasks across sessions using two files:
 **Adding a todo:**
 1. Assign the next available number (incrementing, never reuse - check both TODO.md and DONE.md)
 2. If the todo arises from a conversation about an analysis or other notebook entry, add a `Context:` line linking to it
-3. Commit: `git add notebook/TODO.md && git commit -m "todo: add #N - <task name>"`
+3. Commit:
+   ```bash
+   git -C notebook add TODO.md && git -C notebook commit -m "todo: add #N - <task name>"
+   git -C notebook remote | grep -q origin && git -C notebook push
+   ```
 
 **Working on a todo:**
 1. Read `notebook/TODO.md` to find the item
@@ -226,15 +266,27 @@ Track tasks across sessions using two files:
    - All original fields preserved
    - `Completed:` date added
    - `Result:` link if the work created a notebook entry
-6. Commit: `git add notebook/TODO.md notebook/DONE.md && git commit -m "todo: complete #N - <task name>"`
+6. Commit:
+   ```bash
+   git -C notebook add TODO.md DONE.md && git -C notebook commit -m "todo: complete #N - <task name>"
+   git -C notebook remote | grep -q origin && git -C notebook push
+   ```
 
 **Editing a todo:**
 1. Update the description or context as needed
-2. Commit: `git add notebook/TODO.md && git commit -m "todo: update #N - <brief change>"`
+2. Commit:
+   ```bash
+   git -C notebook add TODO.md && git -C notebook commit -m "todo: update #N - <brief change>"
+   git -C notebook remote | grep -q origin && git -C notebook push
+   ```
 
 **Deleting a todo (without completing):**
 1. Remove the item entirely (don't move to DONE.md)
-2. Commit: `git add notebook/TODO.md && git commit -m "todo: remove #N - <reason>"`
+2. Commit:
+   ```bash
+   git -C notebook add TODO.md && git -C notebook commit -m "todo: remove #N - <reason>"
+   git -C notebook remote | grep -q origin && git -C notebook push
+   ```
 
 ### Integration with Notebook
 
@@ -263,6 +315,10 @@ Phrasing: "Would you like to log feedback about this for future improvement?"
 
 1. Create `notebook/feedback/YYYY-MM-DD-brief-description.md`
 2. Content is freeform - whatever the user wants to capture
-3. Commit: `git add notebook/feedback/ && git commit -m "feedback: <brief description>"`
+3. Commit:
+   ```bash
+   git -C notebook add feedback/ && git -C notebook commit -m "feedback: <brief description>"
+   git -C notebook remote | grep -q origin && git -C notebook push
+   ```
 
 No template, no index - just capture the feedback and commit.
