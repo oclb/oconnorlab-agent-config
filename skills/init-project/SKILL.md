@@ -269,14 +269,24 @@ When `gh` CLI is not available, display:
 > Other: See https://cli.github.com/
 >
 > **After installing, authenticate:**
+>
+> Run this command (it will run in the background):
 > ```bash
-> gh auth login
+> gh auth login --web --git-protocol https
 > ```
 >
-> This will open a browser to authenticate with GitHub. Choose:
-> - GitHub.com
-> - HTTPS (recommended)
-> - Login with a web browser
+> The command will display:
+> ```
+> ! First copy your one-time code: XXXX-XXXX
+> Open this URL to continue in your web browser: https://github.com/login/device
+> ```
+>
+> **Steps to complete:**
+> 1. Copy the one-time code shown
+> 2. Open https://github.com/login/device in your browser
+> 3. Enter the code and authorize
+>
+> Once you see "✓ Logged in as <username>", authentication is complete.
 >
 > Once complete, run `/init-project` again.
 
