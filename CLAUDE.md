@@ -181,7 +181,9 @@ project/
 │   │   └── <dataset-name>.md         # Location, source, characteristics, issues
 │   ├── software/                     # External software documentation
 │   │   └── <tool-name>.md            # Installation, docs URL, issues
-│   └── methods/                      # Methodological changes to codebase
+│   ├── methods/                      # Methodological changes to codebase
+│   │   └── YYYY-MM-DD-<description>.md
+│   └── feedback/                     # Self-improvement feedback
 │       └── YYYY-MM-DD-<description>.md
 ```
 
@@ -230,6 +232,16 @@ Two files track tasks across sessions:
 - `notebook/DONE.md` - Completed tasks with full original record + result
 
 Items have numbers (#1, #2, ...) and can link to related notebook entries via `Context:` field. When starting work on a todo with a `Context:` link, Claude reads the linked notebook entry for background.
+
+### Feedback Logging
+
+`notebook/feedback/` captures issues with Claude's skills and behavior for improvement. Claude proactively suggests logging feedback when:
+- Skill detection failed (user had to invoke manually)
+- O2 approach failed on first attempt
+- User signals skepticism ("hmm", corrections)
+- Memory retrieval or creation failed
+
+Feedback is freeform - no template. User manages review.
 
 ## Notifications
 
