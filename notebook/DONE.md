@@ -1,5 +1,10 @@
 # Completed
 
+- [x] #7 **Configure default permissions** - Configure default permissions
+  - Added: 2026-01-16
+  - Completed: 2026-01-16
+  - Result: `global/settings.json`, `templates/project-settings.json`, `setup.sh` (Step 4), `CLAUDE.md` (Permissions section)
+
 - [x] #3 **Methods logging activation** - Consolidated data/, software/, methods/ into single methods/ memory system; expanded triggers to include features, bugfixes, datasets, tools, decisions
   - Added: 2026-01-16
   - Completed: 2026-01-16

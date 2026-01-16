@@ -9,9 +9,6 @@
 - [ ] #6 **Iterate on O2 skills** - Improve use-o2 and remote-o2 skills based on usage experience
   - Added: 2026-01-16
 
-- [ ] #7 **Configure default permissions** - Configure default permissions
-  - Added: 2026-01-16
-
 - [ ] #8 **Iterate on new-user flag** - Iterate on new-user flag
   - Added: 2026-01-16
 
