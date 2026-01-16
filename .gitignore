@@ -16,3 +16,6 @@ global/CLAUDE.user.md
 
 # Generated scripts (user-specific, created by /remote-o2 skill)
 o2-scripts/
+
+# Notebook (separate git repo)
+notebook/
