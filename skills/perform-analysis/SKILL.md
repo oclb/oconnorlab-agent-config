@@ -48,19 +48,23 @@ An analysis involves **Data** + **Methods** + **Question**.
 
 Every analysis is recorded in a **lab notebook** (`notebook/analyses/`) for reproducibility and project tracking.
 
+**Important:** The notebook is a **separate git repository** inside the project directory, gitignored from the main repo. Use `git -C notebook` for all notebook commits.
+
 ### Notebook Structure
 
 ```
-project/
+project/                              # Main git repo
 ├── CLAUDE.md                         # Curated active context (key findings only)
-├── notebook/
-│   ├── analyses/                     # Analysis logs and scripts
-│   │   └── <analysis-name>/
-│   │       ├── README.md             # Analysis log (all versions)
-│   │       ├── <script>.py           # Analysis scripts (git tracks history)
-│   │       └── outputs/              # Results, figures, data
-│   └── methods/                      # Everything else: features, bugfixes, data, tools, decisions
-│       └── YYYY-MM-DD-<description>.md
+└── notebook/                         # Separate git repo (gitignored from main)
+    ├── .git/
+    ├── INDEX.md
+    ├── analyses/                     # Analysis logs and scripts
+    │   └── <analysis-name>/
+    │       ├── README.md             # Analysis log (all versions)
+    │       ├── <script>.py           # Analysis scripts (git tracks history)
+    │       └── outputs/              # Results, figures, data
+    └── methods/                      # Everything else: features, bugfixes, data, tools, decisions
+        └── YYYY-MM-DD-<description>.md
 ```
 
 ### Analysis Naming
@@ -369,10 +373,11 @@ Challenges:
    ```
    Tags should be 2-4 keywords (e.g., `survival, tcga, tp53`).
 
-4. **Git commit:**
+4. **Git commit (to notebook repo):**
    ```bash
-   git add notebook/analyses/<analysis-name>/ notebook/INDEX.md
-   git commit -m "analysis: <analysis-name> v0 - <brief description of what was done>"
+   git -C notebook add analyses/<analysis-name>/ INDEX.md
+   git -C notebook commit -m "analysis: <analysis-name> v0 - <brief description of what was done>"
+   git -C notebook remote | grep -q origin && git -C notebook push
    ```
 
 5. **Evaluate for CLAUDE.md update:**
@@ -418,10 +423,11 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
    [Updated paths]
    ```
 
-3. **Git commit:**
+3. **Git commit (to notebook repo):**
    ```bash
-   git add notebook/analyses/<analysis-name>/
-   git commit -m "analysis: <analysis-name> v1 - <what changed>"
+   git -C notebook add analyses/<analysis-name>/
+   git -C notebook commit -m "analysis: <analysis-name> v1 - <what changed>"
+   git -C notebook remote | grep -q origin && git -C notebook push
    ```
 
 **Common version patterns:**
