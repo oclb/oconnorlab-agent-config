@@ -2,18 +2,16 @@
 name: remote-o2
 description: This skill should be used when the user asks to "submit to O2", "run on O2", "use the cluster", "submit a SLURM job", mentions O2 or compute cluster job submission, or when an analysis requires substantial computational resources (>16GB RAM, >4 hours runtime, or GPUs).
 user_invocable: true
-version: 1.1.0
+version: 2.0.0
 ---
 
 # Remote O2 Access Skill
 
-This skill enables Claude Code to access the O2 cluster remotely from a local machine via SSH multiplexing and tmux. It handles setup, connection management, and command execution.
+This skill enables Claude Code to access the O2 cluster remotely from a local machine via the `remote-bridge` application.
 
-## Important: Duo Authentication Behavior
+## Key Benefit: Single Duo Push
 
-**Off-campus:** O2 triggers Duo authentication per SSH *session* (not per connection). Each SSH command = 1 Duo push. To minimize pushes, all commands are wrapped into single SSH sessions using the `o2-run.sh` helper script.
-
-**On-campus (Harvard network):** When connected to harvard-secure wifi or the campus network, the Duo per-session overhead may not occur. Users who want to avoid frequent Duo pushes can work from the office.
+The bridge establishes a persistent SSH session with proper terminal emulation. You authenticate once (Duo push), then run unlimited commands through that session.
 
 ## When This Skill Applies
 
@@ -24,439 +22,206 @@ This skill enables Claude Code to access the O2 cluster remotely from a local ma
 
 ## SLURM Reference
 
-For SLURM knowledge (partitions, resource estimation, job scripts, monitoring), refer to the **use-o2** skill which contains cluster reference material:
-- Partition selection (priority, short, medium, long, gpu, highmem)
-- Resource estimation strategies
-- SLURM script templates
-- Job monitoring and troubleshooting
+For SLURM knowledge (partitions, resource estimation, job scripts, monitoring), refer to the **use-o2** skill.
 
-## Step 1: Check Setup Status
+## Step 1: Check Bridge Status
 
-Read behavior.conf and check `O2_REMOTE_SETUP`:
+First, check if the bridge is running:
 
 ```bash
-grep "^O2_" ~/.claude/behavior.conf
+ls -la ~/.claude/remote-bridge-o2.sock 2>/dev/null
 ```
 
-**If `O2_REMOTE_SETUP=false` or missing:** Go to [First-Time Setup](#first-time-setup)
-**If `O2_REMOTE_SETUP=true`:** Go to [Connection Management](#connection-management)
+**If socket exists:** Go to [Using the Bridge](#using-the-bridge)
+**If socket doesn't exist:** Go to [Starting the Bridge](#starting-the-bridge)
 
-## First-Time Setup
+## Starting the Bridge
 
-### 1.1 Collect User Information
+### First-Time Setup
 
-Ask the user for:
+If the bridge has never been configured, the user needs to:
 
-1. **O2 username** (required)
-   - Ask: "What is your O2 username?"
+1. **Install the bridge** (if not already built):
+   ```bash
+   cd $CONFIG_REPO/remote-bridge
+   cargo build --release
+   # Optionally: cp target/release/remote-bridge ~/bin/
+   ```
 
-2. **Lab directory** (required)
-   - Ask: "What should Claude use as the top-level directory in which to store permanent files? (For example, `/n/data1/hms/dbmi/oconnor/lab/your_name/`)"
-   - This is where project code and results live
+2. **Create permissions config**:
+   ```bash
+   mkdir -p ~/.config/remote-bridge
+   cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
+   ```
 
-3. **Scratch directory** (optional, has default)
-   - Temporary storage for large files
-   - Default: `/n/scratch/users/{first_letter_of_username}/{username}` (derived from answer to question 1)
-   - Example: if username is `lukeo`, default is `/n/scratch/users/l/lukeo`
+3. **Edit permissions** to match their paths:
+   ```bash
+   $EDITOR ~/.config/remote-bridge/permissions.toml
+   ```
 
-### 1.2 Get CONFIG_REPO Path
+### Start the Bridge
+
+Tell the user to run:
 
 ```bash
-grep "^CONFIG_REPO=" ~/.claude/behavior.conf | cut -d'=' -f2
+remote-bridge start o2 --user YOUR_USERNAME
 ```
 
-### 1.3 Generate Setup Scripts
-
-Create directory for scripts:
+Or with the full path:
 ```bash
-mkdir -p "$CONFIG_REPO/o2-scripts"
+$CONFIG_REPO/remote-bridge/target/release/remote-bridge start o2 --user YOUR_USERNAME
 ```
 
-**Generate `o2-setup.sh`** (to run ON O2):
+The user will see:
+1. Password prompt (if not using SSH keys)
+2. Duo authentication prompt
+3. Confirmation that bridge is ready
 
-```bash
-cat > "$CONFIG_REPO/o2-scripts/o2-setup.sh" << 'EOF'
-#!/bin/bash
-# O2 Setup Script for Claude Code Remote Access
-# Run this ON O2 after SSH'ing in
+**Important:** The bridge runs in the foreground. The user should keep this terminal open or run it in a background session.
 
-set -e
+Once the user confirms the bridge is running, proceed to [Using the Bridge](#using-the-bridge).
 
-# Configuration (filled in by Claude)
-LAB_DIR="__LAB_DIR__"
-SCRATCH_DIR="__SCRATCH_DIR__"
+## Using the Bridge
 
-echo "Setting up Claude Code remote access on O2..."
+### JSON-RPC Communication
 
-# Create directories
-mkdir -p "$LAB_DIR/claude-projects"
-mkdir -p "$SCRATCH_DIR/claude-tmp"
-mkdir -p ~/bin
-
-# Create tmux session starter
-cat > ~/bin/start-claude-session.sh << 'SCRIPT'
-#!/bin/bash
-SESSION="claude"
-WORKSPACE="__LAB_DIR__/claude-projects"
-
-# Check if session exists
-if tmux has-session -t $SESSION 2>/dev/null; then
-    echo "Session $SESSION already exists, reattaching workspace"
-else
-    tmux new-session -d -s $SESSION -c "$WORKSPACE"
-    echo "Created new session $SESSION in $WORKSPACE"
-fi
-SCRIPT
-
-# Fix the workspace path in the script
-sed -i "s|__LAB_DIR__|$LAB_DIR|g" ~/bin/start-claude-session.sh
-chmod +x ~/bin/start-claude-session.sh
-
-echo ""
-echo "Setup complete!"
-echo "  Lab workspace: $LAB_DIR/claude-projects"
-echo "  Scratch space: $SCRATCH_DIR/claude-tmp"
-echo "  Tmux starter:  ~/bin/start-claude-session.sh"
-EOF
-```
-
-Replace `__LAB_DIR__` and `__SCRATCH_DIR__` with actual values:
-```bash
-sed -i '' "s|__LAB_DIR__|$LAB_DIR|g" "$CONFIG_REPO/o2-scripts/o2-setup.sh"
-sed -i '' "s|__SCRATCH_DIR__|$SCRATCH_DIR|g" "$CONFIG_REPO/o2-scripts/o2-setup.sh"
-chmod +x "$CONFIG_REPO/o2-scripts/o2-setup.sh"
-```
-
-**Generate `connect-o2.sh`** (to run locally):
-
-```bash
-cat > "$CONFIG_REPO/o2-scripts/connect-o2.sh" << 'EOF'
-#!/bin/bash
-# Connect to O2 for Claude Code
-# Run this locally to establish SSH master connection
-
-set -e
-
-SOCKET="__SOCKET__"
-USER="__USER__"
-HOST="o2.hms.harvard.edu"
-
-echo "Connecting to O2..."
-
-# Clean up dead socket if present
-if [ -e "$SOCKET" ]; then
-    if ! ssh -S "$SOCKET" -O check $HOST 2>/dev/null; then
-        echo "Removing stale socket..."
-        rm -f "$SOCKET"
-    else
-        echo "Connection already active!"
-        ssh -S "$SOCKET" $HOST "~/bin/start-claude-session.sh"
-        exit 0
-    fi
-fi
-
-# Establish master connection (will prompt for Duo)
-echo "Establishing SSH master connection (Duo authentication required)..."
-ssh -M -S "$SOCKET" -o ControlPersist=yes -fN ${USER}@${HOST}
-
-# Start tmux session
-echo "Starting tmux session..."
-ssh -S "$SOCKET" $HOST "~/bin/start-claude-session.sh"
-
-echo ""
-echo "O2 connection ready for Claude Code!"
-EOF
-```
-
-Replace placeholders:
-```bash
-sed -i '' "s|__SOCKET__|$O2_SOCKET|g" "$CONFIG_REPO/o2-scripts/connect-o2.sh"
-sed -i '' "s|__USER__|$O2_USER|g" "$CONFIG_REPO/o2-scripts/connect-o2.sh"
-chmod +x "$CONFIG_REPO/o2-scripts/connect-o2.sh"
-```
-
-### 1.4 Create SSH Config
-
-Create or update `~/.ssh/config` to enable multiplexing:
-
-```bash
-# Create SSH config if it doesn't exist
-if [ ! -f ~/.ssh/config ]; then
-    cat > ~/.ssh/config << 'EOF'
-Host o2.hms.harvard.edu o2
-    HostName o2.hms.harvard.edu
-    User __USER__
-    ControlMaster auto
-    ControlPath /tmp/o2-socket
-    ControlPersist 12h
-EOF
-    sed -i '' "s|__USER__|$O2_USER|g" ~/.ssh/config
-    chmod 600 ~/.ssh/config
-fi
-```
-
-### 1.5 Generate o2-run.sh Helper
-
-This script wraps command execution into a single SSH session (= 1 Duo push):
-
-```bash
-cat > "$CONFIG_REPO/o2-scripts/o2-run.sh" << 'EOF'
-#!/bin/bash
-# Execute a command on O2 via tmux, capturing output cleanly
-# Usage: o2-run.sh "command to run" [timeout_seconds]
-#
-# IMPORTANT: O2 triggers Duo authentication per SSH session (when off-campus).
-# This script wraps send + poll + capture into ONE SSH session = ONE Duo push.
-
-set -e
-
-CMD="$1"
-TIMEOUT="${2:-120}"
-
-SCRATCH_DIR=$(grep "^O2_SCRATCH_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
-OUTPUT_FILE="${SCRATCH_DIR}/claude-tmp/output_$$.txt"
-SENTINEL="__DONE_$$__"
-
-ssh o2.hms.harvard.edu "
-    tmux send-keys -t claude '{ $CMD; } > $OUTPUT_FILE 2>&1; echo $SENTINEL' Enter
-    ELAPSED=0
-    while [ \$ELAPSED -lt $TIMEOUT ]; do
-        sleep 2
-        ELAPSED=\$((ELAPSED + 2))
-        if tmux capture-pane -t claude -p | grep -q '$SENTINEL'; then
-            cat $OUTPUT_FILE 2>/dev/null
-            rm -f $OUTPUT_FILE
-            exit 0
-        fi
-    done
-    echo 'TIMEOUT after $TIMEOUT seconds'
-    cat $OUTPUT_FILE 2>/dev/null
-    exit 1
-"
-EOF
-chmod +x "$CONFIG_REPO/o2-scripts/o2-run.sh"
-```
-
-### 1.6 Instruct User to Run Setup
-
-Tell the user:
-
-```
-I've created the setup scripts. Please run these two commands:
-
-1. First, run the O2 setup (requires Duo authentication):
-   ssh <username>@o2.hms.harvard.edu 'bash -s' < <config_repo>/o2-scripts/o2-setup.sh
-
-2. After that completes, establish the connection:
-   <config_repo>/o2-scripts/connect-o2.sh
-
-Let me know when both are done.
-```
-
-### 1.7 Update behavior.conf
-
-After user confirms setup is complete:
-
-```bash
-# Add O2 remote config to behavior.conf
-cat >> ~/.claude/behavior.conf << EOF
-
-# O2 Remote Access (managed by /remote-o2 skill)
-O2_USER=$O2_USER
-O2_LAB_DIR=$O2_LAB_DIR
-O2_SCRATCH_DIR=$O2_SCRATCH_DIR
-O2_SOCKET=/tmp/o2-socket
-O2_TMUX_SESSION=claude
-O2_REMOTE_SETUP=true
-EOF
-```
-
-## Connection Management
+The bridge exposes a Unix socket at `~/.claude/remote-bridge-o2.sock`. Send JSON-RPC 2.0 requests via netcat.
 
 ### Check Connection Status
 
 ```bash
-O2_SOCKET=$(grep "^O2_SOCKET=" ~/.claude/behavior.conf | cut -d'=' -f2)
-ssh -S "$O2_SOCKET" -O check o2.hms.harvard.edu 2>/dev/null
+echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
 ```
 
-**If exit code 0:** Connection is alive. Ready to execute commands.
-
-**If exit code non-zero:** Connection is dead. Tell user:
-```
-O2 connection expired. Please reconnect:
-  <config_repo>/o2-scripts/connect-o2.sh
-
-This requires Duo authentication. Let me know when done.
+Expected response:
+```json
+{"jsonrpc":"2.0","result":{"connected":true,"user":"...","host":"o2.hms.harvard.edu"},"id":1}
 ```
 
-### Verify Tmux Session
+If `connected: false`, ask the user to restart the bridge.
 
-After connection confirmed:
-```bash
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu "tmux has-session -t claude 2>/dev/null && echo 'Session exists' || ~/bin/start-claude-session.sh"
-```
-
-## Command Execution
-
-### Primary Method: o2-run.sh
-
-**Always use o2-run.sh** for command execution. It wraps everything into a single SSH session (= 1 Duo push when off-campus):
+### List Directory
 
 ```bash
-# Get config repo path
-CONFIG_REPO=$(grep "^CONFIG_REPO=" ~/.claude/behavior.conf | cut -d'=' -f2)
-
-# Run a command on O2
-$CONFIG_REPO/o2-scripts/o2-run.sh "hostname && date"
-
-# With custom timeout (default 120s)
-$CONFIG_REPO/o2-scripts/o2-run.sh "long_running_command" 600
+echo '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":["Long","Human"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
 ```
 
-The script:
-1. Sends command to tmux session
-2. Redirects output to a temp file in scratch
-3. Polls for completion
-4. Returns clean output
-5. All in ONE SSH session
+Available flags: `Long`, `All`, `Human`, `Recursive`, `SortByTime`, `SortBySize`
 
-### Direct SSH (when necessary)
-
-For operations that don't fit the o2-run.sh pattern (interactive sessions, special cases), you can use direct SSH. **Each call = 1 Duo push off-campus.**
+### Read File
 
 ```bash
-# Single command
-ssh o2.hms.harvard.edu "tmux send-keys -t claude 'command' Enter; sleep 2; tmux capture-pane -t claude -p"
+# Full file
+echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# First 100 lines
+echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","head":100},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# Last 50 lines
+echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","tail":50},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# Lines 100-200
+echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","offset":100,"limit":100},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
 ```
 
-### File Transfer Pattern
-
-File transfers use scp (each = 1 Duo push off-campus, unavoidable):
+### Search Files (Grep)
 
 ```bash
-O2_USER=$(grep "^O2_USER=" ~/.claude/behavior.conf | cut -d'=' -f2)
-O2_LAB_DIR=$(grep "^O2_LAB_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
-
-# Upload file to O2
-scp local_file.py ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/
-
-# Download file from O2
-scp ${O2_USER}@o2.hms.harvard.edu:$O2_LAB_DIR/claude-projects/results.csv ./
+echo '{"jsonrpc":"2.0","method":"grep","params":{"pattern":"def main","paths":["/path/to/search/"],"flags":["Recursive","LineNumbers"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
 ```
 
-### Multi-line Script Pattern
+Available flags: `IgnoreCase`, `Recursive`, `LineNumbers`, `InvertMatch`, `WordMatch`, `CountOnly`, `FilesWithMatches`
 
-For complex scripts, write locally, upload, then execute:
+## Command Patterns
+
+### Simple Wrapper Function
+
+For cleaner commands, define a function:
 
 ```bash
-# Write script locally
-cat > /tmp/claude/o2_script.sh << 'SCRIPT'
-#!/bin/bash
-cd /path/to/project
-python analysis.py --input data.csv
-SCRIPT
+o2_rpc() {
+    echo "$1" | nc -U ~/.claude/remote-bridge-o2.sock
+}
 
-# Upload (1 Duo push)
-O2_SCRATCH_DIR=$(grep "^O2_SCRATCH_DIR=" ~/.claude/behavior.conf | cut -d'=' -f2)
-scp /tmp/claude/o2_script.sh ${O2_USER}@o2.hms.harvard.edu:$O2_SCRATCH_DIR/claude-tmp/
-
-# Execute via o2-run.sh (1 Duo push)
-$CONFIG_REPO/o2-scripts/o2-run.sh "bash $O2_SCRATCH_DIR/claude-tmp/o2_script.sh"
+# Then use:
+o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":[]},"id":1}'
 ```
 
-## Compute Resource Decisions
-
-When a command needs significant resources, decide between:
-
-### Option 1: Interactive Node (for iterative work)
+### Exploring Directory Structure
 
 ```bash
-# Request interactive node
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu \
-    "tmux send-keys -t claude 'srun --pty -p interactive -t 0-4:00 -c 4 --mem=16G /bin/bash' Enter"
+# List top-level contents
+o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/hms/dbmi/oconnor/lab/luke/","flags":["Long","Human"]},"id":1}'
 
-# Wait for allocation (poll for changed hostname)
-while true; do
-    sleep 5
-    HOSTNAME=$(ssh -S "$O2_SOCKET" o2.hms.harvard.edu "tmux capture-pane -t claude -p -S -5" | grep -o 'compute-[^ ]*' | tail -1)
-    if [ -n "$HOSTNAME" ]; then
-        echo "Got interactive node: $HOSTNAME"
-        break
-    fi
-done
+# Check subdirectory
+o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/.../project/","flags":["All"]},"id":1}'
 ```
 
-### Option 2: Batch Job (for long-running work)
-
-Use `/use-o2` skill patterns but execute through the remote connection:
+### Finding Files
 
 ```bash
-# Create and submit job script
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu "tmux send-keys -t claude 'sbatch job.sh; echo $SENTINEL' Enter"
+# Search for Python files containing a function
+o2_rpc '{"jsonrpc":"2.0","method":"grep","params":{"pattern":"def process_data","paths":["/n/data1/.../project/"],"flags":["Recursive","LineNumbers"]},"id":1}'
 ```
 
-**Decision guide:**
-- Quick exploration/testing (<30 min): Run directly on login node
-- Interactive development (30 min - 4 hours): Request interactive node
-- Long-running analysis (>4 hours): Submit as batch job
+### Reading Code
 
-## Integration with /use-o2
+```bash
+# Read a script
+o2_rpc '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../script.py"},"id":1}'
 
-When connected remotely:
-1. This skill handles connection management
-2. `/use-o2` patterns handle SLURM job creation and monitoring
-3. Execute `/use-o2` commands through the remote connection
-
-Example workflow:
+# Just the first 50 lines
+o2_rpc '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../script.py","head":50},"id":1}'
 ```
-1. /remote-o2 ensures connection
-2. User requests resource-intensive analysis
-3. Claude creates SLURM script using /use-o2 patterns
-4. Claude submits via: ssh -S $socket o2 "tmux send-keys -t claude 'sbatch script.sh' Enter"
-5. Claude monitors via: ssh -S $socket o2 "tmux send-keys -t claude 'squeue -u $USER' Enter"
+
+## Permission Enforcement
+
+The bridge validates all paths against `~/.config/remote-bridge/permissions.toml`:
+
+- **Read paths**: Only directories listed in `paths.read` are accessible
+- **Write paths**: Only directories listed in `paths.write` can be modified
+- **No shell access**: Claude cannot run arbitrary commands
+
+If a request is denied, you'll receive an error response:
+```json
+{"jsonrpc":"2.0","error":{"code":403,"message":"Path not allowed: /unauthorized/path"},"id":1}
 ```
+
+## SLURM Commands (Coming Soon)
+
+SLURM commands (squeue, sacct, sbatch) are planned for future versions. For now, use the `/use-o2` skill for SLURM reference and ask the user to run SLURM commands manually.
 
 ## Troubleshooting
 
-### Connection Issues
+### Socket doesn't exist
 
-**"Connection refused" or socket errors:**
+The bridge isn't running. Ask user to start it:
 ```bash
-# Remove stale socket
-rm -f /tmp/o2-socket
-
-# User re-runs connect script
-./o2-scripts/connect-o2.sh
+remote-bridge start o2 --user USERNAME
 ```
 
-**Tmux session not found:**
-```bash
-ssh -S "$O2_SOCKET" o2.hms.harvard.edu "~/bin/start-claude-session.sh"
-```
+### Connection refused / Connection not active
 
-### Command Timeout
+The SSH session may have timed out. Ask user to:
+1. Stop the bridge: Ctrl+C in the bridge terminal
+2. Restart: `remote-bridge start o2 --user USERNAME`
 
-If sentinel not detected within timeout:
-1. Capture more output: `-S -500` instead of `-S -100`
-2. Check if command is still running
-3. For very long commands, increase timeout or use batch job
+### Permission denied errors
 
-### Output Truncation
+The requested path isn't in the user's permission config. Ask user to either:
+1. Add the path to `~/.config/remote-bridge/permissions.toml`
+2. Run `remote-bridge update-checksum` after editing
 
-If output is truncated by capture-pane:
-1. Use the large output pattern (redirect to file)
-2. Or request specific portions: `head -100`, `tail -100`
+### Command timeout
+
+Default timeout is 30-120 seconds. For long operations, SLURM job submission is preferred (coming in future version).
 
 ## Quick Reference
 
-| Action | Command | Duo pushes (off-campus) |
-|--------|---------|------------------------|
-| Run command | `$CONFIG_REPO/o2-scripts/o2-run.sh "cmd"` | 1 |
-| Check connection | `ssh -O check o2.hms.harvard.edu` | 0 |
-| Upload file | `scp file user@o2:path/` | 1 |
-| Download file | `scp user@o2:path/file ./` | 1 |
-| Reconnect | `$CONFIG_REPO/o2-scripts/connect-o2.sh` | 1 |
-| Kill connection | `ssh -O exit o2.hms.harvard.edu` | 0 |
-
-**Note:** On Harvard network (harvard-secure wifi), Duo overhead may not occur.
+| Action | Command |
+|--------|---------|
+| Check status | `echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' \| nc -U ~/.claude/remote-bridge-o2.sock` |
+| List directory | `ls` method with path and flags |
+| Read file | `cat` method with path (optional: head/tail/offset/limit) |
+| Search files | `grep` method with pattern, paths, flags |
+| Stop bridge | User presses Ctrl+C in bridge terminal |
