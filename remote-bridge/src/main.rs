@@ -1,5 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::io::{BufRead, BufReader, Write};
+use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::{info, Level};
@@ -64,6 +66,18 @@ enum Commands {
         /// Path to permissions config file
         #[arg(short, long, default_value = "~/.config/remote-bridge/permissions.toml")]
         config: PathBuf,
+    },
+
+    /// Send an RPC command to a running bridge
+    Rpc {
+        /// Connection name
+        name: String,
+
+        /// RPC method name (e.g., connection_status, ls, cat, grep, git_pull, squeue, sbatch)
+        method: String,
+
+        /// JSON parameters (optional, e.g., '{"path":"/n/data1/..."}')
+        params: Option<String>,
     },
 }
 
@@ -213,6 +227,56 @@ async fn main() -> Result<()> {
             let config_path = expand_tilde(&config);
             config::update_checksum(&config_path).await?;
             println!("Checksum updated for {}", config_path.display());
+        }
+
+        Commands::Rpc { name, method, params } => {
+            let rpc_socket = socket_path(&name);
+
+            if !rpc_socket.exists() {
+                eprintln!("Bridge '{}' is not running.", name);
+                eprintln!("Start it with: remote-bridge start {} --user YOUR_USERNAME", name);
+                std::process::exit(1);
+            }
+
+            // Build JSON-RPC request
+            let request = if let Some(params_str) = params {
+                // Parse params to validate JSON
+                let params_value: serde_json::Value = serde_json::from_str(&params_str)
+                    .map_err(|e| anyhow::anyhow!("Invalid JSON params: {}", e))?;
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "method": method,
+                    "params": params_value,
+                    "id": 1
+                })
+            } else {
+                serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "method": method,
+                    "id": 1
+                })
+            };
+
+            // Connect to socket
+            let mut stream = UnixStream::connect(&rpc_socket)
+                .map_err(|e| anyhow::anyhow!("Failed to connect to bridge: {}", e))?;
+
+            // Send request
+            let request_str = request.to_string() + "\n";
+            stream.write_all(request_str.as_bytes())?;
+            stream.flush()?;
+
+            // Read response
+            let mut reader = BufReader::new(stream);
+            let mut response = String::new();
+            reader.read_line(&mut response)?;
+
+            // Pretty-print JSON response
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&response) {
+                println!("{}", serde_json::to_string_pretty(&json)?);
+            } else {
+                print!("{}", response);
+            }
         }
     }
 

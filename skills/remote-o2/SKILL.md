@@ -2,7 +2,7 @@
 name: remote-o2
 description: This skill should be used when the user asks to "submit to O2", "run on O2", "use the cluster", "submit a SLURM job", mentions O2 or compute cluster job submission, or when an analysis requires substantial computational resources (>16GB RAM, >4 hours runtime, or GPUs).
 user_invocable: true
-version: 2.0.0
+version: 2.1.0
 ---
 
 # Remote O2 Access Skill
@@ -26,29 +26,25 @@ For SLURM knowledge (partitions, resource estimation, job scripts, monitoring), 
 
 ## Step 1: Check Bridge Status
 
-First, check if the bridge is running:
-
 ```bash
-ls -la ~/.claude/remote-bridge-o2.sock 2>/dev/null
+remote-bridge rpc o2 connection_status
 ```
 
-**If socket exists:** Go to [Using the Bridge](#using-the-bridge)
-**If socket doesn't exist:** Go to [Starting the Bridge](#starting-the-bridge)
+**If response shows `"connected": true`:** Go to [Using the Bridge](#using-the-bridge)
+**If error "Bridge 'o2' is not running":** Go to [Starting the Bridge](#starting-the-bridge)
 
 ## Starting the Bridge
 
 ### First-Time Setup
 
-Follow these steps to install and configure the bridge.
-
 #### Step 1: Check if bridge binary exists
 
 ```bash
-which remote-bridge || ls $CONFIG_REPO/remote-bridge/target/release/remote-bridge 2>/dev/null
+which remote-bridge
 ```
 
-**If binary exists:** Skip to [Step 4: Create permissions config](#step-4-create-permissions-config)
-**If binary doesn't exist:** Continue to Step 2
+**If found:** Skip to [Step 4: Create permissions config](#step-4-create-permissions-config)
+**If not found:** Continue to Step 2
 
 #### Step 2: Check for Rust/Cargo
 
@@ -85,22 +81,17 @@ echo $SHELL
 
 **For zsh (~/.zshrc):**
 ```bash
-echo 'export PATH="$PATH:$CONFIG_REPO/remote-bridge/target/release"' >> ~/.zshrc
+echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 **For bash (~/.bashrc):**
 ```bash
-echo 'export PATH="$PATH:$CONFIG_REPO/remote-bridge/target/release"' >> ~/.bashrc
+echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-Note: Replace `$CONFIG_REPO` with the actual path in the export line (e.g., `~/Dropbox/GitHub/claude-config`).
-
-Verify installation:
-```bash
-which remote-bridge
-```
+Note: Replace `/path/to/claude-config` with the actual CONFIG_REPO path.
 
 #### Step 4: Create permissions config
 
@@ -124,7 +115,7 @@ Update the `[paths]` section with their actual directories.
 
 ### Start the Bridge
 
-Tell the user to run:
+Tell the user to run in a separate terminal:
 
 ```bash
 remote-bridge start o2 --user YOUR_USERNAME
@@ -135,33 +126,24 @@ The user will see:
 2. Duo authentication prompt
 3. Confirmation that bridge is ready
 
-**Important:** The bridge runs in the foreground. The user should keep this terminal open or run it in a background session.
+**Important:** The bridge runs in the foreground. The user should keep that terminal open.
 
 Once the user confirms the bridge is running, proceed to [Using the Bridge](#using-the-bridge).
 
 ## Using the Bridge
 
-### JSON-RPC Communication
-
-The bridge exposes a Unix socket at `~/.claude/remote-bridge-o2.sock`. Send JSON-RPC 2.0 requests via netcat.
+All commands use `remote-bridge rpc o2 <method> [params_json]`.
 
 ### Check Connection Status
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 connection_status
 ```
-
-Expected response:
-```json
-{"jsonrpc":"2.0","result":{"connected":true,"user":"...","host":"o2.hms.harvard.edu"},"id":1}
-```
-
-If `connected: false`, ask the user to restart the bridge.
 
 ### List Directory
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":["Long","Human"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 ls '{"path":"/n/data1/...","flags":["Long","Human"]}'
 ```
 
 Available flags: `Long`, `All`, `Human`, `Recursive`, `SortByTime`, `SortBySize`
@@ -170,99 +152,38 @@ Available flags: `Long`, `All`, `Human`, `Recursive`, `SortByTime`, `SortBySize`
 
 ```bash
 # Full file
-echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt"}'
 
 # First 100 lines
-echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","head":100},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","head":100}'
 
 # Last 50 lines
-echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","tail":50},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","tail":50}'
 
 # Lines 100-200
-echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/path/to/file.txt","offset":100,"limit":100},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","offset":100,"limit":100}'
 ```
 
 ### Search Files (Grep)
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"grep","params":{"pattern":"def main","paths":["/path/to/search/"],"flags":["Recursive","LineNumbers"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 grep '{"pattern":"def main","paths":["/path/to/search/"],"flags":["Recursive","LineNumbers"]}'
 ```
 
 Available flags: `IgnoreCase`, `Recursive`, `LineNumbers`, `InvertMatch`, `WordMatch`, `CountOnly`, `FilesWithMatches`
 
-## Command Patterns
-
-### Simple Wrapper Function
-
-For cleaner commands, define a function:
-
-```bash
-o2_rpc() {
-    echo "$1" | nc -U ~/.claude/remote-bridge-o2.sock
-}
-
-# Then use:
-o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":[]},"id":1}'
-```
-
-### Exploring Directory Structure
-
-```bash
-# List top-level contents
-o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/hms/dbmi/oconnor/lab/luke/","flags":["Long","Human"]},"id":1}'
-
-# Check subdirectory
-o2_rpc '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/.../project/","flags":["All"]},"id":1}'
-```
-
-### Finding Files
-
-```bash
-# Search for Python files containing a function
-o2_rpc '{"jsonrpc":"2.0","method":"grep","params":{"pattern":"def process_data","paths":["/n/data1/.../project/"],"flags":["Recursive","LineNumbers"]},"id":1}'
-```
-
-### Reading Code
-
-```bash
-# Read a script
-o2_rpc '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../script.py"},"id":1}'
-
-# Just the first 50 lines
-o2_rpc '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../script.py","head":50},"id":1}'
-```
-
-## Permission Enforcement
-
-The bridge validates all paths against `~/.config/remote-bridge/permissions.toml`:
-
-- **Read paths**: Only directories listed in `paths.read` are accessible
-- **Write paths**: Only directories listed in `paths.write` can be modified
-- **No shell access**: Claude cannot run arbitrary commands
-
-If a request is denied, you'll receive an error response:
-```json
-{"jsonrpc":"2.0","error":{"code":403,"message":"Path not allowed: /unauthorized/path"},"id":1}
-```
-
-## Git Commands
-
 ### Git Pull
 
-Pull latest changes in a repository on O2:
-
 ```bash
-echo '{"jsonrpc":"2.0","method":"git_pull","params":{"path":"/n/data1/.../project"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'
 ```
 
 Optional params: `remote` (default: "origin"), `branch` (default: current)
 
-## SLURM Commands
-
 ### Submit Job (sbatch)
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"sbatch","params":{"script_path":"/n/data1/.../job.sh"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'
 ```
 
 Optional: `working_dir` - directory to run sbatch from
@@ -273,13 +194,13 @@ Response includes `job_id` of submitted job.
 
 ```bash
 # All jobs for a user
-echo '{"jsonrpc":"2.0","method":"squeue","params":{"user":"ljo8"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 squeue '{"user":"ljo8"}'
 
 # Specific job IDs
-echo '{"jsonrpc":"2.0","method":"squeue","params":{"job_ids":["12345678"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 squeue '{"job_ids":["12345678"]}'
 
 # Filter by state
-echo '{"jsonrpc":"2.0","method":"squeue","params":{"user":"ljo8","state":"running"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 squeue '{"user":"ljo8","state":"running"}'
 ```
 
 States: `pending`, `running`, `suspended`, `completed`, `cancelled`, `failed`, `timeout`, `all`
@@ -288,10 +209,10 @@ States: `pending`, `running`, `suspended`, `completed`, `cancelled`, `failed`, `
 
 ```bash
 # Recent jobs
-echo '{"jsonrpc":"2.0","method":"sacct","params":{"user":"ljo8","start_time":"now-1day"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 sacct '{"user":"ljo8","start_time":"now-1day"}'
 
 # Specific job
-echo '{"jsonrpc":"2.0","method":"sacct","params":{"job_ids":["12345678"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+remote-bridge rpc o2 sacct '{"job_ids":["12345678"]}'
 ```
 
 ## Git-Based Job Submission Workflow
@@ -311,22 +232,32 @@ This workflow enables Claude to create and submit SLURM jobs:
 
 1. **Create sbatch script** locally in project
 2. **Commit and push** to git
-3. **Pull on O2**: `git_pull` method
-4. **Submit job**: `sbatch` method
-5. **Monitor**: `squeue` method
+3. **Pull on O2**: `remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'`
+4. **Submit job**: `remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'`
+5. **Monitor**: `remote-bridge rpc o2 squeue '{"user":"..."}'`
 
 See `/use-o2` skill for SLURM script templates and partition selection.
 
+## Permission Enforcement
+
+The bridge validates all paths against `~/.config/remote-bridge/permissions.toml`:
+
+- **Read paths**: Only directories listed in `paths.read` are accessible
+- **Write paths**: Only directories listed in `paths.write` can be modified
+- **No shell access**: Claude cannot run arbitrary commands
+
+If a request is denied, you'll receive an error response with "Path not allowed".
+
 ## Troubleshooting
 
-### Socket doesn't exist
+### "Bridge 'o2' is not running"
 
-The bridge isn't running. Ask user to start it:
+Ask user to start it in a separate terminal:
 ```bash
 remote-bridge start o2 --user USERNAME
 ```
 
-### Connection refused / Connection not active
+### Connection not active
 
 The SSH session may have timed out. Ask user to:
 1. Stop the bridge: Ctrl+C in the bridge terminal
@@ -334,20 +265,18 @@ The SSH session may have timed out. Ask user to:
 
 ### Permission denied errors
 
-The requested path isn't in the user's permission config. Ask user to either:
+The requested path isn't in the user's permission config. Ask user to:
 1. Add the path to `~/.config/remote-bridge/permissions.toml`
 2. Run `remote-bridge update-checksum` after editing
-
-### Command timeout
-
-Default timeout is 30-120 seconds. For long operations, SLURM job submission is preferred (coming in future version).
 
 ## Quick Reference
 
 | Action | Command |
 |--------|---------|
-| Check status | `echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' \| nc -U ~/.claude/remote-bridge-o2.sock` |
-| List directory | `ls` method with path and flags |
-| Read file | `cat` method with path (optional: head/tail/offset/limit) |
-| Search files | `grep` method with pattern, paths, flags |
-| Stop bridge | User presses Ctrl+C in bridge terminal |
+| Check status | `remote-bridge rpc o2 connection_status` |
+| List directory | `remote-bridge rpc o2 ls '{"path":"...","flags":["Long"]}'` |
+| Read file | `remote-bridge rpc o2 cat '{"path":"..."}'` |
+| Search files | `remote-bridge rpc o2 grep '{"pattern":"...","paths":["..."]}'` |
+| Git pull | `remote-bridge rpc o2 git_pull '{"path":"..."}'` |
+| Submit job | `remote-bridge rpc o2 sbatch '{"script_path":"..."}'` |
+| Check queue | `remote-bridge rpc o2 squeue '{"user":"..."}'` |
