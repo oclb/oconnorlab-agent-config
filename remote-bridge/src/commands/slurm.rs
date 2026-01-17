@@ -256,9 +256,76 @@ pub fn parse_squeue_output(output: &str) -> Vec<QueuedJob> {
     jobs
 }
 
+/// Request for sbatch command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SbatchRequest {
+    /// Path to the sbatch script file (must exist on remote)
+    pub script_path: String,
+    /// Working directory for the job
+    pub working_dir: Option<String>,
+}
+
+/// Response from sbatch command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SbatchResponse {
+    pub job_id: String,
+    pub script_path: String,
+    pub duration_ms: u64,
+}
+
+/// Parse sbatch output to extract job ID
+/// Output format: "Submitted batch job 12345678"
+pub fn parse_sbatch_output(output: &str) -> Option<String> {
+    output
+        .lines()
+        .find(|line| line.starts_with("Submitted batch job"))
+        .and_then(|line| line.split_whitespace().last())
+        .map(|s| s.to_string())
+}
+
+/// Parse sacct output into structured data
+pub fn parse_sacct_output(output: &str) -> Vec<JobAccounting> {
+    let mut jobs = Vec::new();
+
+    for line in output.lines().skip(2) {
+        // Skip header lines
+        let parts: Vec<&str> = line.split('|').collect();
+        if parts.len() >= 10 {
+            jobs.push(JobAccounting {
+                job_id: parts[0].trim().to_string(),
+                job_name: parts[1].trim().to_string(),
+                partition: parts[2].trim().to_string(),
+                state: parts[3].trim().to_string(),
+                exit_code: parts[4].trim().to_string(),
+                elapsed: parts[5].trim().to_string(),
+                max_rss: if parts[6].trim().is_empty() {
+                    None
+                } else {
+                    Some(parts[6].trim().to_string())
+                },
+                max_vmem: if parts[7].trim().is_empty() {
+                    None
+                } else {
+                    Some(parts[7].trim().to_string())
+                },
+                n_cpus: parts[8].trim().parse().unwrap_or(0),
+                n_tasks: parts[9].trim().parse().unwrap_or(0),
+            });
+        }
+    }
+
+    jobs
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_sbatch_output() {
+        let output = "Submitted batch job 12345678\n";
+        assert_eq!(parse_sbatch_output(output), Some("12345678".to_string()));
+    }
 
     #[test]
     fn test_time_spec() {

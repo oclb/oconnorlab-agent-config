@@ -177,6 +177,79 @@ Search files for pattern.
 
 Flags: `IgnoreCase`, `Recursive`, `LineNumbers`, `InvertMatch`, `WordMatch`, `CountOnly`, `FilesWithMatches`
 
+### git_pull
+
+Pull latest changes in a git repository.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "git_pull",
+  "params": {
+    "path": "/n/data1/.../project",
+    "remote": "origin"
+  },
+  "id": 5
+}
+```
+
+Options: `remote` (default: "origin"), `branch` (optional)
+
+### squeue
+
+Check SLURM job queue.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "squeue",
+  "params": {
+    "user": "ljo8"
+  },
+  "id": 6
+}
+```
+
+Options: `user`, `job_ids`, `partition`, `state`
+
+States: `pending`, `running`, `suspended`, `completed`, `cancelled`, `failed`, `timeout`, `all`
+
+### sacct
+
+Get job accounting information.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "sacct",
+  "params": {
+    "job_ids": ["12345678"],
+    "start_time": "now-1day"
+  },
+  "id": 7
+}
+```
+
+Options: `job_ids`, `user`, `start_time`, `end_time`, `state`
+
+### sbatch
+
+Submit a SLURM batch job.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "sbatch",
+  "params": {
+    "script_path": "/n/data1/.../job.sh",
+    "working_dir": "/n/data1/.../project"
+  },
+  "id": 8
+}
+```
+
+Returns `job_id` of submitted job.
+
 ### shutdown
 
 Request graceful shutdown.
@@ -294,6 +367,7 @@ cargo test
 - [x] Core infrastructure (CLI, config, RPC server)
 - [x] SSH with PTY for proper Duo auth
 - [x] Filesystem commands (ls, cat, grep)
-- [ ] SLURM commands (squeue, sacct, sbatch)
+- [x] Git commands (git_pull)
+- [x] SLURM commands (squeue, sacct, sbatch)
 - [ ] Job script templating with Singularity support
 - [ ] Audit logging

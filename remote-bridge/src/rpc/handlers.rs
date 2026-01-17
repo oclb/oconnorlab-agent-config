@@ -212,4 +212,221 @@ impl RpcState {
             duration_ms: start.elapsed().as_millis() as u64,
         })
     }
+
+    /// Execute git pull command
+    pub async fn git_pull(
+        &self,
+        request: commands::GitPullRequest,
+    ) -> Result<commands::GitPullResponse, RpcError> {
+        let start = Instant::now();
+
+        // Validate path (must be readable)
+        let validated = self
+            .validator
+            .validate_read_path(&request.path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Build git pull command
+        let branch_arg = request.branch.as_deref().unwrap_or("");
+        let command = if branch_arg.is_empty() {
+            format!("cd '{}' && git pull '{}'", validated.as_str(), request.remote)
+        } else {
+            format!(
+                "cd '{}' && git pull '{}' '{}'",
+                validated.as_str(),
+                request.remote,
+                branch_arg
+            )
+        };
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&command, 120)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let (already_up_to_date, files_changed) =
+            commands::parse_git_pull_output(&output.stdout);
+
+        Ok(commands::GitPullResponse {
+            path: validated.to_string(),
+            output: output.stdout,
+            already_up_to_date,
+            files_changed,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute squeue command
+    pub async fn squeue(
+        &self,
+        request: commands::SqueueRequest,
+    ) -> Result<commands::SqueueResponse, RpcError> {
+        let start = Instant::now();
+
+        // Build squeue command
+        let mut args = vec!["squeue".to_string()];
+
+        if let Some(ref user) = request.user {
+            args.push(format!("-u {}", user));
+        }
+
+        if !request.job_ids.is_empty() {
+            args.push(format!("-j {}", request.job_ids.join(",")));
+        }
+
+        if let Some(ref partition) = request.partition {
+            args.push(format!("-p {}", partition));
+        }
+
+        if let Some(ref state) = request.state {
+            args.push(format!("-t {}", state.to_slurm_filter()));
+        }
+
+        let command = args.join(" ");
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&command, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let jobs = commands::parse_squeue_output(&output.stdout);
+
+        Ok(commands::SqueueResponse {
+            jobs,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute sacct command
+    pub async fn sacct(
+        &self,
+        request: commands::SacctRequest,
+    ) -> Result<commands::SacctResponse, RpcError> {
+        let start = Instant::now();
+
+        // Build sacct command with parseable output
+        let mut args = vec![
+            "sacct".to_string(),
+            "--parsable2".to_string(),
+            "--format=JobID,JobName,Partition,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,NCPUs,NTasks".to_string(),
+        ];
+
+        if !request.job_ids.is_empty() {
+            args.push(format!("-j {}", request.job_ids.join(",")));
+        }
+
+        if let Some(ref user) = request.user {
+            args.push(format!("-u {}", user));
+        }
+
+        if let Some(ref start_time) = request.start_time {
+            args.push(format!("-S {}", start_time));
+        }
+
+        if let Some(ref end_time) = request.end_time {
+            args.push(format!("-E {}", end_time));
+        }
+
+        if let Some(ref state) = request.state {
+            args.push(format!("-s {}", state.to_slurm_filter()));
+        }
+
+        let command = args.join(" ");
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&command, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let jobs = commands::parse_sacct_output(&output.stdout);
+
+        Ok(commands::SacctResponse {
+            jobs,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute sbatch command
+    pub async fn sbatch(
+        &self,
+        request: commands::SbatchRequest,
+    ) -> Result<commands::SbatchResponse, RpcError> {
+        let start = Instant::now();
+
+        // Validate script path (must be readable)
+        let validated_script = self
+            .validator
+            .validate_read_path(&request.script_path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Build sbatch command
+        let command = if let Some(ref working_dir) = request.working_dir {
+            // Validate working dir if provided
+            let validated_wd = self
+                .validator
+                .validate_read_path(working_dir)
+                .map_err(|e| RpcError {
+                    code: ERR_PERMISSION_DENIED,
+                    message: e.to_string(),
+                    data: None,
+                })?;
+            format!(
+                "cd '{}' && sbatch '{}'",
+                validated_wd.as_str(),
+                validated_script.as_str()
+            )
+        } else {
+            format!("sbatch '{}'", validated_script.as_str())
+        };
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&command, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Parse job ID from output
+        let job_id = commands::parse_sbatch_output(&output.stdout).ok_or_else(|| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: format!("Failed to parse sbatch output: {}", output.stdout),
+            data: None,
+        })?;
+
+        Ok(commands::SbatchResponse {
+            job_id,
+            script_path: validated_script.to_string(),
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
 }

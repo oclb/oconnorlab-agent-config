@@ -245,9 +245,77 @@ If a request is denied, you'll receive an error response:
 {"jsonrpc":"2.0","error":{"code":403,"message":"Path not allowed: /unauthorized/path"},"id":1}
 ```
 
-## SLURM Commands (Coming Soon)
+## Git Commands
 
-SLURM commands (squeue, sacct, sbatch) are planned for future versions. For now, use the `/use-o2` skill for SLURM reference and ask the user to run SLURM commands manually.
+### Git Pull
+
+Pull latest changes in a repository on O2:
+
+```bash
+echo '{"jsonrpc":"2.0","method":"git_pull","params":{"path":"/n/data1/.../project"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+```
+
+Optional params: `remote` (default: "origin"), `branch` (default: current)
+
+## SLURM Commands
+
+### Submit Job (sbatch)
+
+```bash
+echo '{"jsonrpc":"2.0","method":"sbatch","params":{"script_path":"/n/data1/.../job.sh"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+```
+
+Optional: `working_dir` - directory to run sbatch from
+
+Response includes `job_id` of submitted job.
+
+### Check Queue (squeue)
+
+```bash
+# All jobs for a user
+echo '{"jsonrpc":"2.0","method":"squeue","params":{"user":"ljo8"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# Specific job IDs
+echo '{"jsonrpc":"2.0","method":"squeue","params":{"job_ids":["12345678"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# Filter by state
+echo '{"jsonrpc":"2.0","method":"squeue","params":{"user":"ljo8","state":"running"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+```
+
+States: `pending`, `running`, `suspended`, `completed`, `cancelled`, `failed`, `timeout`, `all`
+
+### Job Accounting (sacct)
+
+```bash
+# Recent jobs
+echo '{"jsonrpc":"2.0","method":"sacct","params":{"user":"ljo8","start_time":"now-1day"},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+
+# Specific job
+echo '{"jsonrpc":"2.0","method":"sacct","params":{"job_ids":["12345678"]},"id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+```
+
+## Git-Based Job Submission Workflow
+
+This workflow enables Claude to create and submit SLURM jobs:
+
+### One-Time Setup
+
+1. User clones project repo on O2 (manually via SSH)
+2. User records O2 path in project `CLAUDE.md`:
+   ```markdown
+   ## O2 Paths
+   - O2 repo: /n/data1/hms/dbmi/.../project
+   ```
+
+### Workflow
+
+1. **Create sbatch script** locally in project
+2. **Commit and push** to git
+3. **Pull on O2**: `git_pull` method
+4. **Submit job**: `sbatch` method
+5. **Monitor**: `squeue` method
+
+See `/use-o2` skill for SLURM script templates and partition selection.
 
 ## Troubleshooting
 

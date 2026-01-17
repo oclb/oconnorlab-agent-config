@@ -285,6 +285,51 @@ Detected 1 oom-kill event(s)
 | `--array` | Job array | `--array=1-100` |
 | `--gres` | GPU | `--gres=gpu:1` |
 
+## Git-Based Workflow for Remote Submission
+
+When working remotely via the bridge, use this workflow to create and submit SLURM jobs:
+
+### Setup (One-Time)
+
+1. User clones the project repo on O2:
+   ```bash
+   ssh o2
+   cd /n/data1/hms/dbmi/.../lab/username/
+   git clone <repo-url> project-name
+   ```
+
+2. Record the O2 path in project `CLAUDE.md`:
+   ```markdown
+   ## O2 Paths
+   - O2 repo: /n/data1/hms/dbmi/.../lab/username/project-name
+   ```
+
+### Workflow
+
+1. **Create sbatch script locally** in the project directory
+2. **Commit and push** to git
+3. **Pull on O2** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"git_pull","params":{"path":"/n/data1/.../project-name"},"id":1}
+   ```
+4. **Submit job** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"sbatch","params":{"script_path":"/n/data1/.../project-name/jobs/my_job.sh"},"id":2}
+   ```
+5. **Monitor** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"squeue","params":{"user":"username"},"id":3}
+   ```
+
+### Bridge Commands for SLURM
+
+| Method | Purpose | Example params |
+|--------|---------|----------------|
+| `git_pull` | Pull latest changes | `{"path":"/n/data1/.../repo"}` |
+| `sbatch` | Submit job | `{"script_path":"/path/to/job.sh"}` |
+| `squeue` | Check queue | `{"user":"ljo8"}` or `{"job_ids":["123"]}` |
+| `sacct` | Job accounting | `{"job_ids":["123"],"start_time":"now-1day"}` |
+
 ## Resources
 
 - [O2 Wiki](https://harvardmed.atlassian.net/wiki/spaces/O2/overview)
