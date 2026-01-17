@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Connection status response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionStatus {
     pub connected: bool,
     pub user: String,
@@ -11,7 +11,7 @@ pub struct ConnectionStatus {
 }
 
 /// Generic command result
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandResult {
     pub success: bool,
     pub exit_code: i32,

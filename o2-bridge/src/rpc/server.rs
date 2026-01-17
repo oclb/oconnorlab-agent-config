@@ -3,11 +3,64 @@ use crate::config::PermissionConfig;
 use crate::rpc::handlers::RpcState;
 use crate::ssh::SshConnection;
 use anyhow::Result;
-use jsonrpsee::server::{RpcModule, Server};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tracing::{error, info};
+
+/// JSON-RPC 2.0 request
+#[derive(Debug, Deserialize)]
+struct JsonRpcRequest {
+    jsonrpc: String,
+    method: String,
+    params: Option<serde_json::Value>,
+    id: serde_json::Value,
+}
+
+/// JSON-RPC 2.0 response
+#[derive(Debug, Serialize)]
+struct JsonRpcResponse {
+    jsonrpc: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<JsonRpcError>,
+    id: serde_json::Value,
+}
+
+#[derive(Debug, Serialize)]
+struct JsonRpcError {
+    code: i32,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<serde_json::Value>,
+}
+
+impl JsonRpcResponse {
+    fn success(id: serde_json::Value, result: serde_json::Value) -> Self {
+        Self {
+            jsonrpc: "2.0".to_string(),
+            result: Some(result),
+            error: None,
+            id,
+        }
+    }
+
+    fn error(id: serde_json::Value, code: i32, message: String) -> Self {
+        Self {
+            jsonrpc: "2.0".to_string(),
+            result: None,
+            error: Some(JsonRpcError {
+                code,
+                message,
+                data: None,
+            }),
+            id,
+        }
+    }
+}
 
 /// Start the JSON-RPC server on a Unix socket
 pub async fn start_server(
@@ -32,47 +85,6 @@ pub async fn start_server(
     // Create shared state
     let state = Arc::new(RpcState::new(ssh, config));
 
-    // Build RPC module
-    let mut module = RpcModule::new(state.clone());
-
-    // Register connection_status method
-    module.register_async_method("connection_status", |_, ctx, _| async move {
-        Ok(ctx.connection_status().await)
-    })?;
-
-    // Register ls method
-    module.register_async_method("ls", |params, ctx, _| async move {
-        let request: commands::LsRequest = params.parse()?;
-        ctx.ls(request).await.map_err(|e| {
-            jsonrpsee::types::ErrorObjectOwned::owned(e.code, e.message, e.data)
-        })
-    })?;
-
-    // Register cat method
-    module.register_async_method("cat", |params, ctx, _| async move {
-        let request: commands::CatRequest = params.parse()?;
-        ctx.cat(request).await.map_err(|e| {
-            jsonrpsee::types::ErrorObjectOwned::owned(e.code, e.message, e.data)
-        })
-    })?;
-
-    // Register grep method
-    module.register_async_method("grep", |params, ctx, _| async move {
-        let request: commands::GrepRequest = params.parse()?;
-        ctx.grep(request).await.map_err(|e| {
-            jsonrpsee::types::ErrorObjectOwned::owned(e.code, e.message, e.data)
-        })
-    })?;
-
-    // Register shutdown method
-    module.register_async_method("shutdown", |_, _, _| async move {
-        info!("Shutdown requested via RPC");
-        // This will be handled by the main loop
-        Ok::<_, jsonrpsee::types::ErrorObjectOwned>("shutting down")
-    })?;
-
-    info!("RPC methods registered: connection_status, ls, cat, grep, shutdown");
-
     // Check initial SSH connection status
     let status = state.connection_status().await;
     if status.connected {
@@ -81,17 +93,16 @@ pub async fn start_server(
         info!("SSH not connected. Clients will receive connection instructions.");
     }
 
+    info!("RPC methods available: connection_status, ls, cat, grep, shutdown");
+
     // Accept connections
-    // Note: jsonrpsee doesn't directly support Unix sockets, so we use a custom approach
-    // For now, we'll use a simple line-based JSON-RPC over the socket
     loop {
         match listener.accept().await {
             Ok((stream, _)) => {
-                let module = module.clone();
                 let state = state.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = handle_connection(stream, module, state).await {
+                    if let Err(e) = handle_connection(stream, state).await {
                         error!("Connection error: {}", e);
                     }
                 });
@@ -106,11 +117,8 @@ pub async fn start_server(
 /// Handle a single client connection
 async fn handle_connection(
     stream: tokio::net::UnixStream,
-    module: RpcModule<Arc<RpcState>>,
-    _state: Arc<RpcState>,
+    state: Arc<RpcState>,
 ) -> Result<()> {
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-
     let (reader, mut writer) = stream.into_split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
@@ -130,44 +138,13 @@ async fn handle_connection(
         }
 
         // Parse as JSON-RPC request
-        let response = match serde_json::from_str::<jsonrpsee::types::Request<'_>>(line) {
-            Ok(request) => {
-                // Execute the method
-                let method = request.method.as_ref();
-                let id = request.id.clone();
-
-                let result = module.call(method, request.params).await;
-
-                match result {
-                    Ok(response) => {
-                        serde_json::json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "result": serde_json::from_str::<serde_json::Value>(&response.result).unwrap_or(serde_json::Value::Null)
-                        })
-                    }
-                    Err(e) => {
-                        serde_json::json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "error": {
-                                "code": -32603,
-                                "message": e.to_string()
-                            }
-                        })
-                    }
-                }
-            }
-            Err(e) => {
-                serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": null,
-                    "error": {
-                        "code": -32700,
-                        "message": format!("Parse error: {}", e)
-                    }
-                })
-            }
+        let response = match serde_json::from_str::<JsonRpcRequest>(line) {
+            Ok(request) => dispatch_method(&state, request).await,
+            Err(e) => JsonRpcResponse::error(
+                serde_json::Value::Null,
+                -32700,
+                format!("Parse error: {}", e),
+            ),
         };
 
         // Send response
@@ -177,4 +154,80 @@ async fn handle_connection(
     }
 
     Ok(())
+}
+
+/// Dispatch a method call to the appropriate handler
+async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcResponse {
+    let id = request.id.clone();
+
+    match request.method.as_str() {
+        "connection_status" => {
+            let result = state.connection_status().await;
+            JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+        }
+
+        "ls" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::LsRequest>(params) {
+                Ok(req) => match state.ls(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "cat" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::CatRequest>(params) {
+                Ok(req) => match state.cat(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "grep" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::GrepRequest>(params) {
+                Ok(req) => match state.grep(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "shutdown" => {
+            info!("Shutdown requested via RPC");
+            JsonRpcResponse::success(id, serde_json::json!("shutting down"))
+        }
+
+        _ => JsonRpcResponse::error(id, -32601, format!("Method not found: {}", request.method)),
+    }
 }

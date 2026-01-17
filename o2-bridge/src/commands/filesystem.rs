@@ -34,7 +34,7 @@ pub struct LsRequest {
 }
 
 /// Response from ls command
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LsResponse {
     pub entries: Vec<DirEntry>,
     pub path: String,
@@ -42,7 +42,7 @@ pub struct LsResponse {
 }
 
 /// Directory entry
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DirEntry {
     pub name: String,
     pub entry_type: EntryType,
@@ -51,7 +51,7 @@ pub struct DirEntry {
     pub permissions: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EntryType {
     File,
@@ -128,7 +128,7 @@ pub struct CatRequest {
 }
 
 /// Response from cat command
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CatResponse {
     pub content: String,
     pub path: String,
@@ -174,7 +174,7 @@ pub struct GrepRequest {
 }
 
 /// Response from grep command
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrepResponse {
     pub matches: Vec<GrepMatch>,
     pub total_matches: usize,
@@ -183,7 +183,7 @@ pub struct GrepResponse {
 }
 
 /// A single grep match
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GrepMatch {
     pub file: String,
     pub line_number: Option<usize>,

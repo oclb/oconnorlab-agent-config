@@ -57,16 +57,17 @@ impl RpcState {
             })?;
 
         // Build command
-        let mut args = vec![];
+        let mut args: Vec<&str> = vec![];
         for flag in &request.flags {
             args.push(flag.to_arg());
         }
-        args.push(validated.as_str());
+        let path_str = validated.as_str();
+        args.push(path_str);
 
         // Execute
         let output = self
             .ssh
-            .execute_with_args("ls", &args.iter().map(|s| s.as_str()).collect::<Vec<_>>(), 30)
+            .execute_with_args("ls", &args, 30)
             .await
             .map_err(|e| RpcError {
                 code: ERR_COMMAND_FAILED,
@@ -127,12 +128,12 @@ impl RpcState {
                 data: None,
             })?;
 
-        let lines: Vec<&str> = output.stdout.lines().collect();
+        let total_lines = output.stdout.lines().count();
 
         Ok(commands::CatResponse {
             content: output.stdout,
             path: validated.to_string(),
-            total_lines: lines.len(),
+            total_lines,
             truncated: false,
             duration_ms: start.elapsed().as_millis() as u64,
         })
@@ -199,11 +200,13 @@ impl RpcState {
             &output.stdout,
             request.flags.contains(&commands::GrepFlag::LineNumbers),
         );
+        let total_matches = matches.len();
+        let files_searched = validated_paths.len();
 
         Ok(commands::GrepResponse {
             matches,
-            total_matches: matches.len(),
-            files_searched: validated_paths.len(),
+            total_matches,
+            files_searched,
             duration_ms: start.elapsed().as_millis() as u64,
         })
     }

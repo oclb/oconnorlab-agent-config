@@ -9,8 +9,7 @@ license = "MIT"
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
-# JSON-RPC server
-jsonrpsee = { version = "0.24", features = ["server"] }
+# JSON-RPC (manual implementation, no external crate needed)
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
