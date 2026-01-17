@@ -21,4 +21,4 @@ o2-scripts/
 notebook/
 
 # Rust build artifacts
-o2-bridge/target/
+remote-bridge/target/

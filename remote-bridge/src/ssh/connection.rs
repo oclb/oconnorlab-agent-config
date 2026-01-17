@@ -31,10 +31,7 @@ pub struct CommandOutput {
 }
 
 impl SshConnection {
-    pub fn new(user: String, host: String, _bridge_socket: PathBuf) -> Self {
-        // Use a dedicated socket for SSH ControlMaster
-        let socket_path = PathBuf::from(format!("/tmp/o2-bridge-ssh-{}", user));
-
+    pub fn new(user: String, host: String, socket_path: PathBuf) -> Self {
         Self {
             user,
             host,

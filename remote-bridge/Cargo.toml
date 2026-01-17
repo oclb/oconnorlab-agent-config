@@ -1,8 +1,8 @@
 [package]
-name = "o2-bridge"
+name = "remote-bridge"
 version = "0.1.0"
 edition = "2021"
-description = "Secure bridge for Claude Code to access O2 cluster"
+description = "Secure bridge for Claude Code to access remote hosts via SSH"
 license = "MIT"
 
 [dependencies]
@@ -39,6 +39,9 @@ futures = "0.3"
 
 # Home directory
 dirs = "5"
+
+# Signal handling
+ctrlc = "3"
 
 [dev-dependencies]
 tempfile = "3"
