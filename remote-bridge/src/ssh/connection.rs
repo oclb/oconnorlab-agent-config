@@ -1,25 +1,25 @@
-use crate::error::SshError;
-use std::path::PathBuf;
-use std::process::Stdio;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::process::Command;
-use tokio::sync::RwLock;
-use tracing::debug;
+#![allow(dead_code)]
 
-/// SSH connection manager using ControlMaster
+use crate::error::SshError;
+use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+use std::io::{Read, Write};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tracing::{debug, info};
+use uuid::Uuid;
+
+/// SSH connection with persistent session via PTY
 pub struct SshConnection {
     user: String,
     host: String,
-    socket_path: PathBuf,
-    state: Arc<RwLock<ConnectionState>>,
+    session: Arc<Mutex<Option<PtySession>>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ConnectionState {
-    Unknown,
-    Connected,
-    Disconnected,
+/// A persistent SSH session using a pseudo-terminal
+struct PtySession {
+    master: Box<dyn portable_pty::MasterPty + Send>,
+    reader: Box<dyn Read + Send>,
+    writer: Box<dyn Write + Send>,
 }
 
 /// Output from a remote command
@@ -31,125 +31,344 @@ pub struct CommandOutput {
 }
 
 impl SshConnection {
-    pub fn new(user: String, host: String, socket_path: PathBuf) -> Self {
+    pub fn new(user: String, host: String) -> Self {
         Self {
             user,
             host,
-            socket_path,
-            state: Arc::new(RwLock::new(ConnectionState::Unknown)),
+            session: Arc::new(Mutex::new(None)),
         }
     }
 
-    /// Get the SSH socket path
-    pub fn socket_path(&self) -> &PathBuf {
-        &self.socket_path
+    /// Start the persistent SSH session with interactive authentication via PTY
+    pub async fn connect(&self) -> Result<(), SshError> {
+        let session_guard = self.session.lock().await;
+
+        if session_guard.is_some() {
+            return Ok(()); // Already connected
+        }
+
+        info!("Starting persistent SSH session to {}@{}", self.user, self.host);
+
+        // Create a PTY - this gives SSH a real terminal
+        let pty_system = native_pty_system();
+        let pair = pty_system
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .map_err(|e| SshError::CommandFailed(format!("Failed to open PTY: {}", e)))?;
+
+        // Build SSH command
+        let mut cmd = CommandBuilder::new("ssh");
+        cmd.arg("-tt");
+        cmd.arg("-o");
+        cmd.arg("StrictHostKeyChecking=accept-new");
+        cmd.arg("-o");
+        cmd.arg("ServerAliveInterval=60");
+        cmd.arg("-o");
+        cmd.arg("ServerAliveCountMax=3");
+        cmd.arg(format!("{}@{}", self.user, self.host));
+
+        // Spawn SSH in the PTY
+        let _child = pair
+            .slave
+            .spawn_command(cmd)
+            .map_err(|e| SshError::CommandFailed(format!("Failed to spawn SSH: {}", e)))?;
+
+        // Get reader/writer for the master side
+        let reader = pair
+            .master
+            .try_clone_reader()
+            .map_err(|e| SshError::CommandFailed(format!("Failed to get PTY reader: {}", e)))?;
+        let writer = pair
+            .master
+            .take_writer()
+            .map_err(|e| SshError::CommandFailed(format!("Failed to get PTY writer: {}", e)))?;
+
+        // Drop lock during interactive auth
+        drop(session_guard);
+
+        // Do interactive authentication (user sees prompts, can type password/Duo)
+        let (reader, writer) = self
+            .interactive_auth(reader, writer)
+            .await?;
+
+        // Re-acquire lock and store session
+        let mut session_guard = self.session.lock().await;
+        *session_guard = Some(PtySession {
+            master: pair.master,
+            reader,
+            writer,
+        });
+
+        info!("SSH session established");
+        Ok(())
     }
 
-    /// Check if SSH connection is alive
-    pub async fn check_connection(&self) -> bool {
-        let output = Command::new("ssh")
-            .args([
-                "-S",
-                self.socket_path.to_str().unwrap_or(""),
-                "-O",
-                "check",
-                &format!("{}@{}", self.user, self.host),
-            ])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .output()
-            .await;
-
-        let connected = match output {
-            Ok(o) => o.status.success(),
-            Err(_) => false,
-        };
-
-        let mut state = self.state.write().await;
-        *state = if connected {
-            ConnectionState::Connected
-        } else {
-            ConnectionState::Disconnected
-        };
-
-        connected
-    }
-
-    /// Get instructions for establishing connection
-    pub fn connection_instructions(&self) -> String {
-        format!(
-            "SSH connection required. Please run:\n\n  \
-             ssh -M -S {} -o ControlPersist=yes -fN {}@{}\n\n\
-             This will prompt for Duo authentication (one-time per session).",
-            self.socket_path.display(),
-            self.user,
-            self.host
-        )
-    }
-
-    /// Execute a command over SSH
-    pub async fn execute(
+    /// Handle interactive authentication - proxy I/O until shell is ready
+    async fn interactive_auth(
         &self,
-        command: &str,
-        timeout_secs: u64,
-    ) -> Result<CommandOutput, SshError> {
-        // First check connection
-        if !self.check_connection().await {
-            return Err(SshError::NotConnected(
-                self.user.clone(),
-                self.host.clone(),
-            ));
-        }
+        reader: Box<dyn Read + Send>,
+        writer: Box<dyn Write + Send>,
+    ) -> Result<(Box<dyn Read + Send>, Box<dyn Write + Send>), SshError> {
+        use std::sync::mpsc;
+        use std::sync::atomic::{AtomicBool, Ordering};
 
-        debug!("Executing remote command: {}", command);
+        // Sentinel for detecting shell readiness
+        let sentinel = format!("__READY_{}__", Uuid::new_v4().to_string().replace("-", ""));
 
-        let result = tokio::time::timeout(
-            Duration::from_secs(timeout_secs),
-            Command::new("ssh")
-                .args([
-                    "-S",
-                    self.socket_path.to_str().unwrap_or(""),
-                    &format!("{}@{}", self.user, self.host),
-                    command,
-                ])
-                .output(),
-        )
-        .await;
+        // Shared state
+        let done = Arc::new(AtomicBool::new(false));
+        let sentinel_sent = Arc::new(AtomicBool::new(false));
 
-        match result {
-            Ok(Ok(output)) => {
-                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                let exit_code = output.status.code().unwrap_or(-1);
+        // Channel to send keyboard input to writer thread
+        let (key_tx, key_rx) = mpsc::channel::<Vec<u8>>();
 
-                if !stderr.is_empty() && exit_code != 0 {
-                    debug!("Command stderr: {}", stderr);
+        // Use raw mode for stdin to get individual keystrokes
+        crossterm::terminal::enable_raw_mode()
+            .map_err(|e| SshError::CommandFailed(format!("Failed to enable raw mode: {}", e)))?;
+
+        let sentinel_clone = sentinel.clone();
+        let done_clone = done.clone();
+        let sentinel_sent_clone = sentinel_sent.clone();
+
+        // Thread 1: Read from PTY and display, detect sentinel
+        let reader_handle = std::thread::spawn(move || {
+            let mut reader = reader;
+            let mut buf = [0u8; 1024];
+            let mut accumulated = String::new();
+            let mut term_stdout = std::io::stdout();
+
+            loop {
+                if done_clone.load(Ordering::Relaxed) {
+                    break;
                 }
 
-                Ok(CommandOutput {
-                    stdout,
-                    stderr,
-                    exit_code,
-                })
+                match reader.read(&mut buf) {
+                    Ok(0) => {
+                        // EOF
+                        break;
+                    }
+                    Ok(n) => {
+                        let output = &buf[..n];
+
+                        // Print to terminal
+                        term_stdout.write_all(output).ok();
+                        term_stdout.flush().ok();
+
+                        // Accumulate for sentinel detection
+                        if let Ok(s) = std::str::from_utf8(output) {
+                            accumulated.push_str(s);
+                            if accumulated.len() > 4000 {
+                                accumulated = accumulated[accumulated.len() - 2000..].to_string();
+                            }
+
+                            // Check for sentinel
+                            if sentinel_sent_clone.load(Ordering::Relaxed)
+                                && accumulated.contains(&sentinel_clone)
+                            {
+                                done_clone.store(true, Ordering::Relaxed);
+                                break;
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        break;
+                    }
+                }
             }
-            Ok(Err(e)) => Err(SshError::Io(e)),
-            Err(_) => Err(SshError::Timeout(timeout_secs)),
+            reader
+        });
+
+        // Thread 2: Write keyboard input and probes to PTY
+        let done_clone2 = done.clone();
+        let sentinel_sent_clone2 = sentinel_sent.clone();
+        let sentinel_clone2 = sentinel.clone();
+
+        let writer_handle = std::thread::spawn(move || {
+            let mut writer = writer;
+            let start = std::time::Instant::now();
+            let mut last_probe = std::time::Instant::now();
+
+            loop {
+                if done_clone2.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                // Check for keyboard input from channel (non-blocking)
+                match key_rx.recv_timeout(std::time::Duration::from_millis(50)) {
+                    Ok(bytes) => {
+                        writer.write_all(&bytes).ok();
+                        writer.flush().ok();
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {}
+                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                }
+
+                // Periodically send sentinel probe (after 5 seconds, every 3 seconds)
+                if start.elapsed() > std::time::Duration::from_secs(5)
+                    && last_probe.elapsed() > std::time::Duration::from_secs(3)
+                {
+                    let probe = format!("echo {}\n", sentinel_clone2);
+                    writer.write_all(probe.as_bytes()).ok();
+                    writer.flush().ok();
+                    sentinel_sent_clone2.store(true, Ordering::Relaxed);
+                    last_probe = std::time::Instant::now();
+                }
+            }
+            writer
+        });
+
+        // Main thread: Read keyboard and send to writer thread
+        let timeout = std::time::Duration::from_secs(120);
+        let start = std::time::Instant::now();
+
+        loop {
+            if done.load(Ordering::Relaxed) {
+                break;
+            }
+
+            if start.elapsed() > timeout {
+                done.store(true, Ordering::Relaxed);
+                crossterm::terminal::disable_raw_mode().ok();
+                return Err(SshError::Timeout(120));
+            }
+
+            // Poll for keyboard input
+            if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap_or(false) {
+                if let Ok(crossterm::event::Event::Key(key)) = crossterm::event::read() {
+                    let bytes = key_to_bytes(key);
+                    if !bytes.is_empty() {
+                        key_tx.send(bytes).ok();
+                    }
+                }
+            }
+        }
+
+        // Restore terminal mode
+        crossterm::terminal::disable_raw_mode().ok();
+
+        // Wait for threads and get reader/writer back
+        let reader = reader_handle.join().map_err(|_| {
+            SshError::CommandFailed("Reader thread panicked".to_string())
+        })?;
+        let writer = writer_handle.join().map_err(|_| {
+            SshError::CommandFailed("Writer thread panicked".to_string())
+        })?;
+
+        info!("Shell ready (sentinel received)");
+        Ok((reader, writer))
+    }
+
+    /// Check if session is alive
+    pub async fn is_connected(&self) -> bool {
+        let session = self.session.lock().await;
+        session.is_some()
+    }
+
+    /// Execute a command in the persistent session
+    pub async fn execute(&self, command: &str, timeout_secs: u64) -> Result<CommandOutput, SshError> {
+        let mut session_guard = self.session.lock().await;
+
+        let session = session_guard
+            .as_mut()
+            .ok_or_else(|| SshError::NotConnected(self.user.clone(), self.host.clone()))?;
+
+        // Generate unique sentinel markers
+        let sentinel_start = format!("__START_{}__", Uuid::new_v4().to_string().replace("-", ""));
+        let sentinel_end = format!("__END_{}__", Uuid::new_v4().to_string().replace("-", ""));
+
+        // Construct command with sentinels
+        let wrapped_command = format!(
+            "echo '{}'; {} 2>&1; echo '{}'{}\n",
+            sentinel_start, command, sentinel_end, "$?"
+        );
+
+        debug!("Sending command: {}", command);
+
+        // Send command
+        session
+            .writer
+            .write_all(wrapped_command.as_bytes())
+            .map_err(SshError::Io)?;
+        session.writer.flush().map_err(SshError::Io)?;
+
+        // Read output until we see end sentinel
+        let mut output_lines = Vec::new();
+        let mut capturing = false;
+        let mut exit_code = 0;
+        let mut buf = [0u8; 4096];
+        let mut accumulated = String::new();
+
+        let timeout = std::time::Duration::from_secs(timeout_secs);
+        let start = std::time::Instant::now();
+
+        loop {
+            if start.elapsed() > timeout {
+                return Err(SshError::Timeout(timeout_secs));
+            }
+
+            match session.reader.read(&mut buf) {
+                Ok(0) => {
+                    return Err(SshError::CommandFailed("Connection closed".to_string()));
+                }
+                Ok(n) => {
+                    if let Ok(s) = std::str::from_utf8(&buf[..n]) {
+                        accumulated.push_str(s);
+                    }
+
+                    // Process complete lines
+                    while let Some(newline_pos) = accumulated.find('\n') {
+                        let line = accumulated[..newline_pos].trim_end_matches('\r').to_string();
+                        accumulated = accumulated[newline_pos + 1..].to_string();
+
+                        debug!("Read line: {}", line);
+
+                        if line.contains(&sentinel_start) {
+                            capturing = true;
+                            continue;
+                        }
+
+                        if line.contains(&sentinel_end) {
+                            // Extract exit code
+                            if let Some(code_str) = line.strip_prefix(&sentinel_end) {
+                                exit_code = code_str.trim().parse().unwrap_or(0);
+                            }
+                            let stdout = output_lines.join("\n");
+                            return Ok(CommandOutput {
+                                stdout,
+                                stderr: String::new(),
+                                exit_code,
+                            });
+                        }
+
+                        if capturing {
+                            output_lines.push(line);
+                        }
+                    }
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(10));
+                }
+                Err(e) => {
+                    return Err(SshError::Io(e));
+                }
+            }
         }
     }
 
-    /// Execute a command with proper argument escaping
+    /// Execute with argument escaping
     pub async fn execute_with_args(
         &self,
         program: &str,
         args: &[&str],
         timeout_secs: u64,
     ) -> Result<CommandOutput, SshError> {
-        // Build command with proper escaping
-        // Each argument is single-quoted to prevent shell interpretation
         let escaped_args: Vec<String> = args
             .iter()
             .map(|arg| {
-                // Escape single quotes within the argument
                 let escaped = arg.replace("'", "'\"'\"'");
                 format!("'{}'", escaped)
             })
@@ -159,37 +378,47 @@ impl SshConnection {
         self.execute(&command, timeout_secs).await
     }
 
-    /// Get current connection state
-    pub async fn state(&self) -> ConnectionState {
-        self.state.read().await.clone()
+    /// Close the session
+    pub async fn close(&self) {
+        let mut session = self.session.lock().await;
+        if let Some(mut sess) = session.take() {
+            let _ = sess.writer.write_all(b"exit\n");
+            let _ = sess.writer.flush();
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            info!("SSH session closed");
+        }
     }
 
-    /// Get user
     pub fn user(&self) -> &str {
         &self.user
     }
 
-    /// Get host
     pub fn host(&self) -> &str {
         &self.host
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Convert crossterm key event to bytes to send to PTY
+fn key_to_bytes(key: crossterm::event::KeyEvent) -> Vec<u8> {
+    use crossterm::event::{KeyCode, KeyModifiers};
 
-    #[test]
-    fn test_connection_instructions() {
-        let conn = SshConnection::new(
-            "testuser".to_string(),
-            "o2.hms.harvard.edu".to_string(),
-            PathBuf::from("/tmp/test.sock"),
-        );
-
-        let instructions = conn.connection_instructions();
-        assert!(instructions.contains("testuser@o2.hms.harvard.edu"));
-        assert!(instructions.contains("-M -S"));
-        assert!(instructions.contains("ControlPersist"));
+    match key.code {
+        KeyCode::Char(c) => {
+            if key.modifiers.contains(KeyModifiers::CONTROL) {
+                // Ctrl+C = 0x03, Ctrl+D = 0x04, etc.
+                vec![(c as u8) & 0x1f]
+            } else {
+                c.to_string().into_bytes()
+            }
+        }
+        KeyCode::Enter => vec![b'\r'],
+        KeyCode::Backspace => vec![0x7f],
+        KeyCode::Tab => vec![b'\t'],
+        KeyCode::Esc => vec![0x1b],
+        KeyCode::Up => vec![0x1b, b'[', b'A'],
+        KeyCode::Down => vec![0x1b, b'[', b'B'],
+        KeyCode::Right => vec![0x1b, b'[', b'C'],
+        KeyCode::Left => vec![0x1b, b'[', b'D'],
+        _ => vec![],
     }
 }

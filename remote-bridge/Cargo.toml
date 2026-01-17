@@ -43,5 +43,14 @@ dirs = "5"
 # Signal handling
 ctrlc = "3"
 
+# UUID for sentinel markers
+uuid = { version = "1", features = ["v4"] }
+
+# PTY for proper terminal emulation during SSH auth
+portable-pty = "0.8"
+
+# Terminal handling for raw mode input
+crossterm = "0.27"
+
 [dev-dependencies]
 tempfile = "3"

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::commands::{self, PathValidator};
 use crate::config::PermissionConfig;
 use crate::rpc::types::*;
@@ -13,10 +15,10 @@ pub struct RpcState {
 }
 
 impl RpcState {
-    pub fn new(ssh: SshConnection, config: PermissionConfig) -> Self {
+    pub fn new(ssh: Arc<SshConnection>, config: PermissionConfig) -> Self {
         let validator = PathValidator::new(config.clone());
         Self {
-            ssh: Arc::new(ssh),
+            ssh,
             config: Arc::new(config),
             validator: Arc::new(validator),
         }
@@ -24,17 +26,17 @@ impl RpcState {
 
     /// Get connection status
     pub async fn connection_status(&self) -> ConnectionStatus {
-        let connected = self.ssh.check_connection().await;
+        let connected = self.ssh.is_connected().await;
 
         ConnectionStatus {
             connected,
             user: self.ssh.user().to_string(),
             host: self.ssh.host().to_string(),
-            socket_path: self.ssh.socket_path().display().to_string(),
+            socket_path: "N/A (persistent session)".to_string(),
             instructions: if connected {
                 None
             } else {
-                Some(self.ssh.connection_instructions())
+                Some("SSH session not connected. Restart the bridge.".to_string())
             },
         }
     }
@@ -57,7 +59,7 @@ impl RpcState {
             })?;
 
         // Build command
-        let mut args: Vec<&str> = vec![];
+        let mut args: Vec<&str> = vec!["--color=never"];
         for flag in &request.flags {
             args.push(flag.to_arg());
         }

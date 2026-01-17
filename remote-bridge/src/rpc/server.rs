@@ -1,7 +1,9 @@
-use crate::commands;
+#![allow(dead_code)]
+
 use crate::config::PermissionConfig;
 use crate::rpc::handlers::RpcState;
 use crate::ssh::SshConnection;
+use crate::commands;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -66,7 +68,7 @@ impl JsonRpcResponse {
 pub async fn start_server(
     socket_path: PathBuf,
     config: PermissionConfig,
-    ssh: SshConnection,
+    ssh: Arc<SshConnection>,
 ) -> Result<()> {
     // Remove stale socket if it exists
     if socket_path.exists() {

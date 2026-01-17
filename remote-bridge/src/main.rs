@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use tracing::{info, error, Level};
+use std::sync::Arc;
+use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 mod config;
@@ -85,80 +85,6 @@ fn socket_path(name: &str) -> PathBuf {
         .join(format!("remote-bridge-{}.sock", name))
 }
 
-fn ssh_socket_path(name: &str) -> PathBuf {
-    PathBuf::from(format!("/tmp/remote-bridge-ssh-{}", name))
-}
-
-/// Establish SSH connection (spawns ssh, user sees Duo prompt)
-fn establish_ssh_connection(user: &str, host: &str, socket: &PathBuf) -> Result<()> {
-    // Clean up stale socket if exists
-    if socket.exists() {
-        let _ = std::fs::remove_file(socket);
-    }
-
-    println!("Connecting to {}@{}...", user, host);
-    println!("(You may need to approve Duo authentication)\n");
-
-    // Spawn SSH with ControlMaster - this will prompt for Duo
-    // -M: ControlMaster mode
-    // -S: Socket path
-    // -o ControlPersist=12h: Keep connection alive for 12 hours
-    // -f: Background after authentication
-    // -N: No remote command
-    let status = Command::new("ssh")
-        .args([
-            "-M",
-            "-S", socket.to_str().unwrap(),
-            "-o", "ControlPersist=12h",
-            "-o", "ServerAliveInterval=60",
-            "-o", "ServerAliveCountMax=3",
-            "-f",
-            "-N",
-            &format!("{}@{}", user, host),
-        ])
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .status()
-        .context("Failed to spawn SSH")?;
-
-    if !status.success() {
-        anyhow::bail!("SSH connection failed with exit code: {:?}", status.code());
-    }
-
-    // Verify connection is actually up
-    let check = Command::new("ssh")
-        .args([
-            "-S", socket.to_str().unwrap(),
-            "-O", "check",
-            &format!("{}@{}", user, host),
-        ])
-        .output()?;
-
-    if !check.status.success() {
-        anyhow::bail!("SSH connection check failed after connect");
-    }
-
-    println!("SSH connection established!");
-    Ok(())
-}
-
-/// Close SSH connection
-fn close_ssh_connection(socket: &PathBuf) {
-    if socket.exists() {
-        let _ = Command::new("ssh")
-            .args([
-                "-S", socket.to_str().unwrap(),
-                "-O", "exit",
-                "dummy", // hostname doesn't matter for exit
-            ])
-            .output();
-
-        // Clean up socket file if still exists
-        let _ = std::fs::remove_file(socket);
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -173,7 +99,6 @@ async fn main() -> Result<()> {
 
             let config_path = expand_tilde(&config);
             let rpc_socket = socket_path(&name);
-            let ssh_socket = ssh_socket_path(&name);
 
             // Check if already running
             if rpc_socket.exists() {
@@ -194,22 +119,23 @@ async fn main() -> Result<()> {
                 std::env::var("USER").unwrap_or_else(|_| "unknown".to_string())
             });
 
-            // Establish SSH connection (user sees Duo prompt here)
-            establish_ssh_connection(&username, &host, &ssh_socket)?;
-
-            // Create SSH connection manager
-            let ssh = ssh::SshConnection::new(
+            // Create SSH connection (persistent session with piped stdin/stdout)
+            let ssh = Arc::new(ssh::SshConnection::new(
                 username.clone(),
                 host.clone(),
-                ssh_socket.clone(),
-            );
+            ));
+
+            // Establish the persistent SSH session (user sees login/Duo prompt here)
+            println!("Connecting to {}@{}...", username, host);
+            println!("(You may need to approve Duo authentication)\n");
+            ssh.connect().await?;
+            info!("SSH session established");
 
             // Set up cleanup on Ctrl+C
-            let ssh_socket_clone = ssh_socket.clone();
             let rpc_socket_clone = rpc_socket.clone();
             ctrlc::set_handler(move || {
                 eprintln!("\nShutting down...");
-                close_ssh_connection(&ssh_socket_clone);
+                // SSH session is cleaned up when process exits
                 let _ = std::fs::remove_file(&rpc_socket_clone);
                 std::process::exit(0);
             }).expect("Error setting Ctrl-C handler");
@@ -221,7 +147,6 @@ async fn main() -> Result<()> {
             let result = rpc::start_server(rpc_socket.clone(), permissions, ssh).await;
 
             // Cleanup on exit
-            close_ssh_connection(&ssh_socket);
             let _ = std::fs::remove_file(&rpc_socket);
 
             result?;
@@ -229,42 +154,32 @@ async fn main() -> Result<()> {
 
         Commands::Status { name } => {
             let rpc_socket = socket_path(&name);
-            let ssh_socket = ssh_socket_path(&name);
 
             println!("Bridge: {}", name);
             println!("RPC socket: {}", rpc_socket.display());
-            println!("SSH socket: {}", ssh_socket.display());
 
             let rpc_running = rpc_socket.exists();
-            let ssh_connected = ssh_socket.exists() && {
-                Command::new("ssh")
-                    .args(["-S", ssh_socket.to_str().unwrap(), "-O", "check", "dummy"])
-                    .output()
-                    .map(|o| o.status.success())
-                    .unwrap_or(false)
-            };
+            // Note: SSH status is tied to the bridge process now
+            // If RPC socket exists, the bridge (and its SSH session) should be running
 
-            println!("RPC server: {}", if rpc_running { "running" } else { "stopped" });
-            println!("SSH: {}", if ssh_connected { "connected" } else { "disconnected" });
+            println!("Status: {}", if rpc_running { "running" } else { "stopped" });
         }
 
         Commands::Stop { name } => {
             let rpc_socket = socket_path(&name);
-            let ssh_socket = ssh_socket_path(&name);
 
             println!("Stopping bridge '{}'...", name);
 
-            // Close SSH connection
-            close_ssh_connection(&ssh_socket);
-            println!("SSH connection closed");
-
-            // Remove RPC socket
+            // The SSH session is owned by the bridge process
+            // Removing the socket will cause connection failures, but to fully stop
+            // you need to kill the bridge process (Ctrl+C or kill)
             if rpc_socket.exists() {
                 std::fs::remove_file(&rpc_socket)?;
                 println!("RPC socket removed");
+                println!("Note: The bridge process may still be running. Use Ctrl+C or kill to stop it.");
+            } else {
+                println!("Bridge '{}' is not running.", name);
             }
-
-            println!("Stopped.");
         }
 
         Commands::VerifyConfig { config } => {

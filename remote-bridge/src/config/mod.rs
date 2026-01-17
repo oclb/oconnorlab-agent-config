@@ -17,7 +17,7 @@ pub async fn load_and_verify(path: &Path) -> Result<PermissionConfig, ConfigErro
         IntegrityStatus::Valid => {
             info!("Config integrity verified");
         }
-        IntegrityStatus::Modified { stored, current } => {
+        IntegrityStatus::Modified { .. } => {
             return Err(ConfigError::IntegrityViolation);
         }
         IntegrityStatus::NoBaseline => {

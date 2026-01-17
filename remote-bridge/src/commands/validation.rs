@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::config::PermissionConfig;
 use crate::error::ValidationError;
 use std::path::{Component, Path, PathBuf};
