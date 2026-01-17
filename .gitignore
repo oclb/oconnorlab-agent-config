@@ -19,3 +19,6 @@ o2-scripts/
 
 # Notebook (separate git repo)
 notebook/
+
+# Rust build artifacts
+o2-bridge/target/

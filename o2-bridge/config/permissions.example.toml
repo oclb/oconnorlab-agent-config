@@ -1,0 +1,63 @@
+# O2 Bridge Permission Configuration
+#
+# This file controls what the O2 bridge can access on your behalf.
+# Copy this file to ~/.config/o2-bridge/permissions.toml and customize.
+#
+# IMPORTANT: After editing, run `o2-bridge update-checksum` to update
+# the integrity checksum. The bridge will refuse to start if the config
+# has been modified without updating the checksum.
+
+[paths]
+# Directories Claude can read from (via ls, cat, grep)
+# Use absolute paths. ~ is not supported here.
+read = [
+    "/n/data1/hms/dbmi/oconnor/lab/luke/",
+    "/n/scratch/users/l/ljo8/",
+    "/n/app/",
+]
+
+# Directories Claude can write to (must be subsets of read paths)
+# Used for job output, temporary files, etc.
+write = [
+    "/n/data1/hms/dbmi/oconnor/lab/luke/claude-projects/",
+    "/n/scratch/users/l/ljo8/claude-tmp/",
+]
+
+[resources]
+# Maximum resources Claude can request for SLURM jobs
+max_cpus = 32
+max_memory_gb = 128
+max_time_hours = 120    # 5 days
+max_gpus = 2
+max_array_size = 1000   # Maximum job array size
+
+# Pre-approved Singularity container images
+# Only containers listed here can be used for sbatch jobs
+[[containers.allowed]]
+registry = "docker://ghcr.io/hms-dbmi"
+name = "python-science"
+tags = ["3.9", "3.10", "3.11", "latest"]
+
+[[containers.allowed]]
+registry = "docker://ghcr.io/hms-dbmi"
+name = "r-base"
+tags = ["4.2", "4.3", "latest"]
+
+[[containers.allowed]]
+registry = "docker://rocker"
+name = "tidyverse"
+tags = ["4.2", "4.3", "latest"]
+
+[modules]
+# Allowed native modules (for jobs not using containers)
+# Only these modules can be loaded in SLURM scripts
+allowed = [
+    "gcc/9.2.0",
+    "python/3.9.14",
+    "python/3.10.9",
+    "python/3.11.4",
+    "R/4.2.1",
+    "R/4.3.1",
+    "cuda/11.7",
+    "cuda/12.1",
+]
