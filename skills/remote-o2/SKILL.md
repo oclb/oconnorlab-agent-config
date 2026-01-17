@@ -39,25 +39,88 @@ ls -la ~/.claude/remote-bridge-o2.sock 2>/dev/null
 
 ### First-Time Setup
 
-If the bridge has never been configured, the user needs to:
+Follow these steps to install and configure the bridge.
 
-1. **Install the bridge** (if not already built):
-   ```bash
-   cd $CONFIG_REPO/remote-bridge
-   cargo build --release
-   # Optionally: cp target/release/remote-bridge ~/bin/
-   ```
+#### Step 1: Check if bridge binary exists
 
-2. **Create permissions config**:
-   ```bash
-   mkdir -p ~/.config/remote-bridge
-   cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
-   ```
+```bash
+which remote-bridge || ls $CONFIG_REPO/remote-bridge/target/release/remote-bridge 2>/dev/null
+```
 
-3. **Edit permissions** to match their paths:
-   ```bash
-   $EDITOR ~/.config/remote-bridge/permissions.toml
-   ```
+**If binary exists:** Skip to [Step 4: Create permissions config](#step-4-create-permissions-config)
+**If binary doesn't exist:** Continue to Step 2
+
+#### Step 2: Check for Rust/Cargo
+
+```bash
+which cargo
+```
+
+**If cargo exists:** Skip to [Step 3: Build the bridge](#step-3-build-the-bridge)
+
+**If cargo doesn't exist:** Ask the user to install Rust:
+
+```
+Rust is required to build the remote-bridge. Please install it:
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+Follow the prompts (default installation is fine), then restart your terminal
+or run: source ~/.cargo/env
+
+Let me know when Rust is installed.
+```
+
+#### Step 3: Build the bridge
+
+```bash
+cd $CONFIG_REPO/remote-bridge && cargo build --release
+```
+
+Then add to PATH. First detect the user's shell:
+
+```bash
+echo $SHELL
+```
+
+**For zsh (~/.zshrc):**
+```bash
+echo 'export PATH="$PATH:$CONFIG_REPO/remote-bridge/target/release"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**For bash (~/.bashrc):**
+```bash
+echo 'export PATH="$PATH:$CONFIG_REPO/remote-bridge/target/release"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Note: Replace `$CONFIG_REPO` with the actual path in the export line (e.g., `~/Dropbox/GitHub/claude-config`).
+
+Verify installation:
+```bash
+which remote-bridge
+```
+
+#### Step 4: Create permissions config
+
+```bash
+mkdir -p ~/.config/remote-bridge
+cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
+```
+
+#### Step 5: Edit permissions
+
+Ask the user for their O2 paths:
+- Lab directory (e.g., `/n/data1/hms/dbmi/oconnor/lab/username/`)
+- Scratch directory (e.g., `/n/scratch/users/u/username/`)
+
+Then edit the config:
+```bash
+$EDITOR ~/.config/remote-bridge/permissions.toml
+```
+
+Update the `[paths]` section with their actual directories.
 
 ### Start the Bridge
 
@@ -65,11 +128,6 @@ Tell the user to run:
 
 ```bash
 remote-bridge start o2 --user YOUR_USERNAME
-```
-
-Or with the full path:
-```bash
-$CONFIG_REPO/remote-bridge/target/release/remote-bridge start o2 --user YOUR_USERNAME
 ```
 
 The user will see:
