@@ -70,10 +70,9 @@ Claude reads `~/.claude/behavior.conf` at session start:
 |------|--------|--------|
 | `AFK` | `true`/`false` | When true, work autonomously without asking questions |
 | `Environment` | `local` | Always local; use `/remote-o2` for cluster access |
-| `NewUser` | `true`/`false` | When true, proactively explain features and suggest `/support` |
 | `CONFIG_REPO` | Path | Location of this repo (for `/support` skill) |
 
-Toggle AFK by including `(afk)` or `(back)` in a message. Toggle NewUser by explicitly asking Claude to enable/disable onboarding mode.
+Toggle AFK by including `(afk)` or `(back)` in a message.
 
 ### Skills
 

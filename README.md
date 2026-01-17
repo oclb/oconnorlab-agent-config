@@ -139,7 +139,6 @@ my-project/           # Main repo (your code)
 
 Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
 
-- **NewUser mode**: Enabled by default on first setup. Claude proactively explains features and may suggest the `/support` skill to orient new users. Ask Claude to "disable onboarding mode" once you're comfortable.
 - **AFK mode**: For autonomous operation. Include `(afk)` in a message to enable, `(back)` to disable.
 - **O2 cluster access**: Use `/remote-o2` for cluster computing; Claude handles connection and SLURM job submission.
 - **Terminal notifications**: Desktop alerts on task completion via ntfy.sh.

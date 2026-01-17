@@ -18,20 +18,6 @@ Use when the user:
 - Asks about hooks, MCP servers, or other Claude Code features
 - Wants an overview of how to use Claude Code for research
 
-### Proactive Triggering (NewUser Mode)
-
-When `NewUser=true` in behavior.conf, consider invoking this skill proactively:
-
-- **User seems lost**: Asks very open-ended questions or seems unsure what to do
-- **First session**: Provide a brief orientation after completing the first task
-- **Confusion about capabilities**: User tries to do something that a skill handles better
-- **Explicit curiosity**: User asks "how does this work?" or "what else can you do?"
-
-When triggering proactively, keep it brief:
-- Don't dump the full overview unless asked
-- Mention 1-2 relevant skills for their current work
-- Suggest they can ask for more with `/support`
-
 ## Process
 
 ### Step 1: Fetch Documentation
@@ -139,19 +125,6 @@ When AFK mode is enabled:
 - Only pauses for critical decisions that would be difficult to reverse
 
 This is useful for longer-running tasks where you want Claude to proceed independently.
-
-### NewUser Mode (Onboarding)
-
-NewUser mode is enabled by default when you first set up Claude Code. When enabled:
-
-- Claude proactively mentions relevant skills as they become useful
-- Offers brief explanations of what it's doing
-- May suggest the `/support` command for more information
-- Introduces features like AFK mode when appropriate
-
-**Disabling NewUser mode**: Once you're comfortable with the system, ask Claude to "disable onboarding mode" or "turn off NewUser mode". Claude will update behavior.conf and switch to more efficient, less explanatory responses.
-
-**Re-enabling**: Ask Claude to "enable onboarding mode" if you want more guidance again.
 
 ### Feedback and Contributions
 
