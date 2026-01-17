@@ -250,6 +250,40 @@ Submit a SLURM batch job.
 
 Returns `job_id` of submitted job.
 
+### job_wait
+
+Wait for a job to complete, polling with increasing intervals (0s, 5s, 10s, 15s, ... up to 60s).
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "job_wait",
+  "params": {
+    "job_id": "12345678",
+    "array_mode": "any",
+    "max_wait_secs": 86400
+  },
+  "id": 9
+}
+```
+
+Options:
+- `job_id`: Job ID to wait for
+- `array_mode`: For job arrays - `"any"` (default, first to complete), `"all"` (wait for all), or `{"index": N}` (specific task)
+- `max_wait_secs`: Timeout in seconds (default: 86400 = 24 hours)
+
+Response includes exit status:
+```json
+{
+  "job_id": "12345678",
+  "completed_jobs": [
+    {"job_id": "12345678_1", "state": "COMPLETED", "exit_code": "0:0", "elapsed": "00:05:32"}
+  ],
+  "all_completed": false,
+  "wait_time_secs": 45
+}
+```
+
 ### shutdown
 
 Request graceful shutdown.

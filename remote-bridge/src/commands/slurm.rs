@@ -273,6 +273,71 @@ pub struct SbatchResponse {
     pub duration_ms: u64,
 }
 
+/// How to wait for job arrays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ArrayWaitMode {
+    /// Wait for any array task to complete (default)
+    Any,
+    /// Wait for all array tasks to complete
+    All,
+    /// Wait for a specific array index
+    Index(u32),
+}
+
+impl Default for ArrayWaitMode {
+    fn default() -> Self {
+        ArrayWaitMode::Any
+    }
+}
+
+/// Request for job_wait command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JobWaitRequest {
+    /// Job ID to wait for (e.g., "12345678" or "12345678_5" for specific array task)
+    pub job_id: String,
+    /// For job arrays: wait for any (default), all, or specific index
+    #[serde(default)]
+    pub array_mode: ArrayWaitMode,
+    /// Maximum time to wait in seconds (default: 86400 = 24 hours)
+    #[serde(default = "default_max_wait")]
+    pub max_wait_secs: u64,
+}
+
+fn default_max_wait() -> u64 {
+    86400 // 24 hours
+}
+
+/// Response from job_wait command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JobWaitResponse {
+    pub job_id: String,
+    /// Jobs that completed (for arrays, may be multiple)
+    pub completed_jobs: Vec<CompletedJob>,
+    /// Whether all requested jobs completed (vs timeout)
+    pub all_completed: bool,
+    /// Total time spent waiting
+    pub wait_time_secs: u64,
+}
+
+/// Information about a completed job
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompletedJob {
+    pub job_id: String,
+    pub state: String,
+    pub exit_code: String,
+    pub elapsed: String,
+}
+
+/// Check if a job state indicates completion
+pub fn is_terminal_state(state: &str) -> bool {
+    matches!(
+        state.to_uppercase().as_str(),
+        "COMPLETED" | "FAILED" | "CANCELLED" | "TIMEOUT" | "OUT_OF_MEMORY"
+        | "NODE_FAIL" | "PREEMPTED" | "BOOT_FAIL" | "DEADLINE"
+    )
+}
+
 /// Parse sbatch output to extract job ID
 /// Output format: "Submitted batch job 12345678"
 pub fn parse_sbatch_output(output: &str) -> Option<String> {

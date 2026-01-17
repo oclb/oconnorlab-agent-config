@@ -429,4 +429,128 @@ impl RpcState {
             duration_ms: start.elapsed().as_millis() as u64,
         })
     }
+
+    /// Wait for a job to complete, polling with increasing intervals
+    pub async fn job_wait(
+        &self,
+        request: commands::JobWaitRequest,
+    ) -> Result<commands::JobWaitResponse, RpcError> {
+        use commands::{ArrayWaitMode, CompletedJob};
+
+        let start = Instant::now();
+        let mut completed_jobs: Vec<CompletedJob> = Vec::new();
+        let mut poll_count = 0u32;
+
+        // Extract base job ID (without array index)
+        let base_job_id = request.job_id.split('_').next().unwrap_or(&request.job_id);
+
+        loop {
+            // Check timeout
+            let elapsed_secs = start.elapsed().as_secs();
+            if elapsed_secs > request.max_wait_secs {
+                return Ok(commands::JobWaitResponse {
+                    job_id: request.job_id.clone(),
+                    completed_jobs,
+                    all_completed: false,
+                    wait_time_secs: elapsed_secs,
+                });
+            }
+
+            // Calculate sleep time: 0, 5, 10, 15, ... capped at 60s
+            let sleep_secs = std::cmp::min(poll_count * 5, 60) as u64;
+            if poll_count > 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(sleep_secs)).await;
+            }
+            poll_count += 1;
+
+            // Query sacct for job status
+            let command = format!(
+                "sacct -j {} --parsable2 --noheader --format=JobID,State,ExitCode,Elapsed",
+                base_job_id
+            );
+
+            let output = self
+                .ssh
+                .execute(&command, 30)
+                .await
+                .map_err(|e| RpcError {
+                    code: ERR_COMMAND_FAILED,
+                    message: e.to_string(),
+                    data: None,
+                })?;
+
+            // Parse sacct output
+            // Format: JobID|State|ExitCode|Elapsed
+            let mut found_jobs: Vec<CompletedJob> = Vec::new();
+            let mut pending_count = 0usize;
+
+            for line in output.stdout.lines() {
+                let parts: Vec<&str> = line.split('|').collect();
+                if parts.len() >= 4 {
+                    let job_id = parts[0].trim();
+                    let state = parts[1].trim();
+                    let exit_code = parts[2].trim();
+                    let elapsed = parts[3].trim();
+
+                    // Skip .batch and .extern entries
+                    if job_id.contains(".batch") || job_id.contains(".extern") {
+                        continue;
+                    }
+
+                    if commands::is_terminal_state(state) {
+                        found_jobs.push(CompletedJob {
+                            job_id: job_id.to_string(),
+                            state: state.to_string(),
+                            exit_code: exit_code.to_string(),
+                            elapsed: elapsed.to_string(),
+                        });
+                    } else {
+                        pending_count += 1;
+                    }
+                }
+            }
+
+            // Update completed jobs
+            for job in &found_jobs {
+                if !completed_jobs.iter().any(|j| j.job_id == job.job_id) {
+                    completed_jobs.push(job.clone());
+                }
+            }
+
+            // Check completion based on mode
+            match &request.array_mode {
+                ArrayWaitMode::Any => {
+                    if !completed_jobs.is_empty() {
+                        return Ok(commands::JobWaitResponse {
+                            job_id: request.job_id.clone(),
+                            completed_jobs,
+                            all_completed: pending_count == 0,
+                            wait_time_secs: start.elapsed().as_secs(),
+                        });
+                    }
+                }
+                ArrayWaitMode::All => {
+                    if pending_count == 0 && !completed_jobs.is_empty() {
+                        return Ok(commands::JobWaitResponse {
+                            job_id: request.job_id.clone(),
+                            completed_jobs,
+                            all_completed: true,
+                            wait_time_secs: start.elapsed().as_secs(),
+                        });
+                    }
+                }
+                ArrayWaitMode::Index(idx) => {
+                    let target_id = format!("{}_{}", base_job_id, idx);
+                    if let Some(job) = completed_jobs.iter().find(|j| j.job_id == target_id) {
+                        return Ok(commands::JobWaitResponse {
+                            job_id: request.job_id.clone(),
+                            completed_jobs: vec![job.clone()],
+                            all_completed: true,
+                            wait_time_secs: start.elapsed().as_secs(),
+                        });
+                    }
+                }
+            }
+        }
+    }
 }

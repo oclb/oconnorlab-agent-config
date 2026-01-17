@@ -215,6 +215,41 @@ remote-bridge rpc o2 sacct '{"user":"ljo8","start_time":"now-1day"}'
 remote-bridge rpc o2 sacct '{"job_ids":["12345678"]}'
 ```
 
+### Wait for Job Completion (job_wait)
+
+Polls until job completes, with increasing intervals (0s, 5s, 10s, 15s, ... up to 60s).
+
+```bash
+# Wait for a single job
+remote-bridge rpc o2 job_wait '{"job_id":"12345678"}'
+
+# Job array: wait for ANY task to complete (default)
+remote-bridge rpc o2 job_wait '{"job_id":"12345678","array_mode":"any"}'
+
+# Job array: wait for ALL tasks to complete
+remote-bridge rpc o2 job_wait '{"job_id":"12345678","array_mode":"all"}'
+
+# Job array: wait for specific index (e.g., task 5)
+remote-bridge rpc o2 job_wait '{"job_id":"12345678","array_mode":{"index":5}}'
+
+# Custom timeout (default: 86400 = 24 hours)
+remote-bridge rpc o2 job_wait '{"job_id":"12345678","max_wait_secs":3600}'
+```
+
+Response includes exit status for completed jobs:
+```json
+{
+  "job_id": "12345678",
+  "completed_jobs": [
+    {"job_id": "12345678_1", "state": "COMPLETED", "exit_code": "0:0", "elapsed": "00:05:32"}
+  ],
+  "all_completed": false,
+  "wait_time_secs": 45
+}
+```
+
+**Use with background tasks:** Run `job_wait` as a background Bash command. Claude will be notified when the job completes.
+
 ## Git-Based Job Submission Workflow
 
 This workflow enables Claude to create and submit SLURM jobs:
@@ -280,3 +315,4 @@ The requested path isn't in the user's permission config. Ask user to:
 | Git pull | `remote-bridge rpc o2 git_pull '{"path":"..."}'` |
 | Submit job | `remote-bridge rpc o2 sbatch '{"script_path":"..."}'` |
 | Check queue | `remote-bridge rpc o2 squeue '{"user":"..."}'` |
+| Wait for job | `remote-bridge rpc o2 job_wait '{"job_id":"..."}'` |
