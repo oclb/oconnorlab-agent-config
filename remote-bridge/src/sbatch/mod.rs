@@ -283,12 +283,23 @@ fn generate_script_content(
         writeln!(script, "#SBATCH --array={}", array).unwrap();
     }
 
+    // Output file - use scripts_dir as default location
     if let Some(output) = &request.output {
         writeln!(script, "#SBATCH --output={}", output).unwrap();
+    } else if let Some(scripts_dir) = &singularity.scripts_dir {
+        // Trim trailing slash to avoid double-slash
+        let dir = scripts_dir.display().to_string();
+        let dir = dir.trim_end_matches('/');
+        writeln!(script, "#SBATCH --output={}/{}.out", dir, "%j").unwrap();
     }
 
+    // Error file - use scripts_dir as default location
     if let Some(error) = &request.error {
         writeln!(script, "#SBATCH --error={}", error).unwrap();
+    } else if let Some(scripts_dir) = &singularity.scripts_dir {
+        let dir = scripts_dir.display().to_string();
+        let dir = dir.trim_end_matches('/');
+        writeln!(script, "#SBATCH --error={}/{}.err", dir, "%j").unwrap();
     }
 
     // Extra directives
@@ -312,9 +323,11 @@ fn generate_script_content(
     }
     writeln!(script).unwrap();
 
-    // Load singularity module
-    writeln!(script, "module load singularity").unwrap();
-    writeln!(script).unwrap();
+    // Load singularity module (if specified)
+    if !singularity.module_name.is_empty() {
+        writeln!(script, "module load {}", singularity.module_name).unwrap();
+        writeln!(script).unwrap();
+    }
 
     // Set singularity cache directory if configured
     if let Some(cache_dir) = &singularity.cache_dir {
@@ -410,6 +423,7 @@ mod tests {
                 scripts_dir: Some(PathBuf::from("/scratch/scripts/")),
                 cache_dir: Some(PathBuf::from("/scratch/.singularity")),
                 extra_binds: vec!["/n/app:ro".to_string()],
+                module_name: "singularity/3.10.3".to_string(),
             },
         }
     }

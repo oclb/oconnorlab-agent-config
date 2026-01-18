@@ -71,6 +71,14 @@ pub struct SingularityConfig {
     /// Additional bind mounts (format: "path:mode" or "host:container:mode")
     #[serde(default)]
     pub extra_binds: Vec<String>,
+    /// Singularity module name to load (e.g., "singularity/3.10.3")
+    #[serde(default = "default_singularity_module")]
+    pub module_name: String,
+}
+
+fn default_singularity_module() -> String {
+    // Empty = don't load any module (apptainer usually available by default)
+    String::new()
 }
 
 impl PermissionConfig {
