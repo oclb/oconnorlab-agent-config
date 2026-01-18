@@ -23,13 +23,13 @@ fn test_config() -> PermissionConfig {
             ],
             write: vec![PathBuf::from("/data/output/")],
         },
-        resources: ResourceLimits {
+        resources: Some(ResourceLimits {
             max_cpus: 32,
             max_memory_gb: 128,
             max_time_hours: 120,
             max_gpus: 2,
             max_array_size: 1000,
-        },
+        }),
         containers: ContainerConfig::default(),
         modules: ModuleConfig::default(),
         singularity: SingularityConfig::default(),
@@ -117,8 +117,8 @@ fn test_params_serialization() {
 fn test_config_creation() {
     let config = test_config();
 
-    assert_eq!(config.resources.max_cpus, 32);
-    assert_eq!(config.resources.max_memory_gb, 128);
+    assert_eq!(config.resources.as_ref().unwrap().max_cpus, 32);
+    assert_eq!(config.resources.as_ref().unwrap().max_memory_gb, 128);
     assert!(config.paths.read.contains(&PathBuf::from("/data/input/")));
     assert!(config.paths.write.contains(&PathBuf::from("/data/output/")));
 }

@@ -164,12 +164,16 @@ fn parse_bind_spec(spec: &str) -> Option<BindMount> {
     }
 }
 
-/// Validate resource limits against config
+/// Validate resource limits against config (if limits are configured)
 fn validate_resources(
     request: &SandboxedSbatchRequest,
     config: &PermissionConfig,
 ) -> Result<(), ScriptError> {
-    let limits = &config.resources;
+    // If no resource limits configured, let O2 handle enforcement
+    let limits = match &config.resources {
+        Some(limits) => limits,
+        None => return Ok(()),
+    };
 
     if request.cpus > limits.max_cpus {
         return Err(ScriptError::ResourceLimitExceeded(format!(
@@ -226,12 +230,15 @@ fn validate_array_spec(spec: &str, config: &PermissionConfig) -> Result<(), Scri
             .parse()
             .map_err(|_| ScriptError::InvalidArraySpec(spec.to_string()))?;
 
-        let array_size = end - start + 1;
-        if array_size > config.resources.max_array_size {
-            return Err(ScriptError::ResourceLimitExceeded(format!(
-                "Array size {} exceeds max {}",
-                array_size, config.resources.max_array_size
-            )));
+        // Only check array size limit if resources are configured
+        if let Some(limits) = &config.resources {
+            let array_size = end - start + 1;
+            if array_size > limits.max_array_size {
+                return Err(ScriptError::ResourceLimitExceeded(format!(
+                    "Array size {} exceeds max {}",
+                    array_size, limits.max_array_size
+                )));
+            }
         }
     }
 
@@ -389,13 +396,13 @@ mod tests {
                 ],
                 write: vec![PathBuf::from("/data/output/")],
             },
-            resources: ResourceLimits {
+            resources: Some(ResourceLimits {
                 max_cpus: 32,
                 max_memory_gb: 128,
                 max_time_hours: 120,
                 max_gpus: 2,
                 max_array_size: 1000,
-            },
+            }),
             containers: ContainerConfig::default(),
             modules: ModuleConfig::default(),
             singularity: SingularityConfig {

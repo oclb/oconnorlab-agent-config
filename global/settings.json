@@ -3,6 +3,8 @@
     "allow": [
       "Read(~/.claude/behavior.conf)",
       "Edit(~/.claude/behavior.conf)",
+      "Bash(remote-bridge *)",
+      "Bash(*remote-bridge/target/release/remote-bridge *)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:harvardmed.atlassian.net)",
       "WebFetch(domain:docs.astral.sh)",

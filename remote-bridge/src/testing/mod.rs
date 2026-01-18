@@ -29,13 +29,13 @@ pub fn test_config() -> PermissionConfig {
                 PathBuf::from("/scratch/"),
             ],
         },
-        resources: ResourceLimits {
+        resources: Some(ResourceLimits {
             max_cpus: 32,
             max_memory_gb: 128,
             max_time_hours: 120,
             max_gpus: 2,
             max_array_size: 1000,
-        },
+        }),
         containers: ContainerConfig::default(),
         modules: ModuleConfig::default(),
         singularity: SingularityConfig {
@@ -47,20 +47,14 @@ pub fn test_config() -> PermissionConfig {
     }
 }
 
-/// Create a minimal test config (no singularity)
+/// Create a minimal test config (no singularity, no resource limits)
 pub fn minimal_config() -> PermissionConfig {
     PermissionConfig {
         paths: PathPermissions {
             read: vec![PathBuf::from("/data/")],
             write: vec![PathBuf::from("/data/output/")],
         },
-        resources: ResourceLimits {
-            max_cpus: 8,
-            max_memory_gb: 32,
-            max_time_hours: 24,
-            max_gpus: 0,
-            max_array_size: 100,
-        },
+        resources: None,  // Let O2 handle resource limits
         containers: ContainerConfig::default(),
         modules: ModuleConfig::default(),
         singularity: SingularityConfig::default(),

@@ -159,7 +159,7 @@ impl PathValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{PathPermissions, PermissionConfig, ResourceLimits};
+    use crate::config::{PathPermissions, PermissionConfig};
 
     fn test_config() -> PermissionConfig {
         PermissionConfig {
@@ -167,13 +167,7 @@ mod tests {
                 read: vec![PathBuf::from("/data/lab/"), PathBuf::from("/scratch/")],
                 write: vec![PathBuf::from("/data/lab/projects/")],
             },
-            resources: ResourceLimits {
-                max_cpus: 8,
-                max_memory_gb: 32,
-                max_time_hours: 24,
-                max_gpus: 0,
-                max_array_size: 100,
-            },
+            resources: None,  // No resource limits
             containers: Default::default(),
             modules: Default::default(),
             singularity: Default::default(),

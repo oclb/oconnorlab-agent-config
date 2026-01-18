@@ -48,8 +48,20 @@ O2 has several partitions with different purposes and limits:
 | `long` | Jobs >5 days | 30 days | 20 | Requires RC access |
 | `interactive` | Interactive work | 12 hours | 20 | 1-2 concurrent, for debugging/testing |
 | `highmem` | Memory >200GB | Varies | Varies | Memory-intensive jobs |
-| `gpu` | GPU computation | Varies | Varies | CUDA/GPU workloads |
+| `gpu` | GPU jobs (limited) | 100h/GPU | 2 GPUs | Subject to GPU-hour limits |
+| `gpu_quad` | GPU jobs (flexible) | 120 hours | Varies | **No GPU-hour limits** - preferred for GPU work |
+| `gpu_requeue` | Preemptable GPU | Varies | Varies | Lower priority, can be preempted |
 | `mpi` | Multi-node MPI | Varies | >20 | Distributed parallel jobs |
+
+### GPU Partitions Detail
+
+| Partition | GPU Limits | Time Limits | Best For |
+|-----------|-----------|-------------|----------|
+| `gpu` | 2 GPUs for 100h OR 20 GPUs for 10h (GPU-hours capped) | Varies by allocation | Short GPU jobs |
+| `gpu_quad` | No GPU-hour limit; 120h max with 1 GPU | Up to 120h | **Long training runs, preferred** |
+| `gpu_requeue` | No GPU-hour limit | Varies | Interruptible workloads |
+
+**gpu_quad hardware:** 140 GPUs including RTX 8000 (48GB), A40 (48GB), L40S (48GB), V100 (32GB), A100 (80GB).
 
 **Decision guide:**
 ```
@@ -58,7 +70,8 @@ Runtime <12 hours? → short
 Runtime 12h-5 days? → medium
 Runtime >5 days? → long (need access)
 Memory >200GB? → highmem
-Need GPU? → gpu
+Need GPU (long runs)? → gpu_quad (no hour limits!)
+Need GPU (short jobs)? → gpu or gpu_quad
 Need >20 cores (MPI)? → mpi
 Interactive debugging? → interactive
 ```
@@ -137,15 +150,15 @@ python process_one_file.py --input ${INPUT_FILE}
 ### GPU Job
 ```bash
 #!/bin/bash
-#SBATCH -p gpu
-#SBATCH -t 1-00:00
+#SBATCH -p gpu_quad           # Preferred - no GPU-hour limits
+#SBATCH -t 2-00:00            # Up to 5 days with 1 GPU
 #SBATCH -c 4
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1
 #SBATCH -o %j.out
 #SBATCH -e %j.err
 
-module load cuda/11.7
+module load cuda/12.1
 python train_model.py
 ```
 

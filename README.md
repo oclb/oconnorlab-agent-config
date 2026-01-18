@@ -66,9 +66,7 @@ Claude Code requires configuration files to be found at specific locations. This
 ### Remote O2 Access
 Use the `/remote-o2` skill to access the O2 cluster from your local machine. The first time you run `/remote-o2`, Claude will guide you through setup (SSH configuration, connection scripts), then execute commands on O2, submit SLURM jobs, and monitor progress.
 
-**Note:** Off-campus, every interaction between Claude and O2 triggers a Duo push which you must approve. Connect to the harvard-secure wifi or ethernet to avoid this.
 
-**Danger:** Currently, Claude accesses O2 with all of the same permissions that you have. A sandboxing feature is planned. For now, you must be careful that Claude does not accidentally (or intentionally, though this is unlikely) cause harm to the group's data. Data stored on the group drive is backed up via daily snapshots, but these snapshots only persist for a short period of time, so any incident should be reported right away. 
 
 ### Notifications
 Notification hooks are triggered when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop. Setup scripts automatically configure your shell with:

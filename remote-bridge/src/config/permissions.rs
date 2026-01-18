@@ -8,7 +8,8 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PermissionConfig {
     pub paths: PathPermissions,
-    pub resources: ResourceLimits,
+    #[serde(default)]
+    pub resources: Option<ResourceLimits>,
     #[serde(default)]
     pub containers: ContainerConfig,
     #[serde(default)]
@@ -101,15 +102,17 @@ impl PermissionConfig {
             }
         }
 
-        // Validate resource limits are reasonable
-        if self.resources.max_cpus == 0 {
-            return Err(ConfigError::Validation("max_cpus must be > 0".to_string()));
-        }
-        if self.resources.max_memory_gb == 0 {
-            return Err(ConfigError::Validation("max_memory_gb must be > 0".to_string()));
-        }
-        if self.resources.max_time_hours == 0 {
-            return Err(ConfigError::Validation("max_time_hours must be > 0".to_string()));
+        // Validate resource limits if specified
+        if let Some(ref resources) = self.resources {
+            if resources.max_cpus == 0 {
+                return Err(ConfigError::Validation("max_cpus must be > 0".to_string()));
+            }
+            if resources.max_memory_gb == 0 {
+                return Err(ConfigError::Validation("max_memory_gb must be > 0".to_string()));
+            }
+            if resources.max_time_hours == 0 {
+                return Err(ConfigError::Validation("max_time_hours must be > 0".to_string()));
+            }
         }
 
         Ok(())
@@ -134,8 +137,12 @@ impl PermissionConfig {
         })
     }
 
-    /// Check if a module is allowed
+    /// Check if a module is allowed (empty list = allow all)
     pub fn is_module_allowed(&self, module: &str) -> bool {
+        // Empty allowed list means all modules are allowed
+        if self.modules.allowed.is_empty() {
+            return true;
+        }
         self.modules.allowed.iter().any(|m| m == module)
     }
 }
@@ -168,7 +175,7 @@ allowed = ["gcc/9.2.0", "python/3.9.14"]
 
         let config: PermissionConfig = toml::from_str(toml).unwrap();
         assert_eq!(config.paths.read.len(), 2);
-        assert_eq!(config.resources.max_cpus, 32);
+        assert_eq!(config.resources.as_ref().unwrap().max_cpus, 32);
         assert_eq!(config.containers.allowed.len(), 1);
         assert_eq!(config.modules.allowed.len(), 2);
     }
@@ -180,13 +187,7 @@ allowed = ["gcc/9.2.0", "python/3.9.14"]
                 read: vec![PathBuf::from("/data/lab/")],
                 write: vec![PathBuf::from("/data/lab/projects/")],
             },
-            resources: ResourceLimits {
-                max_cpus: 8,
-                max_memory_gb: 32,
-                max_time_hours: 24,
-                max_gpus: 0,
-                max_array_size: 100,
-            },
+            resources: None,  // No resource limits
             containers: ContainerConfig::default(),
             modules: ModuleConfig::default(),
             singularity: SingularityConfig::default(),
