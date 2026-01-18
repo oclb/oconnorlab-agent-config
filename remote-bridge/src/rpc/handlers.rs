@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use crate::commands::{self, PathValidator};
 use crate::config::PermissionConfig;
 use crate::rpc::types::{ConnectionStatus, RpcError, ERR_COMMAND_FAILED, ERR_FILE_TOO_LARGE, ERR_INVALID_REGEX, ERR_PERMISSION_DENIED, ERR_CONFIG_ERROR};
@@ -436,8 +437,6 @@ impl RpcState {
         &self,
         request: commands::DownloadRequest,
     ) -> Result<commands::DownloadResponse, RpcError> {
-        use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
-
         let start = Instant::now();
 
         // Validate path
@@ -918,12 +917,11 @@ impl RpcState {
                 data: None,
             })?;
 
-        // Write script to remote using heredoc
-        // Escape any single quotes in the script content
-        let escaped_content = generated.content.replace('\'', "'\"'\"'");
+        // Write script to remote using base64 (more reliable than heredoc over PTY)
+        let encoded = BASE64.encode(generated.content.as_bytes());
         let write_cmd = format!(
-            "cat > '{}' << 'REMOTE_BRIDGE_EOF'\n{}\nREMOTE_BRIDGE_EOF",
-            script_path_str, escaped_content
+            "echo '{}' | base64 -d > '{}'",
+            encoded, script_path_str
         );
 
         self.ssh
