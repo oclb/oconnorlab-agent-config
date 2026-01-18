@@ -13,6 +13,8 @@ pub struct PermissionConfig {
     pub containers: ContainerConfig,
     #[serde(default)]
     pub modules: ModuleConfig,
+    #[serde(default)]
+    pub singularity: SingularityConfig,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -55,6 +57,19 @@ pub struct ContainerSpec {
 pub struct ModuleConfig {
     #[serde(default)]
     pub allowed: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct SingularityConfig {
+    /// Default container image (path to .sif or docker:// URI)
+    pub default_image: Option<String>,
+    /// Directory where generated sbatch scripts are written
+    pub scripts_dir: Option<PathBuf>,
+    /// Singularity cache directory
+    pub cache_dir: Option<PathBuf>,
+    /// Additional bind mounts (format: "path:mode" or "host:container:mode")
+    #[serde(default)]
+    pub extra_binds: Vec<String>,
 }
 
 impl PermissionConfig {
@@ -174,6 +189,7 @@ allowed = ["gcc/9.2.0", "python/3.9.14"]
             },
             containers: ContainerConfig::default(),
             modules: ModuleConfig::default(),
+            singularity: SingularityConfig::default(),
         };
 
         assert!(config.is_read_allowed(Path::new("/data/lab/file.txt")));

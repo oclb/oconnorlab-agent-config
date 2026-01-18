@@ -61,3 +61,24 @@ allowed = [
     "cuda/11.7",
     "cuda/12.1",
 ]
+
+[singularity]
+# Singularity configuration for sandboxed job execution
+#
+# Default container image (optional)
+# If set, jobs without an explicit image will use this one
+# Can be a path to a .sif file or a docker:// URI
+default_image = "/n/app/containers/users/ljo8/python-science.sif"
+
+# Directory where generated sbatch scripts are written (must be in paths.write)
+scripts_dir = "/n/scratch/users/l/ljo8/claude-tmp/scripts/"
+
+# Singularity cache directory (for pulling images)
+cache_dir = "/n/scratch/users/l/ljo8/.singularity/cache"
+
+# Additional bind mounts that are always included (beyond paths.read/write)
+# Format: "host_path:container_path:mode" where mode is "ro" or "rw"
+# These are useful for system paths that jobs commonly need
+extra_binds = [
+    "/n/app:ro",  # O2 applications (short form: path:mode, container path = host path)
+]

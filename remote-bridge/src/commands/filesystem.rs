@@ -237,6 +237,127 @@ pub fn parse_grep_output(output: &str, with_line_numbers: bool) -> Vec<GrepMatch
     matches
 }
 
+/// Maximum file size for download (1 MB)
+pub const MAX_DOWNLOAD_SIZE: u64 = 1024 * 1024;
+
+/// Request for download command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DownloadRequest {
+    pub path: String,
+}
+
+/// Response from download command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadResponse {
+    pub path: String,
+    pub content: String,       // base64-encoded
+    pub size_bytes: u64,
+    pub duration_ms: u64,
+}
+
+/// Error when file is too large for download
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadTooLargeError {
+    pub path: String,
+    pub size_bytes: u64,
+    pub max_bytes: u64,
+    pub scp_command: String,
+}
+
+/// Flags for find command
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FindType {
+    File,       // -type f
+    Directory,  // -type d
+    Symlink,    // -type l
+}
+
+impl FindType {
+    pub fn to_arg(&self) -> &'static str {
+        match self {
+            FindType::File => "f",
+            FindType::Directory => "d",
+            FindType::Symlink => "l",
+        }
+    }
+}
+
+/// Request for find command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FindRequest {
+    pub path: String,
+    /// Name pattern (e.g., "*.py")
+    pub name: Option<String>,
+    /// File type filter
+    pub file_type: Option<FindType>,
+    /// Max depth to search
+    pub max_depth: Option<u32>,
+    /// Max results to return
+    #[serde(default = "default_find_limit")]
+    pub limit: usize,
+}
+
+fn default_find_limit() -> usize {
+    1000
+}
+
+/// Response from find command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindResponse {
+    pub files: Vec<String>,
+    pub total_found: usize,
+    pub truncated: bool,
+    pub duration_ms: u64,
+}
+
+/// Request for wc command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WcRequest {
+    pub path: String,
+    /// Count lines only (-l)
+    #[serde(default)]
+    pub lines_only: bool,
+    /// Count words only (-w)
+    #[serde(default)]
+    pub words_only: bool,
+    /// Count bytes only (-c)
+    #[serde(default)]
+    pub bytes_only: bool,
+}
+
+/// Response from wc command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WcResponse {
+    pub path: String,
+    pub lines: Option<u64>,
+    pub words: Option<u64>,
+    pub bytes: Option<u64>,
+    pub duration_ms: u64,
+}
+
+/// Request for head command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HeadRequest {
+    pub path: String,
+    /// Number of lines (default 10)
+    #[serde(default = "default_head_lines")]
+    pub lines: usize,
+}
+
+fn default_head_lines() -> usize {
+    10
+}
+
+/// Response from head command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HeadResponse {
+    pub path: String,
+    pub content: String,
+    pub lines_returned: usize,
+    pub duration_ms: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

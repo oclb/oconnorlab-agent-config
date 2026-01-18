@@ -177,6 +177,108 @@ Search files for pattern.
 
 Flags: `IgnoreCase`, `Recursive`, `LineNumbers`, `InvertMatch`, `WordMatch`, `CountOnly`, `FilesWithMatches`
 
+### head
+
+Get first N lines of a file (simpler than cat with head option).
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "head",
+  "params": {
+    "path": "/n/data1/.../file.txt",
+    "lines": 20
+  },
+  "id": 5
+}
+```
+
+Options: `lines` (default: 10)
+
+### wc
+
+Count lines, words, and bytes in a file.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "wc",
+  "params": {
+    "path": "/n/data1/.../file.txt",
+    "lines_only": true
+  },
+  "id": 6
+}
+```
+
+Options: `lines_only`, `words_only`, `bytes_only` (all default false, returns all three)
+
+### find
+
+Search for files by name pattern.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "find",
+  "params": {
+    "path": "/n/data1/.../project",
+    "name": "*.py",
+    "file_type": "file",
+    "max_depth": 3,
+    "limit": 100
+  },
+  "id": 7
+}
+```
+
+Options:
+- `name`: Glob pattern (e.g., "*.py", "test_*")
+- `file_type`: `"file"`, `"directory"`, or `"symlink"`
+- `max_depth`: Maximum directory depth to search
+- `limit`: Max results to return (default: 1000)
+
+### download
+
+Download a file from remote (max 1MB). For larger files, use the transfer node.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "download",
+  "params": {
+    "path": "/n/data1/.../results.txt"
+  },
+  "id": 8
+}
+```
+
+Response includes base64-encoded content:
+```json
+{
+  "path": "/n/data1/.../results.txt",
+  "content": "SGVsbG8gV29ybGQK...",
+  "size_bytes": 1234,
+  "duration_ms": 150
+}
+```
+
+**If file is too large**, returns an error with scp command:
+```json
+{
+  "error": {
+    "code": -32008,
+    "message": "File too large for download (2000000 bytes, max 1048576 bytes). Use transfer node instead.",
+    "data": {
+      "path": "/n/data1/.../large_file.txt",
+      "size_bytes": 2000000,
+      "max_bytes": 1048576,
+      "scp_command": "scp user@transfer.rc.hms.harvard.edu:/n/data1/.../large_file.txt /local/destination/"
+    }
+  }
+}
+```
+
 ### git_pull
 
 Pull latest changes in a git repository.
@@ -249,6 +351,21 @@ Submit a SLURM batch job.
 ```
 
 Returns `job_id` of submitted job.
+
+### scancel
+
+Cancel one or more SLURM jobs.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "scancel",
+  "params": {
+    "job_ids": ["12345678", "12345679"]
+  },
+  "id": 10
+}
+```
 
 ### job_wait
 

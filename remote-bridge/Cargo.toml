@@ -36,6 +36,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Async utilities
 futures = "0.3"
+async-trait = "0.1"
 
 # Home directory
 dirs = "5"
@@ -45,6 +46,12 @@ ctrlc = "3"
 
 # UUID for sentinel markers
 uuid = { version = "1", features = ["v4"] }
+
+# Base64 encoding for file downloads
+base64 = "0.22"
+
+# Date/time handling
+chrono = "0.4"
 
 # PTY for proper terminal emulation during SSH auth
 portable-pty = "0.8"

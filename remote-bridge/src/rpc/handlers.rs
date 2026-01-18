@@ -2,20 +2,21 @@
 
 use crate::commands::{self, PathValidator};
 use crate::config::PermissionConfig;
-use crate::rpc::types::*;
-use crate::ssh::SshConnection;
+use crate::rpc::types::{ConnectionStatus, RpcError, ERR_COMMAND_FAILED, ERR_FILE_TOO_LARGE, ERR_INVALID_REGEX, ERR_PERMISSION_DENIED, ERR_CONFIG_ERROR};
+use crate::sbatch;
+use crate::ssh::RemoteExecutor;
 use std::sync::Arc;
 use std::time::Instant;
 
 /// Shared state for RPC handlers
 pub struct RpcState {
-    pub ssh: Arc<SshConnection>,
+    pub ssh: Arc<dyn RemoteExecutor>,
     pub config: Arc<PermissionConfig>,
     pub validator: Arc<PathValidator>,
 }
 
 impl RpcState {
-    pub fn new(ssh: Arc<SshConnection>, config: PermissionConfig) -> Self {
+    pub fn new(ssh: Arc<dyn RemoteExecutor>, config: PermissionConfig) -> Self {
         let validator = PathValidator::new(config.clone());
         Self {
             ssh,
@@ -430,6 +431,314 @@ impl RpcState {
         })
     }
 
+    /// Execute download command - fetches file content with size limit
+    pub async fn download(
+        &self,
+        request: commands::DownloadRequest,
+    ) -> Result<commands::DownloadResponse, RpcError> {
+        use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+
+        let start = Instant::now();
+
+        // Validate path
+        let validated = self
+            .validator
+            .validate_read_path(&request.path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Check file size first
+        let size_cmd = format!("stat -c%s '{}' 2>/dev/null || stat -f%z '{}'",
+            validated.as_str(), validated.as_str());
+        let size_output = self
+            .ssh
+            .execute(&size_cmd, 10)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let size_bytes: u64 = size_output
+            .stdout
+            .trim()
+            .parse()
+            .map_err(|_| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("Could not determine file size: {}", size_output.stdout),
+                data: None,
+            })?;
+
+        // Check size limit
+        if size_bytes > commands::MAX_DOWNLOAD_SIZE {
+            let scp_cmd = format!(
+                "scp {}@transfer.rc.hms.harvard.edu:{} /local/destination/",
+                self.ssh.user(),
+                validated.as_str()
+            );
+            return Err(RpcError {
+                code: ERR_FILE_TOO_LARGE,
+                message: format!(
+                    "File too large for download ({} bytes, max {} bytes). Use transfer node instead.",
+                    size_bytes, commands::MAX_DOWNLOAD_SIZE
+                ),
+                data: Some(serde_json::to_value(commands::DownloadTooLargeError {
+                    path: validated.to_string(),
+                    size_bytes,
+                    max_bytes: commands::MAX_DOWNLOAD_SIZE,
+                    scp_command: scp_cmd,
+                }).unwrap()),
+            });
+        }
+
+        // Read file and base64 encode on remote (more efficient)
+        let cmd = format!("base64 '{}'", validated.as_str());
+        let output = self
+            .ssh
+            .execute(&cmd, 60)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Verify the base64 decodes properly (sanity check)
+        let content = output.stdout.replace('\n', "").replace('\r', "");
+        if BASE64.decode(&content).is_err() {
+            return Err(RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: "Failed to encode file content".to_string(),
+                data: None,
+            });
+        }
+
+        Ok(commands::DownloadResponse {
+            path: validated.to_string(),
+            content,
+            size_bytes,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute find command
+    pub async fn find(
+        &self,
+        request: commands::FindRequest,
+    ) -> Result<commands::FindResponse, RpcError> {
+        let start = Instant::now();
+
+        // Validate path
+        let validated = self
+            .validator
+            .validate_read_path(&request.path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Build find command
+        let mut cmd = format!("find '{}'", validated.as_str());
+
+        if let Some(depth) = request.max_depth {
+            cmd.push_str(&format!(" -maxdepth {}", depth));
+        }
+
+        if let Some(ref file_type) = request.file_type {
+            cmd.push_str(&format!(" -type {}", file_type.to_arg()));
+        }
+
+        if let Some(ref name) = request.name {
+            // Escape the name pattern for shell
+            let escaped = name.replace("'", "'\"'\"'");
+            cmd.push_str(&format!(" -name '{}'", escaped));
+        }
+
+        // Limit results
+        cmd.push_str(&format!(" 2>/dev/null | head -n {}", request.limit + 1));
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&cmd, 120)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let mut files: Vec<String> = output
+            .stdout
+            .lines()
+            .filter(|l| !l.is_empty())
+            .map(|l| l.to_string())
+            .collect();
+
+        let truncated = files.len() > request.limit;
+        if truncated {
+            files.truncate(request.limit);
+        }
+
+        let total_found = files.len();
+
+        Ok(commands::FindResponse {
+            files,
+            total_found,
+            truncated,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute wc command
+    pub async fn wc(
+        &self,
+        request: commands::WcRequest,
+    ) -> Result<commands::WcResponse, RpcError> {
+        let start = Instant::now();
+
+        // Validate path
+        let validated = self
+            .validator
+            .validate_read_path(&request.path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Build wc command
+        let flag = if request.lines_only {
+            "-l"
+        } else if request.words_only {
+            "-w"
+        } else if request.bytes_only {
+            "-c"
+        } else {
+            "" // Return all three
+        };
+
+        let cmd = format!("wc {} '{}'", flag, validated.as_str());
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&cmd, 60)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        // Parse wc output
+        let parts: Vec<&str> = output.stdout.trim().split_whitespace().collect();
+
+        let (lines, words, bytes) = if request.lines_only {
+            (parts.first().and_then(|s| s.parse().ok()), None, None)
+        } else if request.words_only {
+            (None, parts.first().and_then(|s| s.parse().ok()), None)
+        } else if request.bytes_only {
+            (None, None, parts.first().and_then(|s| s.parse().ok()))
+        } else {
+            // Full output: lines words bytes filename
+            (
+                parts.first().and_then(|s| s.parse().ok()),
+                parts.get(1).and_then(|s| s.parse().ok()),
+                parts.get(2).and_then(|s| s.parse().ok()),
+            )
+        };
+
+        Ok(commands::WcResponse {
+            path: validated.to_string(),
+            lines,
+            words,
+            bytes,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute head command
+    pub async fn head(
+        &self,
+        request: commands::HeadRequest,
+    ) -> Result<commands::HeadResponse, RpcError> {
+        let start = Instant::now();
+
+        // Validate path
+        let validated = self
+            .validator
+            .validate_read_path(&request.path)
+            .map_err(|e| RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let cmd = format!("head -n {} '{}'", request.lines, validated.as_str());
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&cmd, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        let lines_returned = output.stdout.lines().count();
+
+        Ok(commands::HeadResponse {
+            path: validated.to_string(),
+            content: output.stdout,
+            lines_returned,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
+    /// Execute scancel command
+    pub async fn scancel(
+        &self,
+        request: commands::ScancelRequest,
+    ) -> Result<commands::ScancelResponse, RpcError> {
+        let start = Instant::now();
+
+        if request.job_ids.is_empty() {
+            return Err(RpcError {
+                code: -32602,
+                message: "No job IDs provided".to_string(),
+                data: None,
+            });
+        }
+
+        // Build scancel command
+        let cmd = format!("scancel {}", request.job_ids.join(" "));
+
+        // Execute
+        let output = self
+            .ssh
+            .execute(&cmd, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
+
+        Ok(commands::ScancelResponse {
+            cancelled_jobs: request.job_ids.clone(),
+            output: output.stdout,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
+    }
+
     /// Wait for a job to complete, polling with increasing intervals
     pub async fn job_wait(
         &self,
@@ -552,5 +861,121 @@ impl RpcState {
                 }
             }
         }
+    }
+
+    /// Execute sandboxed sbatch command
+    ///
+    /// This generates an sbatch script that runs the command inside a Singularity
+    /// container with restricted bind mounts, writes it to the remote, and submits it.
+    pub async fn sandboxed_sbatch(
+        &self,
+        request: commands::SandboxedSbatchRequest,
+    ) -> Result<commands::SandboxedSbatchResponse, RpcError> {
+        let start = Instant::now();
+
+        // Generate the script
+        let generated = sbatch::generate_script(&request, &self.config).map_err(|e| RpcError {
+            code: ERR_CONFIG_ERROR,
+            message: e.to_string(),
+            data: None,
+        })?;
+
+        // Get scripts directory from config
+        let scripts_dir = self
+            .config
+            .singularity
+            .scripts_dir
+            .as_ref()
+            .ok_or_else(|| RpcError {
+                code: ERR_CONFIG_ERROR,
+                message: "Singularity scripts_dir not configured".to_string(),
+                data: None,
+            })?;
+
+        // Validate scripts_dir is writable
+        if !self.config.is_write_allowed(scripts_dir) {
+            return Err(RpcError {
+                code: ERR_PERMISSION_DENIED,
+                message: format!(
+                    "Scripts directory {} is not in allowed write paths",
+                    scripts_dir.display()
+                ),
+                data: None,
+            });
+        }
+
+        let script_path = scripts_dir.join(&generated.filename);
+        let script_path_str = script_path.to_string_lossy();
+
+        // Ensure scripts directory exists on remote
+        let mkdir_cmd = format!("mkdir -p '{}'", scripts_dir.display());
+        self.ssh
+            .execute(&mkdir_cmd, 10)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("Failed to create scripts directory: {}", e),
+                data: None,
+            })?;
+
+        // Write script to remote using heredoc
+        // Escape any single quotes in the script content
+        let escaped_content = generated.content.replace('\'', "'\"'\"'");
+        let write_cmd = format!(
+            "cat > '{}' << 'REMOTE_BRIDGE_EOF'\n{}\nREMOTE_BRIDGE_EOF",
+            script_path_str, escaped_content
+        );
+
+        self.ssh
+            .execute(&write_cmd, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("Failed to write script: {}", e),
+                data: None,
+            })?;
+
+        // Make script executable
+        let chmod_cmd = format!("chmod +x '{}'", script_path_str);
+        self.ssh
+            .execute(&chmod_cmd, 10)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("Failed to chmod script: {}", e),
+                data: None,
+            })?;
+
+        // Submit the job
+        let sbatch_cmd = format!("sbatch '{}'", script_path_str);
+        let output = self
+            .ssh
+            .execute(&sbatch_cmd, 30)
+            .await
+            .map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("sbatch failed: {}", e),
+                data: None,
+            })?;
+
+        // Parse job ID
+        let job_id = commands::parse_sbatch_output(&output.stdout).ok_or_else(|| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: format!("Failed to parse sbatch output: {}", output.stdout),
+            data: None,
+        })?;
+
+        Ok(commands::SandboxedSbatchResponse {
+            job_id,
+            script_path: script_path_str.to_string(),
+            script_content: if request.return_script {
+                Some(generated.content)
+            } else {
+                None
+            },
+            image_used: generated.image,
+            bind_mounts: generated.bind_mounts,
+            duration_ms: start.elapsed().as_millis() as u64,
+        })
     }
 }

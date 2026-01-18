@@ -2,7 +2,7 @@
 
 use crate::config::PermissionConfig;
 use crate::rpc::handlers::RpcState;
-use crate::ssh::SshConnection;
+use crate::ssh::RemoteExecutor;
 use crate::commands;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -68,7 +68,7 @@ impl JsonRpcResponse {
 pub async fn start_server(
     socket_path: PathBuf,
     config: PermissionConfig,
-    ssh: Arc<SshConnection>,
+    ssh: Arc<dyn RemoteExecutor>,
 ) -> Result<()> {
     // Remove stale socket if it exists
     if socket_path.exists() {
@@ -95,7 +95,7 @@ pub async fn start_server(
         info!("SSH not connected. Clients will receive connection instructions.");
     }
 
-    info!("RPC methods available: connection_status, ls, cat, grep, git_pull, squeue, sacct, sbatch, job_wait, shutdown");
+    info!("RPC methods available: connection_status, ls, cat, grep, head, wc, find, download, git_pull, squeue, sacct, sbatch, sandboxed_sbatch, scancel, job_wait, shutdown");
 
     // Accept connections
     loop {
@@ -225,6 +225,93 @@ async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcRe
             }
         }
 
+        "head" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::HeadRequest>(params) {
+                Ok(req) => match state.head(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "wc" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::WcRequest>(params) {
+                Ok(req) => match state.wc(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "find" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::FindRequest>(params) {
+                Ok(req) => match state.find(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "download" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::DownloadRequest>(params) {
+                Ok(req) => match state.download(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => {
+                        // Include data for file too large errors
+                        if let Some(data) = e.data {
+                            let mut response = JsonRpcResponse::error(id, e.code, e.message);
+                            if let Some(ref mut err) = response.error {
+                                err.data = Some(data);
+                            }
+                            response
+                        } else {
+                            JsonRpcResponse::error(id, e.code, e.message)
+                        }
+                    }
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
         "git_pull" => {
             let params = match request.params {
                 Some(p) => p,
@@ -291,6 +378,25 @@ async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcRe
             }
         }
 
+        "sandboxed_sbatch" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::SandboxedSbatchRequest>(params) {
+                Ok(req) => match state.sandboxed_sbatch(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
         "job_wait" => {
             let params = match request.params {
                 Some(p) => p,
@@ -301,6 +407,25 @@ async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcRe
 
             match serde_json::from_value::<commands::JobWaitRequest>(params) {
                 Ok(req) => match state.job_wait(req).await {
+                    Ok(result) => {
+                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
+                    }
+                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
+                },
+                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
+            }
+        }
+
+        "scancel" => {
+            let params = match request.params {
+                Some(p) => p,
+                None => {
+                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
+                }
+            };
+
+            match serde_json::from_value::<commands::ScancelRequest>(params) {
+                Ok(req) => match state.scancel(req).await {
                     Ok(result) => {
                         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
                     }

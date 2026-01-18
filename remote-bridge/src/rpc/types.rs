@@ -38,3 +38,5 @@ pub const ERR_INVALID_REGEX: i32 = -32004;
 pub const ERR_COMMAND_FAILED: i32 = -32005;
 pub const ERR_TIMEOUT: i32 = -32006;
 pub const ERR_VALIDATION: i32 = -32007;
+pub const ERR_FILE_TOO_LARGE: i32 = -32008;
+pub const ERR_CONFIG_ERROR: i32 = -32009;

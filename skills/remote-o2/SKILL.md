@@ -2,16 +2,18 @@
 name: remote-o2
 description: This skill should be used when the user asks to "submit to O2", "run on O2", "use the cluster", "submit a SLURM job", mentions O2 or compute cluster job submission, or when an analysis requires substantial computational resources (>16GB RAM, >4 hours runtime, or GPUs).
 user_invocable: true
-version: 2.1.0
+version: 2.4.0
 ---
 
 # Remote O2 Access Skill
 
 This skill enables Claude Code to access the O2 cluster remotely from a local machine via the `remote-bridge` application.
 
-## Key Benefit: Single Duo Push
+## Key Principles
 
-The bridge establishes a persistent SSH session with proper terminal emulation. You authenticate once (Duo push), then run unlimited commands through that session.
+1. **Use `sandboxed_sbatch` for job submission** - Jobs run in Singularity containers with restricted filesystem access. This is the secure, preferred method.
+2. **Single Duo Push** - The bridge maintains a persistent SSH session. Authenticate once, run unlimited commands.
+3. **Permission-Based Access** - All paths validated against user config before execution.
 
 ## When This Skill Applies
 
@@ -172,6 +174,64 @@ remote-bridge rpc o2 grep '{"pattern":"def main","paths":["/path/to/search/"],"f
 
 Available flags: `IgnoreCase`, `Recursive`, `LineNumbers`, `InvertMatch`, `WordMatch`, `CountOnly`, `FilesWithMatches`
 
+### Head (First N Lines)
+
+```bash
+remote-bridge rpc o2 head '{"path":"/path/to/file.txt","lines":20}'
+```
+
+Default: 10 lines. Simpler than cat with head option.
+
+### Word Count (wc)
+
+```bash
+# Get all counts (lines, words, bytes)
+remote-bridge rpc o2 wc '{"path":"/path/to/file.txt"}'
+
+# Lines only
+remote-bridge rpc o2 wc '{"path":"/path/to/file.txt","lines_only":true}'
+
+# Bytes only
+remote-bridge rpc o2 wc '{"path":"/path/to/file.txt","bytes_only":true}'
+```
+
+### Find Files
+
+```bash
+# Find Python files
+remote-bridge rpc o2 find '{"path":"/n/data1/.../project","name":"*.py"}'
+
+# Find with depth limit
+remote-bridge rpc o2 find '{"path":"/n/data1/...","name":"*.txt","max_depth":2}'
+
+# Find directories only
+remote-bridge rpc o2 find '{"path":"/n/data1/...","file_type":"directory"}'
+
+# Limit results
+remote-bridge rpc o2 find '{"path":"/n/data1/...","name":"*test*","limit":50}'
+```
+
+File types: `file`, `directory`, `symlink`
+
+### Download Small Files
+
+Download files up to 1MB. Content is base64-encoded.
+
+```bash
+remote-bridge rpc o2 download '{"path":"/n/data1/.../results.txt"}'
+```
+
+**For files >1MB:** The bridge will reject the request and provide an scp command to transfer via the transfer node. Tell the user:
+
+```
+This file is too large for download via the bridge (max 1MB).
+Please transfer it manually using the transfer node:
+
+scp USERNAME@transfer.rc.hms.harvard.edu:/n/data1/.../large_file.txt ~/Downloads/
+```
+
+**Why the limit?** Login nodes are not for large file transfers. The transfer node (`transfer.rc.hms.harvard.edu`) is designed for this purpose and won't affect other users.
+
 ### Git Pull
 
 ```bash
@@ -180,7 +240,9 @@ remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'
 
 Optional params: `remote` (default: "origin"), `branch` (default: current)
 
-### Submit Job (sbatch)
+### Submit Job (sbatch) - Use sandboxed_sbatch Instead
+
+> **Note:** Prefer `sandboxed_sbatch` (below) for security and validation. Use raw `sbatch` only for pre-existing scripts that must run exactly as written.
 
 ```bash
 remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'
@@ -189,6 +251,80 @@ remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'
 Optional: `working_dir` - directory to run sbatch from
 
 Response includes `job_id` of submitted job.
+
+### Submit Sandboxed Job (sandboxed_sbatch) - RECOMMENDED
+
+**This is the preferred method for job submission.** It generates an sbatch script that runs inside a Singularity container with restricted filesystem access.
+
+```bash
+remote-bridge rpc o2 sandboxed_sbatch '{
+  "job_name": "my-analysis",
+  "command": "python /n/data1/.../script.py",
+  "input_paths": ["/n/data1/.../input_data/"],
+  "output_paths": ["/n/scratch/users/u/username/results/"],
+  "cpus": 4,
+  "memory": {"amount": 16, "unit": "gb"},
+  "time": {"days": 0, "hours": 2, "minutes": 0},
+  "partition": "short"
+}'
+```
+
+**Required parameters:**
+- `job_name`: Name for the job
+- `command`: Command to run inside the container
+
+**Path parameters:**
+- `input_paths`: Directories to mount read-only (validated against config)
+- `output_paths`: Directories to mount read-write (validated against config)
+- `working_dir`: Working directory inside the container (must be in output_paths)
+- `output`: SLURM stdout file path (e.g., `/path/to/logs/%j.out`)
+- `error`: SLURM stderr file path (e.g., `/path/to/logs/%j.err`)
+
+**Resource parameters:**
+- `cpus`: Number of CPUs (default: 1)
+- `memory`: `{"amount": N, "unit": "mb"|"gb"|"tb"}`
+- `time`: `{"days": D, "hours": H, "minutes": M}`
+- `partition`: One of `priority`, `short`, `medium`, `long`, `interactive`, `highmem`, `gpu`, `mpi`
+- `gpu`: `{"count": N, "gpu_type": "tesla"|"v100"|"a100"}`
+- `array`: Array job spec (e.g., `"1-100"` or `"1-100%10"`)
+
+**Container parameters:**
+- `image`: Path to .sif file (optional if default configured in permissions.toml)
+
+**Other parameters:**
+- `environment`: `{"VAR": "value"}` - Environment variables to set
+- `extra_directives`: `{"mail-type": "END"}` - Additional SLURM directives
+- `return_script`: If true, response includes the generated script content
+
+**Response:**
+```json
+{
+  "job_id": "12345678",
+  "script_path": "/n/scratch/.../scripts/my-analysis_20260117_143022.sh",
+  "image_used": "/containers/python.sif",
+  "bind_mounts": [
+    {"host": "/n/data1/.../input_data/", "container": "/n/data1/.../input_data/", "mode": "ro"},
+    {"host": "/n/scratch/.../results/", "container": "/n/scratch/.../results/", "mode": "rw"}
+  ],
+  "duration_ms": 1234
+}
+```
+
+**Why use sandboxed_sbatch?**
+1. **Security**: The job can only access explicitly listed directories
+2. **Reproducibility**: Container ensures consistent environment
+3. **Validation**: Paths and resources are validated before submission
+4. **Audit trail**: Generated scripts are saved for review
+
+### Cancel Jobs (scancel)
+
+```bash
+# Cancel one job
+remote-bridge rpc o2 scancel '{"job_ids":["12345678"]}'
+
+# Cancel multiple jobs
+remote-bridge rpc o2 scancel '{"job_ids":["12345678","12345679"]}'
+```
 
 ### Check Queue (squeue)
 
@@ -214,6 +350,8 @@ remote-bridge rpc o2 sacct '{"user":"ljo8","start_time":"now-1day"}'
 # Specific job
 remote-bridge rpc o2 sacct '{"job_ids":["12345678"]}'
 ```
+
+Response includes resource usage: `max_rss` (peak memory), `max_vmem` (virtual memory), `n_cpus`, `n_tasks`, `elapsed` time. Use this to check if jobs are using appropriate resources.
 
 ### Wait for Job Completion (job_wait)
 
@@ -250,26 +388,44 @@ Response includes exit status for completed jobs:
 
 **Use with background tasks:** Run `job_wait` as a background Bash command. Claude will be notified when the job completes.
 
-## Git-Based Job Submission Workflow
+## Job Submission Strategy
 
-This workflow enables Claude to create and submit SLURM jobs:
+**Always prefer `sandboxed_sbatch`** for job submission. It provides security, validation, and audit trails.
 
-### One-Time Setup
+### When to Use Each Method
+
+| Method | Use Case |
+|--------|----------|
+| `sandboxed_sbatch` | **Default choice.** Running scripts, analyses, any compute job |
+| `sbatch` (raw) | Only when: pre-existing scripts need exact execution, or container not available |
+
+### sandboxed_sbatch Workflow (Recommended)
+
+1. **Identify inputs/outputs**: What data does the job read? Where does it write?
+2. **Submit directly**:
+   ```bash
+   remote-bridge rpc o2 sandboxed_sbatch '{
+     "job_name": "analysis-v1",
+     "command": "python /n/scratch/.../analyze.py --input /n/data1/.../data/",
+     "input_paths": ["/n/data1/.../data/"],
+     "output_paths": ["/n/scratch/.../results/"],
+     "cpus": 4,
+     "memory": {"amount": 32, "unit": "gb"},
+     "time": {"hours": 4}
+   }'
+   ```
+3. **Monitor**: `remote-bridge rpc o2 squeue '{"user":"..."}'`
+4. **Wait if needed**: `remote-bridge rpc o2 job_wait '{"job_id":"..."}'`
+
+### Git-Based Workflow (Alternative)
+
+Use when scripts need to be version-controlled on O2:
 
 1. User clones project repo on O2 (manually via SSH)
-2. User records O2 path in project `CLAUDE.md`:
-   ```markdown
-   ## O2 Paths
-   - O2 repo: /n/data1/hms/dbmi/.../project
-   ```
-
-### Workflow
-
-1. **Create sbatch script** locally in project
-2. **Commit and push** to git
-3. **Pull on O2**: `remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'`
-4. **Submit job**: `remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'`
-5. **Monitor**: `remote-bridge rpc o2 squeue '{"user":"..."}'`
+2. User records O2 path in project `CLAUDE.md`
+3. Create/edit scripts locally, commit and push
+4. Pull on O2: `remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'`
+5. Submit via `sandboxed_sbatch` with the script as the command
 
 See `/use-o2` skill for SLURM script templates and partition selection.
 
@@ -282,6 +438,46 @@ The bridge validates all paths against `~/.config/remote-bridge/permissions.toml
 - **No shell access**: Claude cannot run arbitrary commands
 
 If a request is denied, you'll receive an error response with "Path not allowed".
+
+## Singularity Configuration for sandboxed_sbatch
+
+To use `sandboxed_sbatch`, add a `[singularity]` section to permissions.toml:
+
+```toml
+[singularity]
+# Default container image (used if no image specified in request)
+default_image = "/n/app/containers/users/USERNAME/python-science.sif"
+
+# Directory where generated sbatch scripts are written
+# Must be within paths.write
+scripts_dir = "/n/scratch/users/u/USERNAME/claude-scripts/"
+
+# Singularity cache directory
+cache_dir = "/n/scratch/users/u/USERNAME/.singularity/cache"
+
+# Extra bind mounts always included (beyond input_paths/output_paths)
+extra_binds = [
+    "/n/app:ro",  # O2 applications (read-only)
+]
+```
+
+**Creating a container image:**
+
+Option 1 - Pull from Docker Hub (simplest):
+```bash
+# On O2 or locally
+module load singularity
+singularity pull python_3.11.sif docker://python:3.11
+```
+
+Option 2 - Build with definition file (more control):
+```bash
+# Requires root or fakeroot - build locally, then transfer to O2
+apptainer build python-science.sif my_environment.def
+scp python-science.sif USERNAME@transfer.rc.hms.harvard.edu:/n/app/containers/users/USERNAME/
+```
+
+See O2 documentation for Singularity details.
 
 ## Troubleshooting
 
@@ -311,8 +507,15 @@ The requested path isn't in the user's permission config. Ask user to:
 | Check status | `remote-bridge rpc o2 connection_status` |
 | List directory | `remote-bridge rpc o2 ls '{"path":"...","flags":["Long"]}'` |
 | Read file | `remote-bridge rpc o2 cat '{"path":"..."}'` |
+| First N lines | `remote-bridge rpc o2 head '{"path":"...","lines":20}'` |
+| Line count | `remote-bridge rpc o2 wc '{"path":"...","lines_only":true}'` |
 | Search files | `remote-bridge rpc o2 grep '{"pattern":"...","paths":["..."]}'` |
+| Find files | `remote-bridge rpc o2 find '{"path":"...","name":"*.py"}'` |
+| Download file | `remote-bridge rpc o2 download '{"path":"..."}'` |
 | Git pull | `remote-bridge rpc o2 git_pull '{"path":"..."}'` |
-| Submit job | `remote-bridge rpc o2 sbatch '{"script_path":"..."}'` |
+| Submit job (raw) | `remote-bridge rpc o2 sbatch '{"script_path":"..."}'` |
+| Submit job (sandboxed) | `remote-bridge rpc o2 sandboxed_sbatch '{"job_name":"...","command":"..."}'` |
+| Cancel job | `remote-bridge rpc o2 scancel '{"job_ids":["..."]}'` |
 | Check queue | `remote-bridge rpc o2 squeue '{"user":"..."}'` |
+| Job accounting | `remote-bridge rpc o2 sacct '{"job_ids":["..."]}'` |
 | Wait for job | `remote-bridge rpc o2 job_wait '{"job_id":"..."}'` |

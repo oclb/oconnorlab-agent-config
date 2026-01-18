@@ -176,6 +176,7 @@ mod tests {
             },
             containers: Default::default(),
             modules: Default::default(),
+            singularity: Default::default(),
         }
     }
 

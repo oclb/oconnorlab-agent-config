@@ -12,6 +12,9 @@ mod ssh;
 mod rpc;
 mod commands;
 mod error;
+mod sbatch;
+#[cfg(test)]
+mod testing;
 
 #[derive(Parser)]
 #[command(name = "remote-bridge")]

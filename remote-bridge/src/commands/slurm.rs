@@ -329,6 +329,21 @@ pub struct CompletedJob {
     pub elapsed: String,
 }
 
+/// Request for scancel command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScancelRequest {
+    /// Job IDs to cancel
+    pub job_ids: Vec<String>,
+}
+
+/// Response from scancel command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScancelResponse {
+    pub cancelled_jobs: Vec<String>,
+    pub output: String,
+    pub duration_ms: u64,
+}
+
 /// Check if a job state indicates completion
 pub fn is_terminal_state(state: &str) -> bool {
     matches!(
@@ -380,6 +395,127 @@ pub fn parse_sacct_output(output: &str) -> Vec<JobAccounting> {
     }
 
     jobs
+}
+
+// ============================================================================
+// Sandboxed sbatch types (Singularity-based execution)
+// ============================================================================
+
+/// Request for sandboxed sbatch command
+///
+/// This generates and submits an sbatch script that runs the command inside
+/// a Singularity container with restricted bind mounts for security.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SandboxedSbatchRequest {
+    /// Job name (--job-name)
+    pub job_name: String,
+
+    /// The command to run inside the container
+    /// Can be a script path or inline command
+    pub command: String,
+
+    /// Container image to use (path to .sif or docker:// URI)
+    /// If not specified, uses the default from singularity config
+    pub image: Option<String>,
+
+    /// Partition (--partition)
+    #[serde(default)]
+    pub partition: Option<Partition>,
+
+    /// Number of CPUs (--cpus-per-task)
+    #[serde(default = "default_cpus")]
+    pub cpus: u32,
+
+    /// Memory specification (--mem)
+    #[serde(default)]
+    pub memory: Option<MemorySpec>,
+
+    /// Time limit (--time)
+    #[serde(default)]
+    pub time: Option<TimeSpec>,
+
+    /// GPU specification (--gres)
+    #[serde(default)]
+    pub gpu: Option<GpuSpec>,
+
+    /// Array job specification (--array), e.g., "1-100" or "1-100%10"
+    #[serde(default)]
+    pub array: Option<String>,
+
+    /// Working directory inside the container (--chdir)
+    /// Must be within an allowed write path
+    #[serde(default)]
+    pub working_dir: Option<String>,
+
+    /// Output file path (--output)
+    /// Must be within an allowed write path
+    #[serde(default)]
+    pub output: Option<String>,
+
+    /// Error file path (--error)
+    /// Must be within an allowed write path
+    #[serde(default)]
+    pub error: Option<String>,
+
+    /// Input paths that will be bind-mounted as read-only
+    /// These are validated against paths.read in the config
+    #[serde(default)]
+    pub input_paths: Vec<String>,
+
+    /// Output paths that will be bind-mounted as read-write
+    /// These are validated against paths.write in the config
+    #[serde(default)]
+    pub output_paths: Vec<String>,
+
+    /// Environment variables to pass to the job
+    #[serde(default)]
+    pub environment: std::collections::HashMap<String, String>,
+
+    /// Additional SLURM directives (key-value pairs)
+    /// e.g., {"mail-type": "END", "mail-user": "user@example.com"}
+    #[serde(default)]
+    pub extra_directives: std::collections::HashMap<String, String>,
+
+    /// If true, also return the generated script content (for debugging)
+    #[serde(default)]
+    pub return_script: bool,
+}
+
+fn default_cpus() -> u32 {
+    1
+}
+
+/// Response from sandboxed sbatch command
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SandboxedSbatchResponse {
+    /// SLURM job ID
+    pub job_id: String,
+
+    /// Path to the generated sbatch script on remote
+    pub script_path: String,
+
+    /// The generated script content (only if return_script was true)
+    pub script_content: Option<String>,
+
+    /// Container image that was used
+    pub image_used: String,
+
+    /// Bind mounts that were configured
+    pub bind_mounts: Vec<BindMount>,
+
+    /// Execution time in milliseconds
+    pub duration_ms: u64,
+}
+
+/// A bind mount specification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BindMount {
+    /// Host path
+    pub host: String,
+    /// Container path (usually same as host)
+    pub container: String,
+    /// Mount mode: "ro" (read-only) or "rw" (read-write)
+    pub mode: String,
 }
 
 #[cfg(test)]
