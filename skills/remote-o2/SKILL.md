@@ -7,17 +7,22 @@ version: 2.4.0
 
 # Remote O2 Access Skill
 
-This skill enables Claude Code to access the O2 cluster remotely from a local machine via the `remote-bridge` application.
+## Role
+
+Remote O2 cluster access specialist, managing secure job submission and monitoring through the remote-bridge application.
+
+## Goal
+
+Enable local-machine users to submit, monitor, and manage SLURM jobs on O2 without direct SSH sessions, while maintaining security through containerized execution and path validation.
 
 ## Key Principles
 
-1. **Use `sandboxed_sbatch` for job submission** - Jobs run in Singularity containers with restricted filesystem access. This is the secure, preferred method.
-2. **Single Duo Push** - The bridge maintains a persistent SSH session. Authenticate once, run unlimited commands.
-3. **Permission-Based Access** - All paths validated against user config before execution.
+1. **Job submission uses sandboxed_sbatch** - Jobs run in Singularity containers with restricted filesystem access
+2. **Single Duo authentication** - The bridge maintains a persistent SSH session; authenticate once, run unlimited commands
+3. **Permission-based access** - All paths validated against user config before execution
 
 ## When This Skill Applies
 
-**Auto-trigger when:**
 - User mentions "O2", "cluster", or "SLURM"
 - Analysis requires substantial resources (>16GB RAM, >4 hours, GPUs)
 - User explicitly invokes `/remote-o2`
@@ -37,85 +42,75 @@ remote-bridge rpc o2 connection_status
 
 ## Starting the Bridge
 
-### First-Time Setup
+### Phase 1: Binary Installation
 
-#### Step 1: Check if bridge binary exists
+Check if the bridge binary exists:
 
 ```bash
 which remote-bridge
 ```
 
-**If found:** Skip to [Step 4: Create permissions config](#step-4-create-permissions-config)
-**If not found:** Continue to Step 2
+**If found:** Skip to [Phase 2: Permission Configuration](#phase-2-permission-configuration)
 
-#### Step 2: Check for Rust/Cargo
+**If not found:** Build the bridge:
 
-```bash
-which cargo
-```
+1. Check for Rust/Cargo:
+   ```bash
+   which cargo
+   ```
 
-**If cargo exists:** Skip to [Step 3: Build the bridge](#step-3-build-the-bridge)
+2. If cargo doesn't exist, ask the user to install Rust:
+   ```
+   Rust is required to build the remote-bridge. Please install it:
 
-**If cargo doesn't exist:** Ask the user to install Rust:
+       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-```
-Rust is required to build the remote-bridge. Please install it:
+   Follow the prompts (default installation is fine), then restart your terminal
+   or run: source ~/.cargo/env
 
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   Let me know when Rust is installed.
+   ```
 
-Follow the prompts (default installation is fine), then restart your terminal
-or run: source ~/.cargo/env
+3. Build the bridge:
+   ```bash
+   cd $CONFIG_REPO/remote-bridge && cargo build --release
+   ```
 
-Let me know when Rust is installed.
-```
+4. Add to PATH (detect shell with `echo $SHELL`):
 
-#### Step 3: Build the bridge
+   **For zsh (~/.zshrc):**
+   ```bash
+   echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
 
-```bash
-cd $CONFIG_REPO/remote-bridge && cargo build --release
-```
+   **For bash (~/.bashrc):**
+   ```bash
+   echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
 
-Then add to PATH. First detect the user's shell:
+   Replace `/path/to/claude-config` with the actual CONFIG_REPO path.
 
-```bash
-echo $SHELL
-```
+### Phase 2: Permission Configuration
 
-**For zsh (~/.zshrc):**
-```bash
-echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.zshrc
-source ~/.zshrc
-```
+1. Create the config directory:
+   ```bash
+   mkdir -p ~/.config/remote-bridge
+   cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
+   ```
 
-**For bash (~/.bashrc):**
-```bash
-echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.bashrc
-source ~/.bashrc
-```
+2. Ask the user for their O2 paths:
+   - Lab directory (e.g., `/n/data1/hms/dbmi/oconnor/lab/username/`)
+   - Scratch directory (e.g., `/n/scratch/users/u/username/`)
 
-Note: Replace `/path/to/claude-config` with the actual CONFIG_REPO path.
+3. Edit the config:
+   ```bash
+   $EDITOR ~/.config/remote-bridge/permissions.toml
+   ```
+   Update the `[paths]` section with their actual directories.
 
-#### Step 4: Create permissions config
-
-```bash
-mkdir -p ~/.config/remote-bridge
-cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
-```
-
-#### Step 5: Edit permissions
-
-Ask the user for their O2 paths:
-- Lab directory (e.g., `/n/data1/hms/dbmi/oconnor/lab/username/`)
-- Scratch directory (e.g., `/n/scratch/users/u/username/`)
-
-Then edit the config:
-```bash
-$EDITOR ~/.config/remote-bridge/permissions.toml
-```
-
-Update the `[paths]` section with their actual directories.
-
-### Start the Bridge
+### Phase 3: First Connection
 
 Tell the user to run in a separate terminal:
 
@@ -128,7 +123,7 @@ The user will see:
 2. Duo authentication prompt
 3. Confirmation that bridge is ready
 
-**Important:** The bridge runs in the foreground. The user should keep that terminal open.
+The bridge runs in the foreground. The user should keep that terminal open.
 
 Once the user confirms the bridge is running, proceed to [Using the Bridge](#using-the-bridge).
 
@@ -240,9 +235,9 @@ remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'
 
 Optional params: `remote` (default: "origin"), `branch` (default: current)
 
-### Submit Job (sbatch) - Use sandboxed_sbatch Instead
+### Submit Job (sbatch)
 
-> **Note:** Prefer `sandboxed_sbatch` (below) for security and validation. Use raw `sbatch` only for pre-existing scripts that must run exactly as written.
+For pre-existing scripts that must run exactly as written:
 
 ```bash
 remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'
@@ -252,9 +247,9 @@ Optional: `working_dir` - directory to run sbatch from
 
 Response includes `job_id` of submitted job.
 
-### Submit Sandboxed Job (sandboxed_sbatch) - RECOMMENDED
+### Submit Sandboxed Job (sandboxed_sbatch)
 
-**This is the preferred method for job submission.** It generates an sbatch script that runs inside a Singularity container with restricted filesystem access.
+Generates an sbatch script that runs inside a Singularity container with restricted filesystem access.
 
 ```bash
 remote-bridge rpc o2 sandboxed_sbatch '{
@@ -266,6 +261,36 @@ remote-bridge rpc o2 sandboxed_sbatch '{
   "memory": {"amount": 16, "unit": "gb"},
   "time": {"days": 0, "hours": 2, "minutes": 0},
   "partition": "short"
+}'
+```
+
+**GPU job example:**
+```bash
+remote-bridge rpc o2 sandboxed_sbatch '{
+  "job_name": "train-model",
+  "command": "python /n/scratch/.../train.py --epochs 100",
+  "input_paths": ["/n/data1/.../training_data/"],
+  "output_paths": ["/n/scratch/.../checkpoints/"],
+  "cpus": 8,
+  "memory": {"amount": 64, "unit": "gb"},
+  "time": {"days": 2, "hours": 0, "minutes": 0},
+  "partition": "gpu_quad",
+  "gpu": {"count": 1, "gpu_type": "a100"}
+}'
+```
+
+**Job array example (parallel processing):**
+```bash
+remote-bridge rpc o2 sandboxed_sbatch '{
+  "job_name": "batch-process",
+  "command": "python /n/scratch/.../process.py --task $SLURM_ARRAY_TASK_ID",
+  "input_paths": ["/n/data1/.../samples/"],
+  "output_paths": ["/n/scratch/.../results/"],
+  "cpus": 1,
+  "memory": {"amount": 8, "unit": "gb"},
+  "time": {"hours": 1},
+  "partition": "short",
+  "array": "1-100%20"
 }'
 ```
 
@@ -388,18 +413,9 @@ Response includes exit status for completed jobs:
 
 **Use with background tasks:** Run `job_wait` as a background Bash command. Claude will be notified when the job completes.
 
-## Job Submission Strategy
+## Job Submission Workflow
 
-**Always prefer `sandboxed_sbatch`** for job submission. It provides security, validation, and audit trails.
-
-### When to Use Each Method
-
-| Method | Use Case |
-|--------|----------|
-| `sandboxed_sbatch` | **Default choice.** Running scripts, analyses, any compute job |
-| `sbatch` (raw) | Only when: pre-existing scripts need exact execution, or container not available |
-
-### sandboxed_sbatch Workflow (Recommended)
+### sandboxed_sbatch Workflow
 
 1. **Identify inputs/outputs**: What data does the job read? Where does it write?
 2. **Submit directly**:

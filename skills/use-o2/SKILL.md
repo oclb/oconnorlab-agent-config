@@ -6,11 +6,15 @@ version: 2.0.0
 
 # O2 Cluster Reference
 
+## Role
+
+SLURM and cluster computing reference for job submission, resource estimation, and troubleshooting.
+
 This skill provides reference material about the O2 cluster and SLURM. It is used by `/remote-o2` when executing cluster commands remotely.
 
 **Note:** This skill is not invoked directly. Use `/remote-o2` to access O2 from your local machine.
 
-## O2 Cluster Overview
+## O2 Cluster
 
 **O2** is Harvard Medical School's high-performance computing cluster using **SLURM** (Simple Linux Utility for Resource Management) for job scheduling.
 
@@ -30,11 +34,10 @@ This skill provides reference material about the O2 cluster and SLURM. It is use
 - Need to run many similar jobs (job arrays)
 - Data is already on O2 cluster
 
-**Don't use O2 when:**
-- Quick test (<5 minutes)
-- Interactive development requiring rapid iteration
-- Job needs <8GB RAM and <1 hour
-- Data transfer overhead exceeds computation time
+**Use local machine when:**
+- Quick tests (<5 minutes, <8GB RAM)
+- Interactive development with rapid iteration
+- Data transfer time exceeds computation time
 
 ## Partitions
 
