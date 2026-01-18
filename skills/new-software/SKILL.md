@@ -10,11 +10,11 @@ Quickly learn and set up new tools, libraries, and frameworks by finding documen
 
 ## Notebook Integration
 
-This skill writes to `notebook/methods/` to track external tools used in the project (as `type: tool` entries).
+This skill writes to `notebook/entries/` to track external tools used in the project.
 
 **Before starting:** Check if software is already documented:
 ```bash
-ls notebook/methods/ 2>/dev/null | grep -i "<tool-name>"
+ls notebook/entries/ 2>/dev/null | grep -i "<tool-name>"
 ```
 
 If an entry exists, read it to see what's already known. You may just need to update version info or add new issues.
@@ -131,14 +131,12 @@ Next Steps:
 
 ### 5. Write to Notebook
 
-**Create or update `notebook/methods/YYYY-MM-DD-<tool-name>.md`:**
+**Create or update `notebook/entries/YYYY-MM-DD-<tool-name>.md`:**
 
 ```markdown
 # <Tool Name>
 
 **Date:** YYYY-MM-DD
-**Type:** tool
-**Commit:** N/A
 
 ## Summary
 [One sentence: what this tool is and why we're using it]
@@ -154,6 +152,9 @@ Next Steps:
 - [e.g., "Requires R >= 4.0"]
 - [e.g., "Memory-intensive for >50k genes"]
 - [e.g., "Output format changed in v2.0"]
+
+## References
+[Related entries if applicable]
 ```
 
 **Important:**
@@ -162,16 +163,19 @@ Next Steps:
 - Link to specific docs sections relevant to your usage
 
 **Update notebook/INDEX.md:**
-Add a row to the Methods table:
+Add a row:
 ```
-| YYYY-MM-DD | tool | <tool-name> v<version>: <primary use> |
+| YYYY-MM-DD | <tool-name> | <tool> v<version>: <primary use> |
 ```
 
-**Commit the notebook entry:**
+**Announce and commit:**
+State "Created notebook entry: `<tool-name>`"
+
 ```bash
-mkdir -p notebook/methods
-git add notebook/methods/YYYY-MM-DD-<tool-name>.md notebook/INDEX.md
-git commit -m "methods: document <tool-name> setup"
+mkdir -p notebook/entries
+git -C notebook add entries/ INDEX.md
+git -C notebook commit -m "entry: <tool-name> setup"
+git -C notebook remote | grep -q origin && git -C notebook push
 ```
 
 ## Best Practices

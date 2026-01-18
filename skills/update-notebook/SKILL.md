@@ -15,9 +15,7 @@ Synchronizes the lab notebook when work has been done outside Claude Code, or on
 
 ## Purpose
 
-The lab notebook (`notebook/`) is the archival record of the project:
-- `analyses/` - Analysis logs, scripts, and outputs
-- `methods/` - Everything else: features, bugfixes, datasets, tools, decisions
+The lab notebook (`notebook/entries/`) is the archival record of the project - all analyses, features, research, discussions, datasets, and tools in a single directory.
 
 When users work outside Claude Code, the notebook can become out of sync. This skill:
 
@@ -80,37 +78,31 @@ Ask the user open-ended questions:
 
 ### Step 4: Create Retrospective Entries
 
-For analyses done outside Claude Code, create notebook entries:
+For work done outside Claude Code, create notebook entries:
 
-1. **Create analysis directory:**
-   ```
-   notebook/analyses/<analysis-name>/
-   ├── README.md
-   └── outputs/  (if applicable)
-   ```
-
-2. **Mark as retrospective in README.md:**
+1. **Create entry file** (`notebook/entries/YYYY-MM-DD-<name>.md`):
    ```markdown
-   # <Analysis Name>
+   # <Descriptive Title>
 
-   **Analysis ID:** `<analysis-name>`
-   **Performed:** YYYY-MM-DD (approximate)
+   **Date:** YYYY-MM-DD
    **Recorded:** YYYY-MM-DD (retrospective entry)
-   **Status:** Complete
 
-   > Note: This analysis was performed outside Claude Code. This entry was created retrospectively to maintain project context.
+   > Note: This work was done outside Claude Code. Entry created retrospectively.
 
-   ## Motivation
-   [From user description]
+   ## Summary
+   [Brief description from user]
 
-   ## Findings
-   [Key results as described by user]
+   ## Details
+   [Key results, methods, or context as described by user]
 
-   ## Output Files
-   [If known - paths to relevant outputs]
+   ## References
+   [Related entries if applicable]
+   ```
 
-   ## Notes
-   [Any additional context]
+2. **Create associated directory** (if scripts/outputs exist):
+   ```
+   notebook/entries/<name>/
+   └── outputs/  (if applicable)
    ```
 
 3. **Don't fabricate details:**
@@ -118,10 +110,15 @@ For analyses done outside Claude Code, create notebook entries:
    - Mark uncertainties: "Exact parameters unknown"
    - Keep entries brief - the goal is context, not reconstruction
 
+4. **Announce entry creation:** State "Created notebook entry: `<name>`"
+
 ### Step 5: Update INDEX.md and CLAUDE.md
 
 **Update notebook/INDEX.md:**
-For each retrospective entry created, add a row to the appropriate table (Analyses or Methods).
+For each retrospective entry created, add a row:
+```
+| YYYY-MM-DD | <name> | <one-line summary> |
+```
 
 **Update CLAUDE.md:**
 Based on the sync conversation:
@@ -179,23 +176,18 @@ Start with a welcoming introduction:
 ### Step 2: Create Notebook Structure
 
 ```bash
-mkdir -p notebook/analyses notebook/methods
+mkdir -p notebook/entries notebook/feedback
 ```
 
 **Initialize INDEX.md:**
 ```markdown
 # Notebook Index
 
-## Analyses
-| ID | Summary | Date | Tags |
-|----|---------|------|------|
-
-## Methods
-| Date | Type | Summary |
+| Date | Name | Summary |
 |------|------|---------|
 ```
 
-### Step 3: Document Datasets and Tools
+### Step 3: Document Datasets, Tools, and Context
 
 **Prompt the user about datasets:**
 > "What datasets are you using in this project? For each one, I'd like to know:
@@ -206,12 +198,12 @@ mkdir -p notebook/analyses notebook/methods
 **Prompt the user about specialized software:**
 > "Are there any specialized tools, libraries, or software specific to this project that I should know about? (I don't need to know about standard tools like Python, PyTorch, pandas, etc. - just project-specific or unusual dependencies.)"
 
-For each dataset or tool mentioned, create a methods entry `notebook/methods/YYYY-MM-DD-<name>.md` with:
-- `Type: data` or `Type: tool`
+For each dataset or tool mentioned, create an entry `notebook/entries/YYYY-MM-DD-<name>.md` with:
+- Summary of what it is
 - Location and source (for data) or version and docs URL (for tools)
 - Any issues or gotchas mentioned by user
 
-**Skip tool documentation for:**
+**Skip documentation for:**
 - Standard, well-known tools (Python, R, PyTorch, TensorFlow, pandas, numpy, etc.)
 - Common CLI tools
 - Anything Claude would know from training

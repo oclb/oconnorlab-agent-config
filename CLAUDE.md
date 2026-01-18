@@ -161,7 +161,7 @@ Reference material for O2 cluster and SLURM (used by remote-o2):
 
 ## Lab Notebook System
 
-The lab notebook provides archival tracking of analyses, separate from the curated CLAUDE.md.
+The lab notebook provides archival memory of all work, separate from the curated CLAUDE.md.
 
 ### Two-Repo Architecture
 
@@ -171,94 +171,67 @@ The notebook is a **separate git repository** inside the project, gitignored fro
 project/                              # Main git repo
 ├── .git/
 ├── .gitignore                        # Contains: notebook/
-├── CLAUDE.md                         # Key findings, current directions
+├── CLAUDE.md                         # Active context (references entries)
 ├── .claude/settings.json             # Project permissions
 ├── src/                              # Your code
 └── notebook/                         # Separate git repo (gitignored)
     ├── .git/
-    ├── INDEX.md                      # Quick-reference summary
+    ├── INDEX.md                      # Entry index (Date, Name, Summary)
     ├── TODO.md                       # Active tasks
     ├── DONE.md                       # Completed tasks
-    ├── analyses/                     # Analysis logs and scripts
-    │   └── <analysis-name>/
-    │       ├── README.md
-    │       ├── <script>.py
-    │       └── outputs/
-    ├── methods/                      # Features, bugfixes, data, tools, decisions
-    │   └── YYYY-MM-DD-<description>.md
-    └── feedback/                     # Self-improvement feedback
+    ├── entries/                      # All memories
+    │   └── YYYY-MM-DD-<slug>.md
+    └── feedback/                     # Feedback for claude-config (not indexed)
         └── YYYY-MM-DD-<description>.md
 ```
 
-**Why separate repos?**
-- Main repo git log stays clean (only code changes)
-- Notebook can have different backup/sharing rules
-- Prevents repo bloat from analysis outputs
-- Easy to share code without sharing exploratory work
-
 **Setup:** Run `/init-project` to create this structure automatically.
+
+### Entries
+
+All memories go in `notebook/entries/`. Any task that produces knowledge worth recalling creates an entry: analyses, features, research, discussions, tool setup, presentations, etc.
+
+**Entry format:**
+```markdown
+# <Descriptive Title>
+
+**Date:** YYYY-MM-DD
+
+## Summary
+[What was done and why]
+
+## Details
+[The work itself - updated as work progresses]
+
+## References
+- `<entry-name>`: <why it was useful>
+```
+
+The **References** section records which previous entries informed this work and why. This creates a lightweight knowledge graph that helps retrieval.
 
 ### Two-Tier Context System
 
 | Layer | Location | Purpose | Lifecycle |
 |-------|----------|---------|-----------|
-| **Notebook** | `notebook/` (separate repo) | Complete archival record | Append-only, grows forever |
-| **CLAUDE.md** | Project root (main repo) | Curated active context | Actively pruned, current-relevant only |
+| **Notebook** | `notebook/entries/` | Complete archival record | Grows forever |
+| **CLAUDE.md** | Project root | Curated active context | Pruned when stale |
 
-### How It Works
+**CLAUDE.md references entries:** Important findings get a reference like "Variant filtering excludes singletons (see `variant-filtering-v2`)". Remove references when superseded.
 
-**During `/perform-analysis`:**
-1. Reads `notebook/INDEX.md` for quick retrieval of related memories
-2. Generates a specific, descriptive name (or uses user-provided)
-3. Writes to notebook incrementally after each step
-4. Updates INDEX.md with summary row on completion
-5. Commits to **notebook repo**: `git -C notebook add . && git -C notebook commit`
-6. Pushes to notebook remote (if configured)
-7. Updates CLAUDE.md only for important findings (committed to main repo)
+### Index and Retrieval
 
-**Version management:**
-- v0 often a pilot (subset data), v1 the full run
-- All versions in single README.md
-- Scripts can be modified - git tracks history
+`notebook/INDEX.md` is a minimal table: Date, Name, Summary. Claude reads it at session start to know what memories exist.
 
-**CLAUDE.md curation:**
-- Add: Important findings, working solutions, current directions
-- Prune: Superseded findings, abandoned directions, stale context
-- Goal: Only what affects ongoing work
-
-### Syncing External Work
-
-When work is done outside Claude Code, use `/update-notebook` to:
-1. Review git history for methodological changes
-2. Ask about recent analyses and findings
-3. Create retrospective notebook entries
-4. Update CLAUDE.md with current context
-
-### Notebook Index
-
-`notebook/INDEX.md` provides quick-reference summaries of all memories:
-- **Analyses**: ID, summary, date, tags
-- **Methods**: date, type (feature/bugfix/data/tool/decision), summary
-
-Skills that create memories update the index in the same commit. Retrieval reads the index first, then full entries only for relevant items.
+**Retrieval:** Use Explore subagent to find relevant entries when user references past work or when starting multi-step planning. Explore starts at INDEX.md, then reads full entries as needed.
 
 ### Persistent To-Do List
 
-Two files track tasks across sessions:
-- `notebook/TODO.md` - Active tasks (kept small)
-- `notebook/DONE.md` - Completed tasks with full original record + result
+- `notebook/TODO.md` - Active tasks
+- `notebook/DONE.md` - Completed tasks with `Result:` links to entries
 
-Items have numbers (#1, #2, ...) and can link to related notebook entries via `Context:` field. When starting work on a todo with a `Context:` link, Claude reads the linked notebook entry for background.
+### Feedback
 
-### Feedback Logging
-
-`notebook/feedback/` captures issues with Claude's skills and behavior for improvement. Claude proactively suggests logging feedback when:
-- Skill detection failed (user had to invoke manually)
-- O2 approach failed on first attempt
-- User signals skepticism ("hmm", corrections)
-- Memory retrieval or creation failed
-
-Feedback is freeform - no template. User manages review.
+`notebook/feedback/` captures issues with Claude's skills for improvement. Feedback is for the claude-config repo, not indexed with project memories.
 
 ## Notifications
 

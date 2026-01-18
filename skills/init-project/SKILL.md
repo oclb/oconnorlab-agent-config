@@ -83,7 +83,7 @@ Options:
 **4.1 Create notebook structure**
 
 ```bash
-mkdir -p notebook/{analyses,methods,feedback}
+mkdir -p notebook/{entries,feedback}
 ```
 
 **4.2 Initialize notebook git repo**
@@ -99,12 +99,7 @@ Create `notebook/INDEX.md`:
 ```markdown
 # Notebook Index
 
-## Analyses
-| ID | Summary | Date | Tags |
-|----|---------|------|------|
-
-## Methods
-| Date | Type | Summary |
+| Date | Name | Summary |
 |------|------|---------|
 ```
 

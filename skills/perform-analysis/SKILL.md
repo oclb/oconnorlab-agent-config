@@ -46,7 +46,7 @@ An analysis involves **Data** + **Methods** + **Question**.
 
 ## Lab Notebook System
 
-Every analysis is recorded in a **lab notebook** (`notebook/analyses/`) for reproducibility and project tracking.
+Every analysis is recorded in the **lab notebook** (`notebook/entries/`) for reproducibility and project tracking.
 
 **Important:** The notebook is a **separate git repository** inside the project directory, gitignored from the main repo. Use `git -C notebook` for all notebook commits.
 
@@ -54,17 +54,16 @@ Every analysis is recorded in a **lab notebook** (`notebook/analyses/`) for repr
 
 ```
 project/                              # Main git repo
-├── CLAUDE.md                         # Curated active context (key findings only)
+├── CLAUDE.md                         # Active context (references key entries)
 └── notebook/                         # Separate git repo (gitignored from main)
     ├── .git/
-    ├── INDEX.md
-    ├── analyses/                     # Analysis logs and scripts
-    │   └── <analysis-name>/
-    │       ├── README.md             # Analysis log (all versions)
-    │       ├── <script>.py           # Analysis scripts (git tracks history)
-    │       └── outputs/              # Results, figures, data
-    └── methods/                      # Everything else: features, bugfixes, data, tools, decisions
-        └── YYYY-MM-DD-<description>.md
+    ├── INDEX.md                      # Entry index: Date, Name, Summary
+    ├── entries/                      # All memories (including analyses)
+    │   ├── YYYY-MM-DD-<analysis-name>.md   # Analysis log
+    │   └── <analysis-name>/                # Associated files (scripts, outputs)
+    │       ├── <script>.py
+    │       └── outputs/
+    └── feedback/                     # Feedback for claude-config (not indexed)
 ```
 
 ### Analysis Naming
@@ -136,14 +135,14 @@ Follow these 8 steps systematically.
    - Use user-provided name if given
    - Otherwise, generate specific descriptive name
 
-3. **Initialize notebook directory:**
+3. **Initialize notebook entry and directory:**
    ```
-   notebook/analyses/<analysis-name>/
-   ├── README.md      # Create with header and Motivation section
-   └── outputs/       # Create empty directory
+   notebook/entries/YYYY-MM-DD-<analysis-name>.md    # Analysis log
+   notebook/entries/<analysis-name>/                 # Associated files
+   └── outputs/                                      # Results, figures
    ```
 
-4. **Initialize README.md:**
+4. **Initialize entry file** (`notebook/entries/YYYY-MM-DD-<analysis-name>.md`):
    ```markdown
    # <Analysis Name (Human Readable)>
 
@@ -157,9 +156,9 @@ Follow these 8 steps systematically.
    ## Expected Results
    [To be filled in Step 2]
 
-   ## Related Analyses
-   [List 0-3 related analyses consulted, or "None - new project area"]
-   - `<related-analysis-name>` - [what was useful: script template, resource estimates, etc.]
+   ## References
+   [List 0-3 related entries consulted, or "None - new project area"]
+   - `<entry-name>`: <what was useful - script template, resource estimates, etc.>
 
    ---
 
@@ -292,7 +291,7 @@ If the analysis is expected to take **>1 minute**, plan a pilot first:
 - Intermediate data
 - Results, figures, tables
 
-**Script archiving:** Save analysis scripts to `notebook/analyses/<analysis-name>/`. Scripts can be modified between versions - git commits preserve history for reproducibility.
+**Script archiving:** Save analysis scripts to `notebook/entries/<analysis-name>/`. Scripts can be modified between versions - git commits preserve history for reproducibility.
 
 **Notebook write:** Update Execution Notes with any issues encountered, deviations from plan, or important observations during execution.
 
@@ -353,34 +352,38 @@ Challenges:
    ```
    Files Created:
 
+   Entry:
+   - notebook/entries/YYYY-MM-DD-<name>.md - Analysis log
+
    Scripts:
-   - notebook/analyses/<name>/run_analysis.py - Main analysis script
+   - notebook/entries/<name>/run_analysis.py - Main analysis script
 
    Outputs:
-   - notebook/analyses/<name>/outputs/results.csv - Statistical results
-   - notebook/analyses/<name>/outputs/figure.png - Main visualization
+   - notebook/entries/<name>/outputs/results.csv - Statistical results
+   - notebook/entries/<name>/outputs/figure.png - Main visualization
    ```
 
-2. **Update notebook README.md:**
+2. **Update the entry file:**
    - Fill in Output Files section with paths and descriptions
    - Fill in Scripts section with script filenames
    - Update Status from "In Progress" to "Complete"
 
 3. **Update notebook/INDEX.md:**
-   Add a row to the Analyses table:
+   Add a row to the table:
    ```
-   | <analysis-name> | <one-line summary of key finding> | YYYY-MM-DD | <tags> |
+   | YYYY-MM-DD | <analysis-name> | <one-line summary of key finding> |
    ```
-   Tags should be 2-4 keywords (e.g., `survival, tcga, tp53`).
 
-4. **Git commit (to notebook repo):**
+4. **Announce entry creation:** State "Created notebook entry: `<analysis-name>`"
+
+5. **Git commit (to notebook repo):**
    ```bash
-   git -C notebook add analyses/<analysis-name>/ INDEX.md
-   git -C notebook commit -m "analysis: <analysis-name> v0 - <brief description of what was done>"
+   git -C notebook add entries/ INDEX.md
+   git -C notebook commit -m "entry: <analysis-name> v0 - <brief description>"
    git -C notebook remote | grep -q origin && git -C notebook push
    ```
 
-5. **Evaluate for CLAUDE.md update:**
+6. **Evaluate for CLAUDE.md update:**
 
    Ask: Is this finding important enough for CLAUDE.md?
 
@@ -404,7 +407,7 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
 
 1. **Modify scripts as needed** - git tracks history for reproducibility
 
-2. **Add new version section to README.md:**
+2. **Add new version section to the entry file:**
    ```markdown
    ---
 
@@ -425,8 +428,8 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
 
 3. **Git commit (to notebook repo):**
    ```bash
-   git -C notebook add analyses/<analysis-name>/
-   git -C notebook commit -m "analysis: <analysis-name> v1 - <what changed>"
+   git -C notebook add entries/
+   git -C notebook commit -m "entry: <analysis-name> v1 - <what changed>"
    git -C notebook remote | grep -q origin && git -C notebook push
    ```
 

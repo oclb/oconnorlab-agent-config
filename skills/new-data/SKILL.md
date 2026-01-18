@@ -10,11 +10,11 @@ Systematic framework for acquiring, validating, and exploring datasets to ensure
 
 ## Notebook Integration
 
-This skill writes to `notebook/methods/` to track datasets used in the project (as `type: data` entries).
+This skill writes to `notebook/entries/` to track datasets used in the project.
 
 **Before starting:** Check if dataset is already documented:
 ```bash
-ls notebook/methods/ 2>/dev/null | grep -i "<dataset-name>"
+ls notebook/entries/ 2>/dev/null | grep -i "<dataset-name>"
 ```
 
 If an entry exists, read it to see what's already known. You may just need to update it rather than start fresh.
@@ -205,14 +205,12 @@ See [references/domain-checks.md](references/domain-checks.md) for tool-specific
 
 ### Step 9: Write to Notebook
 
-**Create or update `notebook/methods/YYYY-MM-DD-<dataset-name>.md`:**
+**Create or update `notebook/entries/YYYY-MM-DD-<dataset-name>.md`:**
 
 ```markdown
 # <Dataset Name>
 
 **Date:** YYYY-MM-DD
-**Type:** data
-**Commit:** N/A
 
 ## Summary
 [One sentence: what this dataset is and where it came from]
@@ -233,19 +231,25 @@ See [references/domain-checks.md](references/domain-checks.md) for tool-specific
 - 5 columns have >10% missing values
 - Column "age" contains some negative values (likely data entry errors)
 - Gene IDs use older HGNC symbols
+
+## References
+[Related entries if applicable]
 ```
 
 **Update notebook/INDEX.md:**
-Add a row to the Methods table:
+Add a row:
 ```
-| YYYY-MM-DD | data | <dataset-name>: <brief description> |
+| YYYY-MM-DD | <dataset-name> | <brief description of dataset> |
 ```
 
-**Commit the notebook entry:**
+**Announce and commit:**
+State "Created notebook entry: `<dataset-name>`"
+
 ```bash
-mkdir -p notebook/methods
-git add notebook/methods/YYYY-MM-DD-<dataset-name>.md notebook/INDEX.md
-git commit -m "methods: document <dataset-name> dataset"
+mkdir -p notebook/entries
+git -C notebook add entries/ INDEX.md
+git -C notebook commit -m "entry: <dataset-name> dataset"
+git -C notebook remote | grep -q origin && git -C notebook push
 ```
 
 ## Best Practices
