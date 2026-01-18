@@ -18,7 +18,7 @@ At the start of each session, read `~/.claude/behavior.conf` to check the curren
 
 | Flag | Default | Behavior |
 |------|---------|----------|
-| `AFK` | `false` | When `true`: Be more independent. Make reasonable decisions without asking. Proceed with likely interpretations rather than clarifying ambiguities. Complete multi-step tasks autonomously. Only pause for critical decisions that would be difficult to reverse. |
+| `AFK` | `false` | When `true`: Be more independent. Proceed if 80%+ confident in interpretation. Document assumptions in notebook entries. Only pause for: irreversible actions (destructive git operations, file deletions), external API calls with side effects, or decisions where wrong choice would require significant rework. When pausing, state the specific decision point. |
 | `Environment` | `local` | Always `local`. For O2 cluster access, use the `/remote-o2` skill which connects via SSH. |
 
 ### Auto-Detection Keywords
@@ -119,6 +119,92 @@ The **References** section records which previous entries informed this work and
 - `o2-job-template`: SLURM script structure used as starting point
 - `variant-filtering-v2`: statistical approach for handling missingness
 
+### Example Entries
+
+**Analysis entry:**
+```markdown
+# Gene Expression Batch Effect Analysis
+
+**Date:** 2026-01-15
+
+## Summary
+Investigated unexpected clustering in PCA of RNA-seq data. Identified sequencing batch as primary driver of PC1 (explaining 23% of variance). Recommended ComBat correction before downstream analysis.
+
+## Details
+Initial PCA showed samples clustering by an unknown factor rather than treatment group. Systematically tested metadata variables:
+
+| Variable | PC1 correlation | PC2 correlation |
+|----------|-----------------|-----------------|
+| Batch | 0.89 | 0.12 |
+| Treatment | 0.15 | 0.67 |
+| RIN score | 0.34 | 0.08 |
+
+Batch correction with ComBat reduced batch-PC1 correlation to 0.11 while preserving treatment signal. QC plots saved to `figures/batch_correction_qc.png`.
+
+**Decision:** Use ComBat-corrected counts for all downstream analyses. Raw counts preserved in `data/raw/` for reproducibility.
+
+## References
+- `rnaseq-pipeline-setup`: sample metadata location and format
+```
+
+**Feature implementation entry:**
+```markdown
+# User Authentication with OAuth2
+
+**Date:** 2026-01-10
+
+## Summary
+Implemented OAuth2 authentication flow with Google provider. Users can now sign in via Google account, with session persistence via HTTP-only cookies.
+
+## Details
+Architecture decisions:
+- **Provider:** Google OAuth2 (most users have accounts, good documentation)
+- **Session storage:** HTTP-only cookies with 7-day expiry (balances security and UX)
+- **Token refresh:** Silent refresh 5 minutes before expiry
+
+Key files modified:
+- `src/auth/oauth.ts` - OAuth flow implementation
+- `src/middleware/session.ts` - Session validation middleware
+- `src/routes/auth.ts` - `/auth/login`, `/auth/callback`, `/auth/logout` endpoints
+
+Edge cases handled:
+- Token refresh failure → redirect to login with flash message
+- Revoked Google permissions → clear session, prompt re-auth
+- Concurrent sessions → allowed (no single-session enforcement)
+
+## References
+- `api-route-structure`: followed existing route patterns for consistency
+```
+
+**Debugging/research entry:**
+```markdown
+# SSH Socket Validation Findings
+
+**Date:** 2026-01-17
+
+## Summary
+Discovered that ControlMaster `-O check` returns success even for stale sockets. Implemented inode-based validation as reliable alternative.
+
+## Details
+Initial approach used `ssh -O check` but this only verifies socket file exists, not connection validity. After testing, found that comparing socket inode before/after connection attempt reliably detects stale sockets.
+
+Validation function:
+```bash
+validate_socket() {
+    local socket="$1"
+    local inode_before=$(stat -f %i "$socket" 2>/dev/null)
+    ssh -O check -S "$socket" user@host 2>/dev/null
+    local inode_after=$(stat -f %i "$socket" 2>/dev/null)
+    [[ "$inode_before" == "$inode_after" ]]
+}
+```
+
+**Root cause:** ControlMaster checks socket file descriptor, not actual TCP connection state. When connection drops, socket file persists until explicitly removed or new connection attempted.
+
+## References
+- `o2-connection-setup`: original socket implementation this extends
+```
+
 ### Writing Entries As You Go
 
 Write entries incrementally during work, not just as a summary at the end. Start the entry when beginning a task, add details as you progress, and finalize when complete.
@@ -151,14 +237,17 @@ Git tracks entry history, so updating is fine when appropriate.
 
 ### Session Start
 
-At the start of every conversation, read `notebook/INDEX.md` to know what memories exist.
+1. Read `notebook/INDEX.md` immediately
+2. If user's first message contains pronouns referencing past work ("that", "the", "our"), retrieve relevant entries
+3. If planning a task similar to an indexed entry, read that entry first
 
-### Retrieval via Explore Agent
+### Retrieval Triggers
 
-Use the **Explore subagent** to retrieve relevant memories when:
-- Unsure what user means or references
-- User mentions past work ("that analysis", "the script we wrote", etc.)
-- Starting any task that requires multi-step planning
+Use **Explore subagent** when ANY of these patterns appear in user messages:
+- Demonstrative references: "the analysis", "that script", "what we did", "last time"
+- User references a date, filename, or method name that appears in INDEX.md
+- User asks to continue, extend, or fix previous work
+- You're about to start work that might duplicate an existing entry
 
 Direct the Explore agent to start at `notebook/INDEX.md`, identify potentially relevant entries, then read full entries as needed. The References section in entries provides hints about whether linked entries are worth exploring.
 
@@ -267,16 +356,18 @@ Most completed todos should result in a notebook entry. The `Result:` link in DO
 
 Log feedback about Claude's behavior to `notebook/feedback/`. This feedback is for propagating improvements back to the claude-config repository (skills, settings, CLAUDE.md instructions). It is **not indexed** in INDEX.md - it's separate from project memories.
 
-### When to Suggest Logging Feedback
+### Feedback Triggers
 
-Proactively offer to log feedback when:
-- You didn't detect that the user wanted a skill (they had to invoke it manually or mention it)
-- Your first approach to an O2/remote task failed
-- User signals skepticism ("hmm", hesitation, correction)
-- You failed to retrieve a relevant memory and the user had to point to it
-- You failed to create a memory and the user had to ask explicitly
+**Log feedback automatically (without asking) when:**
+- User corrects your interpretation ("no, I meant...", "that's not what I asked")
+- User manually invokes a skill you should have auto-detected
+- A command fails due to environment or permission issues Claude could have anticipated
+- User points to a notebook entry Claude should have retrieved but didn't
 
-Phrasing: "Would you like to log feedback about this for future improvement?"
+**Ask "Would you like to log feedback for future improvement?" when:**
+- User expresses hesitation or skepticism ("hmm", "are you sure?", "that doesn't seem right")
+- Your first approach to an O2/remote task fails
+- User explicitly mentions Claude's behavior could be improved
 
 ### How to Log Feedback
 
