@@ -1,0 +1,74 @@
+# Test 1.4: Retrieval on Date Reference
+# When user references a date that appears in INDEX.md, Claude reads relevant entries
+
+name: retrieval-date-reference
+description: Retrieval when user references a date from INDEX.md
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-15 | pca-ancestry | PCA for ancestry inference, identified 3 clusters |
+      | 2026-01-10 | sample-qc | Sample QC, removed 50 samples for missingness |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-15-pca-ancestry.md << 'EOF'
+      # PCA Ancestry Analysis
+
+      **Date:** 2026-01-15
+
+      ## Summary
+      Ran PCA on genotype data. Identified 3 ancestry clusters (EUR, AFR, AMR).
+
+      ## Details
+      Used PLINK --pca with 10 components. PC1 separates AFR from EUR/AMR.
+
+      ## References
+      - `sample-qc`: Used QC'd sample set
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-sample-qc.md << 'EOF'
+      # Sample QC
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      QC on 5,000 samples. Removed 50 for >5% missingness. Final N=4,950.
+
+      ## Details
+      Standard GWAS QC: missingness, heterozygosity, sex check.
+
+      ## References
+      None
+      EOF
+
+prompt: |
+  What did we do on January 15th?
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "INDEX.md"
+    description: "Should read INDEX.md to find what happened on that date"
+
+  - type: tool_used
+    tool: Read
+    target_pattern: "pca-ancestry"
+    description: "Should read the January 15th entry"
+
+  - type: output_contains
+    pattern: "PCA|ancestry|cluster"
+    case_insensitive: true
+    description: "Should describe the PCA work"

@@ -1,0 +1,45 @@
+# Test 6.5: new-data - Identifies Missing Values
+# Validation identifies missing values
+
+name: new-data-missing-values
+description: Validation identifies missing values
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/incomplete.csv << 'EOF'
+      sample,phenotype,covariate
+      A,1.5,0.8
+      B,,0.6
+      C,2.3,
+      D,1.8,0.9
+      E,NA,0.7
+      EOF
+
+prompt: |
+  Validate data/incomplete.csv for quality issues.
+
+assertions:
+  - type: output_contains
+    pattern: "missing|NA|empty|null|blank"
+    case_insensitive: true
+    description: "Should identify missing values"
+
+  - type: output_contains
+    pattern: "phenotype|covariate|column"
+    case_insensitive: true
+    description: "Should indicate which columns have issues"

@@ -1,0 +1,101 @@
+# Test 8.2: Don't Over-Retrieve for Every Request
+# Claude doesn't read every notebook entry for every request
+
+name: dont-over-retrieve
+description: Don't read all entries for every request
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-14 | entry-e | PCA analysis |
+      | 2026-01-13 | entry-d | Sample filtering |
+      | 2026-01-12 | entry-c | Variant annotation |
+      | 2026-01-11 | entry-b | GWAS summary |
+      | 2026-01-10 | entry-a | Data download |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-14-entry-e.md << 'EOF'
+      # PCA Analysis
+
+      **Date:** 2026-01-14
+
+      ## Summary
+      Ran PCA. PC1 explains 15% variance.
+
+      ## Details
+      Used PLINK --pca.
+
+      ## References
+      None
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-13-entry-d.md << 'EOF'
+      # Sample Filtering
+
+      **Date:** 2026-01-13
+
+      ## Summary
+      Filtered samples by call rate.
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-12-entry-c.md << 'EOF'
+      # Variant Annotation
+
+      **Date:** 2026-01-12
+
+      ## Summary
+      Annotated variants with VEP.
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-11-entry-b.md << 'EOF'
+      # GWAS Summary
+
+      **Date:** 2026-01-11
+
+      ## Summary
+      Ran GWAS on height.
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-entry-a.md << 'EOF'
+      # Data Download
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      Downloaded reference data.
+      EOF
+
+prompt: |
+  What were the results of the PCA analysis?
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "entry-e"
+    description: "Should read the PCA entry"
+
+  - type: evaluator
+    prompt: |
+      Check how many entry files were read. The agent should NOT read all 5 entries - it should read INDEX.md and then only the relevant entry (entry-e for PCA).
+
+      Tool calls:
+      {{tool_calls}}
+
+      Did the agent read 3 or fewer entry files (not all 5)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should not read all entries"

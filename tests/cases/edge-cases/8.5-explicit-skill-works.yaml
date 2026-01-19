@@ -1,0 +1,37 @@
+# Test 8.5: Explicit Skill Invocation Works
+# /skill-name explicitly invokes the skill
+
+name: explicit-skill-works
+description: Explicit skill invocation works
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+    - Skill
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+
+prompt: |
+  /support
+
+assertions:
+  - type: skill_invoked
+    skill: "support"
+    description: "Explicit skill invocation"
+
+  - type: output_contains
+    pattern: "skill|capabilit|help|available"
+    case_insensitive: true
+    description: "Support skill provides capability overview"

@@ -1,0 +1,33 @@
+# Test 8.8: Resource-Intensive Task Mentions O2
+# Analysis requiring heavy compute mentions O2 cluster option
+
+name: resource-intensive-mentions-o2
+description: Large analysis mentions O2 cluster
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Skill
+
+prompt: |
+  I need to run GWAS on 500,000 samples with 10 million variants. How should I approach this?
+
+assertions:
+  - type: output_contains
+    pattern: "O2|cluster|SLURM|HPC|remote|compute|server"
+    case_insensitive: true
+    description: "Should mention cluster computing"
+
+  - type: evaluator
+    prompt: |
+      For a GWAS of this size (500K samples x 10M variants), the agent should recognize this is resource-intensive and mention the O2 cluster or similar HPC option.
+
+      Does the response acknowledge this needs substantial compute resources and mention cluster/HPC options?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should recommend cluster for large analysis"

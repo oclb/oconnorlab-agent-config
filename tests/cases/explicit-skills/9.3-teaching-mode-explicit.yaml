@@ -1,0 +1,37 @@
+# Test 9.3: /teaching-mode Explicit Call
+# /teaching-mode invokes educational mode
+
+name: teaching-mode-explicit
+description: Explicit /teaching-mode invocation
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Skill
+
+prompt: |
+  /teaching-mode
+  What is a QQ plot?
+
+assertions:
+  - type: skill_invoked
+    skill: "teaching-mode"
+    description: "Explicit skill invocation"
+
+  - type: evaluator
+    prompt: |
+      Teaching mode should provide an educational explanation, not just a definition.
+      It should explain:
+      - What a QQ plot is
+      - What it's used for
+      - How to interpret it
+
+      Is this an educational explanation (more than a one-sentence definition)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should be educational"

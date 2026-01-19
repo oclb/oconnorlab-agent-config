@@ -1,0 +1,54 @@
+# Test 2.4: INDEX.md Updated on Entry Creation
+# When entry is created, INDEX.md gets a new row
+
+name: index-updated
+description: INDEX.md updated when entry is created
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Calculate the allele frequency of rs123456 given these genotype counts: AA=100, AG=50, GG=10.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    description: "Entry should be created"
+
+  - type: tool_used
+    tool: Edit
+    target_pattern: "INDEX.md"
+    description: "INDEX.md should be edited"
+
+  - type: evaluator
+    prompt: |
+      The INDEX.md file should have a new row added to the table.
+
+      Original INDEX.md had only headers:
+      | Date | Name | Summary |
+      |------|------|---------|
+
+      Does the final INDEX.md have at least one data row in the table (not just the header)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "INDEX.md should have data row"

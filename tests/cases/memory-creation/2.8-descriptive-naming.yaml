@@ -1,0 +1,55 @@
+# Test 2.8: Descriptive Entry Naming
+# Entry name is descriptive, not generic
+
+name: descriptive-naming
+description: Entry name is specific and descriptive
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Perform a chi-square test comparing genotype frequencies between cases and controls for variant rs7903146.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    description: "Entry should be created"
+
+  - type: evaluator
+    prompt: |
+      The notebook entry name should be specific and descriptive, not generic.
+
+      BAD names (too generic):
+      - "analysis"
+      - "chi-square-test"
+      - "genotype-analysis"
+
+      GOOD names (specific):
+      - "rs7903146-genotype-chisq"
+      - "chisq-rs7903146-case-control"
+      - "genotype-freq-rs7903146"
+
+      Is the entry name specific (mentions rs7903146 or similar identifying detail)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Entry name should be specific"

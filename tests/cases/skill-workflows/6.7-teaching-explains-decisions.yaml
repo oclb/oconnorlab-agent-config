@@ -1,0 +1,36 @@
+# Test 6.7: teaching-mode - Explains Decisions
+# Teaching mode explains why choices were made
+
+name: teaching-explains-decisions
+description: Teaching mode explains decision criteria
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Skill
+
+prompt: |
+  Teach me how to choose between a t-test and a Mann-Whitney U test.
+
+assertions:
+  - type: output_contains
+    pattern: "normal|distribution|parametric|non-parametric|assumption"
+    case_insensitive: true
+    description: "Should explain decision criteria"
+
+  - type: evaluator
+    prompt: |
+      A teaching response about test selection should explain:
+      - When to use t-test (assumptions)
+      - When to use Mann-Whitney (assumptions)
+      - How to decide between them
+
+      Does the response explain the decision-making process (not just list the tests)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should explain decision process"

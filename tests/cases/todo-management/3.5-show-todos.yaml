@@ -1,0 +1,49 @@
+# Test 3.5: Show Todos
+# "Show my todos" reads and displays TODO.md content
+
+name: show-todos
+description: Show todos displays TODO.md content
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      - [ ] #1 **Calculate LD scores** - For EUR population
+        - Added: 2026-01-15
+
+      - [ ] #2 **Run LDSC** - Estimate heritability
+        - Added: 2026-01-16
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Show my todos.
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "TODO.md"
+    description: "Should read the todo file"
+
+  - type: output_contains
+    pattern: "LD scores|LDSC"
+    case_insensitive: true
+    description: "Should display todo content"
+
+  - type: output_contains
+    pattern: "#1.*#2|#2.*#1|1.*2"
+    description: "Should show both items"

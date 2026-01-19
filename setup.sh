@@ -125,28 +125,15 @@ setup_symlink "$REPO_DIR/global/settings.json" "$CLAUDE_DIR/settings.json" "sett
 setup_symlink "$REPO_DIR/skills" "$CLAUDE_DIR/skills" "skills"
 setup_symlink "$REPO_DIR/hooks" "$CLAUDE_DIR/hooks" "hooks"
 
-# Step 3: Set up notifications
+# Step 3: Check for terminal-notifier (notifications)
 echo ""
-echo "Step 3: Setting up notifications..."
+echo "Step 3: Checking notification dependencies..."
 
-# Add NTFY_TOPIC if not already present
-if grep -q "export NTFY_TOPIC=" "$SHELL_CONFIG" 2>/dev/null; then
-    echo "  NTFY_TOPIC already configured in $SHELL_CONFIG"
+if command -v terminal-notifier &> /dev/null; then
+    echo "  terminal-notifier is installed"
 else
-    echo "" >> "$SHELL_CONFIG"
-    echo "# Claude Code: Notification topic for ntfy.sh" >> "$SHELL_CONFIG"
-    echo "export NTFY_TOPIC=\"$(whoami)_claude_notifications\"" >> "$SHELL_CONFIG"
-    echo "  Added NTFY_TOPIC to $SHELL_CONFIG"
-fi
-
-# Add source line for notification helpers if not already present
-if grep -q "source.*notify-helpers.sh" "$SHELL_CONFIG" 2>/dev/null; then
-    echo "  Notification helpers already sourced in $SHELL_CONFIG"
-else
-    echo "" >> "$SHELL_CONFIG"
-    echo "# Claude Code: Notification helper functions" >> "$SHELL_CONFIG"
-    echo "source \"$REPO_DIR/notify-helpers.sh\"" >> "$SHELL_CONFIG"
-    echo "  Added notification helpers to $SHELL_CONFIG"
+    echo "  WARNING: terminal-notifier not found"
+    echo "  Install with: brew install terminal-notifier"
 fi
 
 # Step 4: Create settings.local.json with user-specific permissions
@@ -173,14 +160,6 @@ echo ""
 echo "======================================"
 echo "Setup complete!"
 echo "======================================"
-echo ""
-echo "IMPORTANT: Run 'source $SHELL_CONFIG' or start a new terminal session"
-echo ""
-echo "To receive notifications:"
-echo "  1. Subscribe on your device:"
-echo "     - Phone: Install ntfy app, subscribe to: $(whoami)_claude_notifications"
-echo "     - Desktop: Visit https://ntfy.sh/$(whoami)_claude_notifications"
-echo "  2. Test with: source $SHELL_CONFIG && test_notify"
 echo ""
 echo "To verify setup:"
 echo "  ls -la ~/.claude/"

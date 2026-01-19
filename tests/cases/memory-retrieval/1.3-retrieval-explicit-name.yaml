@@ -1,0 +1,68 @@
+# Test 1.3: Retrieval on Explicit Entry Name
+# When user explicitly names an entry, Claude reads it
+
+name: retrieval-explicit-name
+description: Retrieval when user explicitly names an entry
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-12 | fine-mapping-susie | SuSiE fine-mapping of height GWAS loci |
+      | 2026-01-10 | ld-score-regression | LDSC heritability estimate for height |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-ld-score-regression.md << 'EOF'
+      # LD Score Regression Analysis
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      Ran LDSC on height GWAS summary statistics. Estimated h2=0.45 (SE=0.03).
+
+      ## Details
+      Used 1000G EUR LD scores. Intercept 1.02 suggests minimal inflation.
+
+      ## References
+      None
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-12-fine-mapping-susie.md << 'EOF'
+      # SuSiE Fine-Mapping
+
+      **Date:** 2026-01-12
+
+      ## Summary
+      Fine-mapped 50 height GWAS loci using SuSiE. Identified 73 credible sets.
+
+      ## Details
+      Used UK Biobank LD reference. Default L=10 causal variants per locus.
+
+      ## References
+      - `ld-score-regression`: Used same LD reference panel
+      EOF
+
+prompt: |
+  Look at the ld-score-regression entry and tell me the heritability estimate.
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "ld-score-regression"
+    description: "Should read the named entry"
+
+  - type: output_contains
+    pattern: "0\\.45|45%|h2"
+    description: "Should report the h2 estimate"

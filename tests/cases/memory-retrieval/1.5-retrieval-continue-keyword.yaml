@@ -1,0 +1,59 @@
+# Test 1.5: Retrieval on "Continue" Keyword
+# "Continue the analysis" should trigger retrieval of most recent relevant entry
+
+name: retrieval-continue-keyword
+description: Retrieval on continue keyword for in-progress work
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-17 | variant-annotation | Annotating GWAS hits with VEP, in progress |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-17-variant-annotation.md << 'EOF'
+      # Variant Annotation with VEP
+
+      **Date:** 2026-01-17
+      **Status:** In Progress
+
+      ## Summary
+      Annotating 500 GWAS significant variants with VEP. Completed: downloaded VEP cache. Next: run annotation.
+
+      ## Details
+      Using Ensembl VEP v110 with GRCh38. Cache downloaded to data/vep_cache/.
+
+      ## References
+      None
+      EOF
+
+prompt: |
+  Continue the annotation work.
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "INDEX.md"
+    description: "Should read INDEX.md to find what's in progress"
+
+  - type: tool_used
+    tool: Read
+    target_pattern: "variant-annotation"
+    description: "Should read the in-progress entry"
+
+  - type: output_contains
+    pattern: "VEP|annotation|500"
+    case_insensitive: true
+    description: "Should reference the annotation task"

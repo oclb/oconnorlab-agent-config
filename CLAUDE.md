@@ -8,7 +8,7 @@ This repository customizes Claude Code for scientific research workflows. It con
 - Custom skills for research: data analysis, data validation, tool learning, scientific writing
 - O2 cluster access via remote SSH connection
 - Behavioral flags (AFK mode, environment detection)
-- Push notifications via ntfy.sh
+- Local notifications via terminal-notifier
 
 **When working in this repo:**
 - Skills are in `skills/<skill-name>/SKILL.md` (the actual prompt) and `README.md` (documentation)
@@ -39,13 +39,12 @@ claude-config/
 │   ├── pptx/                 # PowerPoint handling
 │   └── skill-creator/        # Guide for creating new skills
 ├── hooks/                     # Shell scripts for Claude Code hooks
-│   └── notify.sh             # Cross-platform notification hook
+│   └── notify.sh             # Local notification hook (macOS)
 ├── templates/                 # Templates for project setup
 │   └── project-settings.json # Project permissions template (notebook access)
 ├── feedback/                  # Centralized feedback about Claude's behavior
 │   └── YYYY-MM-DD-<description>.md
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
-├── notify-helpers.sh          # Shell functions for notifications
 └── setup.sh                   # Setup script for local machines
 ```
 
@@ -62,7 +61,7 @@ Running `setup.sh` creates symlinks:
 ~/.claude/hooks/         → hooks/
 ```
 
-Setup also creates `~/.claude/behavior.conf` and configures shell notifications.
+Setup also creates `~/.claude/behavior.conf`.
 
 ### Behavior Flags
 
@@ -235,24 +234,13 @@ Feedback about Claude's behavior is logged centrally in `$CONFIG_REPO/feedback/`
 
 ## Notifications
 
-The repository includes a cross-platform notification system using ntfy.sh:
+Local notifications via macOS Notification Center:
 
-### Automatic Notifications (via hooks)
+- **Requires**: `brew install terminal-notifier`
 - **Notification hook**: Fires when Claude needs user input
 - **Stop hook**: Fires when Claude completes a task
 
-### Manual Notifications (via helper functions)
-```bash
-notify "Message"                    # Simple notification
-notify "Message" "Title" high       # With title and priority
-notifyme long_running_command       # Notify when command completes
-test_notify                         # Test notification setup
-```
-
-### In SLURM Scripts
-```bash
-notify_job_complete $?              # Notify job success/failure
-```
+Falls back to `osascript` if terminal-notifier is not installed.
 
 ## Key Files
 
@@ -266,8 +254,7 @@ notify_job_complete $?              # Notify job success/failure
 | `o2-scripts/` | Generated scripts for remote O2 access (gitignored) |
 | `skills/<name>/SKILL.md` | Skill prompt definition |
 | `skills/<name>/README.md` | Skill documentation |
-| `hooks/notify.sh` | Cross-platform notification hook |
-| `notify-helpers.sh` | Shell functions: `notify`, `notifyme`, `test_notify` |
+| `hooks/notify.sh` | Local notification hook (macOS) |
 
 ## Customization
 
@@ -299,7 +286,7 @@ Claude Code uses a layered permission system. This repo configures permissions a
 
 **Global settings** (`global/settings.json`):
 - `Read`/`Edit` for `~/.claude/behavior.conf` (behavioral flags)
-- `WebFetch` for allowed domains (GitHub, O2 docs, ntfy.sh)
+- `WebFetch` for allowed domains (GitHub, O2 docs)
 
 **User local settings** (`~/.claude/settings.local.json`, created by `setup.sh`):
 - `Bash` permissions for O2 scripts (user-specific paths)
@@ -333,4 +320,3 @@ This pre-approves:
 
 - [Claude Code Documentation](https://docs.claude.ai/claude-code)
 - [O2 Wiki](https://harvardmed.atlassian.net/wiki/spaces/O2/overview)
-- [ntfy.sh Documentation](https://docs.ntfy.sh)

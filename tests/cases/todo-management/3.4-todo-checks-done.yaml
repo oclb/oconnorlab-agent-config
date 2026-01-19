@@ -1,0 +1,51 @@
+# Test 3.4: Todo Numbering Checks DONE.md
+# Numbering considers completed todos to avoid reuse
+
+name: todo-checks-done
+description: Todo numbering checks DONE.md for highest number
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      - [ ] #3 **Run association test** - GWAS on filtered data
+        - Added: 2026-01-16
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      - [x] #1 **Download data** - Get 1000G reference panel
+        - Added: 2026-01-14
+        - Completed: 2026-01-14
+
+      - [x] #2 **QC samples** - Remove low quality samples
+        - Added: 2026-01-15
+        - Completed: 2026-01-15
+      EOF
+
+prompt: |
+  Add a todo to visualize Manhattan plot.
+
+assertions:
+  - type: evaluator
+    prompt: |
+      The new todo should be numbered #4 (after #1, #2 in DONE.md and #3 in TODO.md).
+
+      Does the new todo item have #4 in it (not reusing #1, #2, or #3)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "New todo should be #4"

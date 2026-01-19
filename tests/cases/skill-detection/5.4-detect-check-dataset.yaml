@@ -1,0 +1,43 @@
+# Test 5.4: Detect new-data on "check this dataset"
+# "Check this dataset" triggers validation
+
+name: detect-check-dataset
+description: Detect new-data skill on check trigger
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/expression.csv << 'EOF'
+      gene,sample1,sample2,sample3
+      BRCA1,5.2,NA,5.1
+      TP53,8.1,7.9,8.3
+      EGFR,,3.5,3.1
+      EOF
+
+prompt: |
+  Check this dataset: data/expression.csv
+
+assertions:
+  - type: output_contains
+    pattern: "missing|NA|empty|null"
+    case_insensitive: true
+    description: "Should identify missing values"
+
+  - type: output_contains
+    pattern: "3.*gene|gene.*3|3.*row|row.*3"
+    case_insensitive: true
+    description: "Should report dimensions"

@@ -1,0 +1,46 @@
+# Test 5.2: Detect perform-analysis on "run experiment"
+# "Run an experiment" triggers analysis skill
+
+name: detect-run-experiment
+description: Detect analysis skill on experiment trigger
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Run a simulation experiment: generate 100 random numbers from a normal distribution and calculate the mean. Does it match the expected value of 0?
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    description: "Experiments create entries"
+
+  - type: output_contains
+    pattern: "mean|average"
+    description: "Should report the calculated mean"
+
+  - type: output_contains
+    pattern: "[Cc]reated notebook entry"
+    description: "Should announce entry"

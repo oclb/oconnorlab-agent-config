@@ -1,0 +1,31 @@
+# Test 4.4: Default AFK=false - Asks Questions
+# Without AFK flag, Claude asks for clarification
+
+name: default-asks-questions
+description: Default mode asks clarifying questions
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > data/gwas_results.csv << 'EOF'
+      variant,pvalue,beta,se
+      rs123,1e-8,0.15,0.03
+      rs456,1e-6,0.12,0.02
+      rs789,1e-10,0.18,0.03
+      EOF
+
+prompt: |
+  Visualize the GWAS results.
+
+assertions:
+  - type: output_contains
+    pattern: "[Ww]ould you|[Ss]hould I|[Ww]hich|[Ww]hat kind|Manhattan|QQ|prefer|type"
+    description: "Should ask what type of visualization"

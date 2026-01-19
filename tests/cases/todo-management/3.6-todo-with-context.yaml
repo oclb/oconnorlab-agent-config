@@ -1,0 +1,70 @@
+# Test 3.6: Todo with Context Link
+# Todo arising from analysis discussion includes Context link
+
+name: todo-with-context
+description: Todo from analysis includes context link
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-15 | prs-validation | Validated PRS in independent cohort, r2=0.05 |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-15-prs-validation.md << 'EOF'
+      # PRS Validation
+
+      **Date:** 2026-01-15
+
+      ## Summary
+      Validated height PRS in holdout sample. Variance explained r2=0.05, lower than expected.
+
+      ## Details
+      Need to investigate: possibly insufficient sample size or LD mismatch.
+
+      ## References
+      None
+      EOF
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Look at the PRS validation entry. Add a todo to investigate the low r2 - check for LD panel mismatch.
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "prs-validation"
+    description: "Should read the referenced entry"
+
+  - type: evaluator
+    prompt: |
+      The todo should include a Context line linking to the prs-validation entry.
+
+      Does the new todo have a "Context:" line mentioning "prs-validation"?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Todo should have context link"

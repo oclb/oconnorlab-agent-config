@@ -1,0 +1,50 @@
+# Test 1.2: No Retrieval for Unrelated New Task
+# Claude should NOT read notebook entries for completely unrelated work
+
+name: no-retrieval-unrelated
+description: No retrieval for completely unrelated new work
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  allowed_tools:
+    - Read
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-10 | gwas-power-analysis | Power calculations for case-control GWAS with 10K samples |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-gwas-power-analysis.md << 'EOF'
+      # GWAS Power Analysis
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      Power analysis for GWAS study.
+
+      ## Details
+      Details here.
+
+      ## References
+      None
+      EOF
+
+prompt: |
+  What is 2 + 2?
+
+assertions:
+  - type: tool_not_used
+    tool: Read
+    description: "Should not read files for simple arithmetic"
+
+  - type: output_contains
+    pattern: "4"
+    description: "Should still answer correctly"

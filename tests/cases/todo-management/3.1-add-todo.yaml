@@ -1,0 +1,47 @@
+# Test 3.1: Add Todo on Request
+# "Add a todo" creates an entry in TODO.md
+
+name: add-todo
+description: Add todo on explicit request
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Add a todo to run GWAS on the remaining 5 phenotypes.
+
+assertions:
+  - type: tool_used
+    tool: Edit
+    target_pattern: "TODO.md"
+    description: "Should edit TODO.md to add item"
+
+  - type: evaluator
+    prompt: |
+      The TODO.md should now contain a todo item about GWAS and phenotypes.
+
+      Does TODO.md contain a checkbox item (- [ ]) mentioning GWAS or phenotypes?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "TODO.md should have the new item"

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(notebook/**)",
+      "Edit(notebook/**)",
+      "Write(notebook/**)",
+      "Read(src/**)",
+      "Edit(src/**)",
+      "Read(CLAUDE.md)",
+      "Edit(CLAUDE.md)"
+    ]
+  }
+}

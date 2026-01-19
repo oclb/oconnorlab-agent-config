@@ -1,0 +1,61 @@
+# Test 1.1: Index Read on Ambiguous Reference
+# When user references past work with a pronoun, Claude should read INDEX.md
+
+name: index-read-ambiguous-ref
+description: Index read on ambiguous reference like "the analysis"
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-10 | gwas-power-analysis | Power calculations for case-control GWAS with 10K samples |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-gwas-power-analysis.md << 'EOF'
+      # GWAS Power Analysis
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      Calculated statistical power for detecting variants with OR=1.2 in a GWAS with 5K cases and 5K controls. Power is ~80% for MAF>0.1.
+
+      ## Details
+      Used GPC calculator. Key parameters:
+      - Disease prevalence: 1%
+      - Significance threshold: 5e-8
+      - Sample size: 10,000 (5K/5K)
+
+      ## References
+      None
+      EOF
+
+prompt: |
+  What were the key findings from the power analysis?
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "INDEX.md"
+    description: "Should read INDEX.md to find relevant entry"
+
+  - type: tool_used
+    tool: Read
+    target_pattern: "gwas-power-analysis"
+    description: "Should read the actual entry to answer"
+
+  - type: output_contains
+    pattern: "80%|OR.*1\\.2|MAF.*0\\.1|power"
+    case_insensitive: true
+    description: "Should mention key findings"

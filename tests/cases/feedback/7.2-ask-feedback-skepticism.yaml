@@ -1,0 +1,41 @@
+# Test 7.2: Ask About Feedback on Skepticism
+# User skepticism prompts an offer to log feedback
+# NOTE: This is a multi-turn test
+
+name: ask-feedback-skepticism
+description: Offer feedback logging on user skepticism
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: mkdir -p notebook/feedback
+
+# Simulating skepticism scenario
+prompt: |
+  You said the typical sample size for a GWAS is 1,000 samples.
+  Hmm, are you sure about that? That seems low for modern GWAS.
+
+assertions:
+  - type: output_contains
+    pattern: "feedback|log|note|record|improvement|future"
+    case_insensitive: true
+    description: "Should offer to log feedback"
+
+  - type: evaluator
+    prompt: |
+      When the user expresses skepticism ("Hmm, are you sure?"), Claude should offer to log feedback.
+
+      Does the response offer to log feedback for future improvement?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should offer to log feedback"

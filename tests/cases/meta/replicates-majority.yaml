@@ -1,0 +1,20 @@
+# Meta-test: Replicate aggregation
+# Tests that pass_threshold works correctly with multiple replicates
+# This test should pass because the assertion is deterministic
+
+name: meta-replicates-majority
+description: Validates that replicate aggregation works correctly
+
+config:
+  replicates: 3
+  pass_threshold: 0.67  # 2/3 must pass
+  max_turns: 1
+  allowed_tools: []
+
+prompt: "Say the word 'test' exactly."
+
+assertions:
+  - type: output_contains
+    pattern: "test"
+    case_insensitive: true
+    description: "Output should contain 'test'"

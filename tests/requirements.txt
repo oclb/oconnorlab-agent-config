@@ -1,0 +1,5 @@
+# Claude Code Configuration Testing Framework
+# Install with: pip install -r requirements.txt
+
+claude-agent-sdk>=0.1.0
+pyyaml>=6.0

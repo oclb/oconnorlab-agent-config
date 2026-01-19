@@ -1,0 +1,35 @@
+# Test 2.3: Entry Contains Date Header
+# Entry content includes **Date:** header with correct format
+
+name: entry-date-header
+description: Entry content includes Date header
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Document that we've set up the conda environment for GWAS analysis.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    content_pattern: "\\*\\*Date:\\*\\* 2026-01"
+    description: "Should have Date header with correct format"

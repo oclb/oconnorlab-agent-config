@@ -1,0 +1,78 @@
+# Test 6.1: perform-analysis - Reads Related Entries (Step 0)
+# Before analysis, Claude checks for related prior work
+
+name: analysis-reads-related
+description: Analysis reads related prior entries
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-10 | gwas-qc | QC on GWAS summary stats, removed variants with INFO<0.8 |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-gwas-qc.md << 'EOF'
+      # GWAS Quality Control
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      QC on GWAS summary statistics. Filtered variants with INFO < 0.8. Final set: 8M variants.
+
+      ## Details
+      Input: 12M variants
+      Removed: 4M low-INFO variants
+      Output: data/gwas_qc.csv
+
+      ## References
+      None
+      EOF
+  - command: |
+      cat > data/gwas_results.csv << 'EOF'
+      variant,pvalue,beta
+      rs1,1e-8,0.15
+      rs2,1e-6,0.12
+      rs3,1e-10,0.18
+      EOF
+
+prompt: |
+  Analyze the GWAS results in data/gwas_results.csv. Identify genome-wide significant hits.
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "INDEX.md"
+    description: "Should check index for related work"
+
+  - type: tool_used
+    tool: Read
+    target_pattern: "gwas-qc"
+    description: "Should read related GWAS entry"
+
+  - type: evaluator
+    prompt: |
+      The new notebook entry should reference the prior gwas-qc work.
+
+      Does the new entry's References section mention "gwas-qc"?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should reference prior work"

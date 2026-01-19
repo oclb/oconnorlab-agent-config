@@ -1,0 +1,62 @@
+# Test 6.3: perform-analysis - Key Takeaway
+# Analysis includes a clear key takeaway
+
+name: key-takeaway
+description: Analysis includes key takeaway with numbers
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: |
+      cat > data/test_results.csv << 'EOF'
+      group,value
+      control,5.2
+      control,4.8
+      control,5.1
+      treatment,8.3
+      treatment,7.9
+      treatment,8.1
+      EOF
+
+prompt: |
+  Test if treatment significantly differs from control in data/test_results.csv.
+
+assertions:
+  - type: evaluator
+    prompt: |
+      The output should include a clear key finding/takeaway with actual numbers.
+
+      Good: "Treatment increased values by 60% (p < 0.01)"
+      Bad: "The analysis showed interesting results"
+
+      Does the output state a specific key finding with numbers?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should state specific finding with numbers"
+
+  - type: output_contains
+    pattern: "p\\s*[<=<]\\s*0\\.\\d|significant|differ"
+    case_insensitive: true
+    description: "Should report statistical result"

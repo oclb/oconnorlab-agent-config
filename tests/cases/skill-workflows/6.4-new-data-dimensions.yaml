@@ -1,0 +1,45 @@
+# Test 6.4: new-data - Reports Dimensions
+# Data validation reports dataset dimensions
+
+name: new-data-dimensions
+description: Data validation reports dimensions
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/samples.csv << 'EOF'
+      id,age,bmi,status
+      1,45,25.2,case
+      2,32,22.1,control
+      3,58,28.5,case
+      4,41,24.3,control
+      5,36,23.8,case
+      EOF
+
+prompt: |
+  Check the data in data/samples.csv.
+
+assertions:
+  - type: output_contains
+    pattern: "5.*row|row.*5|5.*sample|sample.*5"
+    case_insensitive: true
+    description: "Should report 5 rows"
+
+  - type: output_contains
+    pattern: "4.*col|col.*4|4.*variable|variable.*4|4.*field"
+    case_insensitive: true
+    description: "Should report 4 columns"

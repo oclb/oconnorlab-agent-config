@@ -1,0 +1,24 @@
+# Meta-test: Evaluator assertion (should pass)
+# Tests that the LLM-based evaluator correctly passes valid responses
+
+name: meta-evaluator-pass
+description: Validates that evaluator correctly passes valid responses
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 1
+  allowed_tools: []
+
+prompt: "Explain what Python is in one sentence."
+
+assertions:
+  - type: evaluator
+    prompt: |
+      Does this response describe Python as a programming language?
+
+      Response:
+      {{output}}
+    pass_if: "yes"
+    model: haiku
+    description: "Evaluator should confirm Python is described as a programming language"

@@ -1,0 +1,47 @@
+# Test 7.3: Feedback Not in INDEX.md
+# Feedback files are NOT added to notebook/INDEX.md
+
+name: feedback-not-indexed
+description: Feedback files not added to INDEX.md
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: mkdir -p notebook/feedback
+  - command: rm -f notebook/feedback/*.md 2>/dev/null || true
+
+prompt: |
+  Your explanation of p-values wasn't quite right. Please log that as feedback for future improvement.
+
+assertions:
+  - type: file_created
+    path: "notebook/feedback/*.md"
+    description: "Feedback should be created"
+
+  - type: evaluator
+    prompt: |
+      Feedback files should NOT be added to INDEX.md (feedback is separate from entries).
+
+      Is INDEX.md still empty (just the header, no data rows)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "INDEX.md should not have feedback entries"

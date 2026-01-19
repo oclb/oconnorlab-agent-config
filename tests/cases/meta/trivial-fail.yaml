@@ -1,0 +1,18 @@
+# Meta-test: Should always fail
+# Tests that the framework correctly identifies failing tests
+
+name: meta-trivial-fail
+description: A trivial test that should always fail - validates failure detection
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 1
+  allowed_tools: []
+
+prompt: "Say hello."
+
+assertions:
+  - type: output_contains
+    pattern: "xyzzy12345impossible"
+    description: "Output should contain impossible string (will fail)"

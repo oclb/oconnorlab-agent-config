@@ -1,0 +1,58 @@
+# Test 2.1: Entry Created for Substantive Work
+# Analysis work creates a notebook entry with correct format
+
+name: entry-created-substantive
+description: Entry created for substantive analysis work
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: |
+      cat > data/expression.csv << 'EOF'
+      gene,sample1,sample2,sample3,sample4
+      BRCA1,5.2,4.8,5.1,4.9
+      TP53,8.1,7.9,8.3,8.0
+      EGFR,3.2,3.5,3.1,3.4
+      MYC,6.7,6.5,6.9,6.6
+      EOF
+
+prompt: |
+  Analyze the expression data in data/expression.csv. Calculate the mean expression for each gene.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    content_pattern: "## Summary"
+    description: "Entry should have Summary section"
+
+  - type: file_created
+    path: "notebook/entries/*.md"
+    content_pattern: "## Details"
+    description: "Entry should have Details section"
+
+  - type: output_contains
+    pattern: "BRCA1|TP53|mean|expression"
+    case_insensitive: true
+    description: "Should report analysis results"
+
+  - type: output_contains
+    pattern: "[Cc]reated notebook entry"
+    description: "Should announce entry creation"

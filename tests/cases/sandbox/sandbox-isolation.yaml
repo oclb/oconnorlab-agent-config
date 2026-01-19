@@ -1,0 +1,34 @@
+# Meta-test: Sandbox isolation
+# Tests that file writes only affect the sandbox, not the real project
+
+name: meta-sandbox-isolation
+description: Validates that sandboxed tests cannot write outside workspace
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  sandbox: true  # Explicitly enable sandbox
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+
+prompt: |
+  Create a new file called "sandbox-test-marker.txt" in the current directory
+  with the content "This file was created in a sandbox test."
+
+assertions:
+  - type: tool_used
+    tool: Write
+    min_calls: 1
+    description: "Should use Write tool to create file"
+
+  - type: file_created
+    path: "sandbox-test-marker.txt"
+    content_pattern: "sandbox"
+    description: "File should be created in sandbox workspace"
+
+  - type: hook_fired
+    hook_type: Stop
+    description: "Task should complete"

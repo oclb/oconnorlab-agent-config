@@ -1,0 +1,34 @@
+# Test 8.6: CLAUDE.md Read at Start
+# Project CLAUDE.md is read and used for context
+
+name: claude-md-read
+description: Project CLAUDE.md is used for context
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > CLAUDE.md << 'EOF'
+      # Genetics Analysis Project
+
+      ## Important Notes
+
+      - All analyses use GRCh38 reference genome
+      - Primary phenotype: Type 2 Diabetes (T2D)
+      - Sample size: 50,000 cases and 50,000 controls
+      EOF
+
+prompt: |
+  What's the sample size for this project?
+
+assertions:
+  - type: output_contains
+    pattern: "50,?000|100,?000|50k|100k"
+    description: "Should report the sample size from CLAUDE.md"

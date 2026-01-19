@@ -5,16 +5,27 @@ Initialize a project for use with Claude Code and the notebook system.
 ## When to Use
 
 - First time using Claude Code with a project
-- Replaces the built-in `/init` command with a more comprehensive setup
+- Complements the built-in `/init` command with notebook system setup
 
 ## What It Does
 
 1. **Ensures main repo has a GitHub remote** - Guides user through setup if needed
-2. **Creates notebook structure** - `notebook/{analyses,methods,feedback}/`
+2. **Creates notebook structure** - `notebook/{entries,feedback}/`
 3. **Initializes notebook as separate git repo** - Keeps main repo clean
 4. **Offers notebook remote** - Recommended for backup/sync
 5. **Configures permissions** - Creates `.claude/settings.json`
-6. **Creates CLAUDE.md** - Project context template
+6. **Creates or enhances CLAUDE.md** - Offers to run `/init` for intelligent auto-generation, or uses a basic template
+
+## Integration with `/init`
+
+When no CLAUDE.md exists, `/init-project` offers two options:
+
+| Option | What happens |
+|--------|--------------|
+| **Auto-generate with /init** (recommended) | Runs Claude Code's built-in `/init` to scan your codebase and generate an intelligent CLAUDE.md |
+| **Use basic template** | Creates a simple template you fill in manually |
+
+After CLAUDE.md exists (either way), `/init-project` appends a notebook reference section and continues with the notebook setup.
 
 ## Why Separate Notebook Repo?
 
@@ -47,7 +58,15 @@ I'll now:
 1. Create notebook/ directory structure (as a separate git repo)
 2. Add notebook/ to .gitignore
 3. Create .claude/settings.json with notebook permissions
-4. Create CLAUDE.md with project template
+4. Create or update CLAUDE.md
+
+Generate CLAUDE.md
+
+Claude Code's /init command can scan your codebase and auto-generate a CLAUDE.md.
+How would you like to create CLAUDE.md?
+> Auto-generate with /init (recommended)
+
+[/init runs and generates CLAUDE.md based on codebase analysis]
 
 Notebook backup (recommended)
 
@@ -61,10 +80,10 @@ Project initialized!
 - Notebook: notebook/ (separate git repo)
 - Notebook remote: https://github.com/myusername/my-project-notebook
 - Permissions: .claude/settings.json
-- Project context: CLAUDE.md
+- Project context: CLAUDE.md (auto-generated)
 
 Next steps:
-- Edit CLAUDE.md to add project-specific context
+- Review CLAUDE.md and add any missing context
 - Use /perform-analysis to run and log analyses
 ```
 

@@ -1,0 +1,44 @@
+# Test 8.3: Handle Empty Notebook Index
+# Claude handles empty INDEX.md gracefully
+
+name: empty-index
+description: Handle empty INDEX.md gracefully
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  What have we worked on so far in this project?
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "INDEX.md"
+    description: "Should check the index"
+
+  - type: output_contains
+    pattern: "no.*entr|empty|nothing.*yet|haven't|no prior|no previous|no record"
+    case_insensitive: true
+    description: "Should indicate no prior work"
+
+  - type: output_not_contains
+    pattern: "error|failed|cannot"
+    description: "Should NOT error out"

@@ -1,0 +1,27 @@
+# Meta-test: Tool usage detection
+# Tests that the framework correctly detects tool usage
+
+name: meta-tool-usage-pass
+description: Validates that tool usage is correctly captured
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  allowed_tools:
+    - Read
+    - Glob
+
+# Use a file that definitely exists in this repo
+prompt: "Read the file tests/SPEC.md and tell me what the first heading is."
+
+assertions:
+  - type: tool_used
+    tool: Read
+    min_calls: 1
+    description: "Should use Read tool to read the file"
+
+  - type: output_contains
+    pattern: "Claude Code Configuration Testing Framework|Overview|Testing"
+    case_insensitive: true
+    description: "Should mention content from the spec file"

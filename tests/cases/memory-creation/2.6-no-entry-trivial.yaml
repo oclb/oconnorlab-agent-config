@@ -1,0 +1,35 @@
+# Test 2.6: No Entry for Trivial Task
+# Trivial questions don't create notebook entries
+
+name: no-entry-trivial
+description: No entry created for trivial questions
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  allowed_tools:
+    - Read
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  What does MAF stand for in genetics?
+
+assertions:
+  - type: tool_not_used
+    tool: Write
+    description: "Should not write any files"
+
+  - type: output_contains
+    pattern: "[Mm]inor [Aa]llele [Ff]requency"
+    description: "Should answer correctly"

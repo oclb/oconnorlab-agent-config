@@ -1,0 +1,34 @@
+# Test 8.1: Suggest init-project When No Notebook
+# When notebook/ doesn't exist, Claude suggests /init-project
+
+name: suggest-init-project
+description: Suggest init-project when no notebook exists
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: rm -rf notebook 2>/dev/null || true
+  - command: |
+      cat > CLAUDE.md << 'EOF'
+      # My Project
+
+      A genetics analysis project.
+      EOF
+
+prompt: |
+  Document that we've decided to use PLINK 2.0 for analysis.
+
+assertions:
+  - type: output_contains
+    pattern: "init.project|/init-project|notebook.*not.*exist|set up.*notebook|create.*notebook"
+    case_insensitive: true
+    description: "Should mention init-project or notebook doesn't exist"

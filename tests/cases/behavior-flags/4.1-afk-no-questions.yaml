@@ -1,0 +1,48 @@
+# Test 4.1: AFK Mode - No Clarifying Questions
+# With AFK=true, Claude proceeds without asking clarifying questions
+
+name: afk-no-questions
+description: AFK mode proceeds without questions
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/samples.csv << 'EOF'
+      sample_id,phenotype,covariate
+      S001,1.2,0.5
+      S002,2.3,0.8
+      S003,1.8,0.6
+      S004,0.9,0.4
+      S005,2.1,0.7
+      EOF
+
+prompt: |
+  Analyze the relationship between phenotype and covariate in data/samples.csv.
+
+assertions:
+  - type: output_not_contains
+    pattern: "[Ww]ould you like|[Ss]hould I|[Dd]o you want|[Ww]hich (method|approach)|[Pp]refer"
+    description: "Should NOT ask clarifying questions in AFK mode"
+
+  - type: tool_used
+    tool: Read
+    target_pattern: "samples.csv"
+    description: "Should proceed to read and analyze"
+
+  - type: output_contains
+    pattern: "correlation|regression|r\\s*=|slope|relationship"
+    case_insensitive: true
+    description: "Should produce analysis results"

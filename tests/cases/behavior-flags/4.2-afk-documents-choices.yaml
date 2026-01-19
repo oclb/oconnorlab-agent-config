@@ -1,0 +1,55 @@
+# Test 4.2: AFK Mode - Documents Choices
+# In AFK mode, Claude documents the choices it made autonomously
+
+name: afk-documents-choices
+description: AFK mode documents autonomous choices
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: |
+      cat > data/expression.csv << 'EOF'
+      gene,ctrl1,ctrl2,ctrl3,case1,case2,case3
+      GENE_A,5.1,4.9,5.2,7.8,8.1,7.5
+      GENE_B,3.2,3.4,3.1,3.3,3.2,3.5
+      GENE_C,6.5,6.8,6.2,9.1,8.9,9.3
+      EOF
+
+prompt: |
+  Test for differential expression between case and control samples in data/expression.csv.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/*.md"
+    description: "Should create entry"
+
+  - type: evaluator
+    prompt: |
+      In AFK mode, the notebook entry should document the choices made.
+      Look for sections like "Choices Made", "Decisions", or explicit reasoning for method selection.
+
+      Does the entry document what statistical test was chosen and/or why?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Entry should document choices"

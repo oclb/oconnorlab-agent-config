@@ -1,0 +1,57 @@
+# Test 6.2: perform-analysis - Creates Entry with Required Sections
+# Analysis entry has all required sections
+
+name: entry-required-sections
+description: Analysis entry has required sections
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 15
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: |
+      cat > data/counts.csv << 'EOF'
+      gene,count
+      BRCA1,150
+      TP53,320
+      EGFR,85
+      EOF
+
+prompt: |
+  Analyze the gene counts in data/counts.csv. Which gene has the highest expression?
+
+assertions:
+  - type: evaluator
+    prompt: |
+      The notebook entry should have these sections:
+      - Summary (or Motivation)
+      - Details (or Plan, Execution Notes, Findings)
+
+      Does the entry have at least Summary and Details/Findings sections?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Entry should have required sections"
+
+  - type: output_contains
+    pattern: "TP53|highest|320"
+    description: "TP53 has highest count"

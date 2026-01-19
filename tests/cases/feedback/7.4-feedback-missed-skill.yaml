@@ -1,0 +1,40 @@
+# Test 7.4: Feedback on Missed Skill Detection
+# When user manually invokes a skill Claude should have detected, log feedback
+# NOTE: This is a multi-turn test
+
+name: feedback-missed-skill
+description: Log feedback on missed skill detection
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+
+setup:
+  - command: mkdir -p notebook/feedback
+  - command: rm -f notebook/feedback/*.md 2>/dev/null || true
+
+prompt: |
+  You should have used the data validation skill when I showed you the samples.csv file earlier.
+  Please log feedback about missing the skill auto-detection.
+
+assertions:
+  - type: evaluator
+    prompt: |
+      When a user points out a missed skill detection, Claude should log feedback.
+
+      Did Claude either:
+      a) Create a feedback file about missing the skill detection, OR
+      b) Acknowledge the missed detection and offer to log feedback?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should acknowledge missed detection"

@@ -1,0 +1,42 @@
+# Test 3.2: Todo Numbering Starts at 1
+# First todo gets #1
+
+name: todo-numbering-first
+description: First todo gets number 1
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Add a todo: implement variant filtering pipeline
+
+assertions:
+  - type: evaluator
+    prompt: |
+      The first todo should be numbered #1.
+
+      Does the todo item have #1 in it?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "First todo should be #1"

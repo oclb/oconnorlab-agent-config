@@ -1,0 +1,46 @@
+# Test 9.2: /new-data Explicit Call
+# /new-data invokes validation skill
+
+name: new-data-explicit
+description: Explicit /new-data invocation
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Skill
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/samples.csv << 'EOF'
+      sample,age,sex
+      S1,45,M
+      S2,32,F
+      S3,58,M
+      EOF
+
+prompt: |
+  /new-data data/samples.csv
+
+assertions:
+  - type: skill_invoked
+    skill: "new-data"
+    description: "Explicit skill invocation"
+
+  - type: output_contains
+    pattern: "3.*row|row.*3|3.*sample"
+    case_insensitive: true
+    description: "Should report dimensions"
+
+  - type: output_contains
+    pattern: "age|sex|sample"
+    description: "Should describe columns"

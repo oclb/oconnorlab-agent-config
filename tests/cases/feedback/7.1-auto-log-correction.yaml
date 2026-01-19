@@ -1,0 +1,51 @@
+# Test 7.1: Auto-Log on User Correction
+# When user says "No, I meant X", feedback is logged automatically
+# NOTE: This is a multi-turn test - requires framework enhancement
+
+name: auto-log-correction
+description: Auto-log feedback on user correction
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+  - command: mkdir -p notebook/feedback
+  - command: rm -f notebook/feedback/*.md 2>/dev/null || true
+
+# NOTE: This test requires multi-turn conversation support
+# The prompt simulates a correction scenario
+prompt: |
+  You previously calculated the arithmetic mean of 1,2,3,4,5 as 3.
+  No, I meant the geometric mean, not arithmetic mean. Please correct this and log feedback about the misunderstanding.
+
+assertions:
+  - type: file_created
+    path: "notebook/feedback/*.md"
+    description: "User correction should trigger feedback log"
+
+  - type: evaluator
+    prompt: |
+      The feedback file should document what was misunderstood.
+
+      Does the feedback describe the misunderstanding (arithmetic vs geometric mean)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Feedback should describe misunderstanding"

@@ -1,0 +1,48 @@
+# Test 2.7: Entry Announcement Format
+# Claude announces entry creation with correct format
+
+name: entry-announcement
+description: Entry announcement uses correct format
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Document that we've decided to use PLINK 2.0 for all GWAS analyses in this project.
+
+assertions:
+  - type: output_contains
+    pattern: "[Cc]reated notebook entry"
+    description: "Should announce creation"
+
+  - type: evaluator
+    prompt: |
+      The output should announce the entry creation in the format:
+      "Created notebook entry: `entry-name`" (with backticks around the name)
+
+      Output:
+      {{output}}
+
+      Does the output contain this announcement format with the entry name in backticks?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Announcement should use backticks"

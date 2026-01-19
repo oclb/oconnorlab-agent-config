@@ -1,0 +1,64 @@
+# Test 8.7: Continue Previous Entry
+# "Continue the X" updates existing entry, not creates new
+
+name: continue-previous-entry
+description: Continue updates existing entry
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-17 | variant-filtering | Filtering GWAS variants, in progress |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-17-variant-filtering.md << 'EOF'
+      # Variant Filtering
+
+      **Date:** 2026-01-17
+      **Status:** In Progress
+
+      ## Summary
+      Filtering GWAS variants by MAF and INFO score.
+
+      ## Details
+      Step 1: Removed variants with MAF < 0.01 (done)
+      Step 2: Remove variants with INFO < 0.8 (pending)
+
+      ## References
+      None
+      EOF
+
+prompt: |
+  Continue the variant filtering. Step 2 is now done - we removed 50,000 variants.
+
+assertions:
+  - type: tool_used
+    tool: Edit
+    target_pattern: "variant-filtering"
+    description: "Should edit existing entry"
+
+  - type: evaluator
+    prompt: |
+      The existing entry should be updated with the new information about Step 2.
+
+      Does the entry now mention that Step 2 is done with 50,000 variants removed?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Entry should be updated with Step 2 info"

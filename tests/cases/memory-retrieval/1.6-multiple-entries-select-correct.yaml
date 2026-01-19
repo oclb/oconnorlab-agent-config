@@ -1,0 +1,85 @@
+# Test 1.6: Multiple Entries - Select Correct One
+# When multiple entries exist, Claude selects the most relevant based on the question
+
+name: multiple-entries-select-correct
+description: Select correct entry when multiple exist
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      | 2026-01-14 | mendelian-randomization | MR analysis of BMI on T2D risk |
+      | 2026-01-12 | heritability | LDSC h2 estimates for metabolic traits |
+      | 2026-01-10 | gwas-qc | Quality control for UK Biobank GWAS |
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-10-gwas-qc.md << 'EOF'
+      # GWAS Quality Control
+
+      **Date:** 2026-01-10
+
+      ## Summary
+      QC on UKBB GWAS summary stats. Removed 1M variants with INFO<0.8.
+
+      ## Details
+      Standard filters: INFO, MAF, HWE.
+
+      ## References
+      None
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-12-heritability.md << 'EOF'
+      # Heritability Estimation
+
+      **Date:** 2026-01-12
+
+      ## Summary
+      LDSC heritability for BMI (h2=0.25), T2D (h2=0.18), fasting glucose (h2=0.12).
+
+      ## Details
+      Used EUR LD scores. All estimates significant (p<1e-10).
+
+      ## References
+      - `gwas-qc`: Used QC'd summary stats
+      EOF
+  - command: |
+      cat > notebook/entries/2026-01-14-mendelian-randomization.md << 'EOF'
+      # Mendelian Randomization: BMI -> T2D
+
+      **Date:** 2026-01-14
+
+      ## Summary
+      Two-sample MR shows BMI causally increases T2D risk. OR=1.8 per SD BMI (p=3e-15).
+
+      ## Details
+      Used 97 BMI instruments from GIANT. IVW estimate robust to pleiotropy (MR-Egger intercept p=0.4).
+
+      ## References
+      - `heritability`: Confirmed genetic signal in both traits
+      EOF
+
+prompt: |
+  What was the causal effect estimate from our MR analysis?
+
+assertions:
+  - type: tool_used
+    tool: Read
+    target_pattern: "mendelian-randomization"
+    description: "Should read the MR entry"
+
+  - type: output_contains
+    pattern: "OR.*1\\.8|1\\.8.*OR|causal"
+    case_insensitive: true
+    description: "Should report the OR estimate"

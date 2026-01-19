@@ -1,0 +1,54 @@
+# Test 4.5: AFK Mode - Autonomous Error Recovery
+# In AFK mode, Claude attempts to fix errors before stopping
+
+name: afk-error-recovery
+description: AFK mode handles errors autonomously
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+  behavior_flags:
+    AFK: "true"
+
+setup:
+  - command: |
+      cat > data/data.csv << 'EOF'
+      sample,value
+      A,1.5
+      B,2.3
+      C,NA
+      D,1.8
+      EOF
+
+prompt: |
+  Calculate the mean of the 'value' column in data/data.csv using Python.
+
+assertions:
+  - type: output_contains
+    pattern: "NA|missing|handle|skip|dropna|nan"
+    case_insensitive: true
+    description: "Should handle the NA value"
+
+  - type: output_contains
+    pattern: "mean|average|1\\.[0-9]"
+    case_insensitive: true
+    description: "Should produce a mean result"
+
+  - type: evaluator
+    prompt: |
+      The agent should have handled the NA value in the data and still calculated a mean.
+      It should NOT have stopped and asked for help with the NA.
+
+      Did the agent handle the NA and produce a mean value (not ask for help)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should handle NA autonomously"

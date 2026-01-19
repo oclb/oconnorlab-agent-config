@@ -1,0 +1,26 @@
+# Meta-test: Tool NOT used detection
+# Tests that the framework correctly detects when tools are NOT used
+
+name: meta-tool-not-used-pass
+description: Validates that tool non-usage is correctly detected
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 1
+  allowed_tools: []  # No tools allowed
+
+prompt: "What is the capital of France? Just answer directly."
+
+assertions:
+  - type: tool_not_used
+    tool: Read
+    description: "Should not use Read tool for a trivia question"
+
+  - type: tool_not_used
+    tool: Bash
+    description: "Should not use Bash tool for a trivia question"
+
+  - type: output_contains
+    pattern: "Paris"
+    description: "Should correctly answer Paris"

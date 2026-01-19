@@ -1,0 +1,24 @@
+# Meta-test: Evaluator assertion (should fail)
+# Tests that the LLM-based evaluator correctly fails invalid responses
+
+name: meta-evaluator-fail
+description: Validates that evaluator correctly fails invalid responses
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 1
+  allowed_tools: []
+
+prompt: "What is 2 + 2?"
+
+assertions:
+  - type: evaluator
+    prompt: |
+      Does this response claim that 2 + 2 equals 5?
+
+      Response:
+      {{output}}
+    pass_if: "yes"
+    model: haiku
+    description: "Evaluator should fail because 2+2 is not 5"

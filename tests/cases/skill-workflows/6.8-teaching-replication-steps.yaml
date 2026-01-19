@@ -1,0 +1,36 @@
+# Test 6.8: teaching-mode - Provides Replication Steps
+# Teaching mode includes how to replicate
+
+name: teaching-replication-steps
+description: Teaching mode provides replication steps
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Skill
+
+prompt: |
+  Teach me how to calculate Hardy-Weinberg equilibrium p-value for a variant.
+
+assertions:
+  - type: output_contains
+    pattern: "step|first|then|calculate|formula"
+    case_insensitive: true
+    description: "Should give steps"
+
+  - type: evaluator
+    prompt: |
+      A teaching response should include replication instructions:
+      - Specific steps or commands
+      - Formula or calculation method
+      - Example with numbers
+
+      Does the response include enough detail to replicate the calculation?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should provide replication detail"

@@ -1,0 +1,56 @@
+# Test 3.7: Complete Todo Moves to DONE.md
+# Completing a todo moves it from TODO.md to DONE.md
+
+name: complete-todo
+description: Completing todo moves it to DONE.md
+
+config:
+  model: sonnet
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      - [ ] #1 **Count variants** - Count variants passing QC filters
+        - Added: 2026-01-15
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Work on todo #1. The answer is: 5.2 million variants passed QC. Mark it complete.
+
+assertions:
+  - type: evaluator
+    prompt: |
+      After completion:
+      - TODO.md should NOT contain the #1 item
+      - DONE.md should contain the #1 item with [x] checkbox
+
+      Is the #1 item now in DONE.md (not TODO.md)?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Item should be in DONE.md"
+
+  - type: evaluator
+    prompt: |
+      The completed item should have a Completed: date line.
+
+      Does the completed item have a "Completed:" line with a date?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Should have completed date"

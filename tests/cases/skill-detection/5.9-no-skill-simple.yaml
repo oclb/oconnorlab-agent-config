@@ -1,0 +1,40 @@
+# Test 5.9: No Skill for Simple Question
+# Simple factual questions don't trigger specialized skills
+
+name: no-skill-simple
+description: Simple questions don't trigger skills
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 3
+  allowed_tools:
+    - Read
+    - Skill
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  What does GWAS stand for?
+
+assertions:
+  - type: output_contains
+    pattern: "[Gg]enome.*[Ww]ide.*[Aa]ssociation.*[Ss]tud"
+    description: "Should answer correctly"
+
+  - type: tool_not_used
+    tool: Write
+    description: "Simple definition doesn't need notebook entry"
+
+  - type: tool_not_used
+    tool: Skill
+    description: "No skill invocation needed"

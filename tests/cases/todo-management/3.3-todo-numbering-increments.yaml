@@ -1,0 +1,47 @@
+# Test 3.3: Todo Numbering Increments
+# New todo gets next number after existing todos
+
+name: todo-numbering-increments
+description: Todo numbering increments correctly
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/TODO.md << 'EOF'
+      # To-Do
+
+      - [ ] #1 **Run sample QC** - Filter samples by call rate
+        - Added: 2026-01-15
+
+      - [ ] #2 **Run variant QC** - Filter by MAF and HWE
+        - Added: 2026-01-15
+      EOF
+  - command: |
+      cat > notebook/DONE.md << 'EOF'
+      # Completed
+
+      EOF
+
+prompt: |
+  Add a todo to run PCA for population stratification.
+
+assertions:
+  - type: evaluator
+    prompt: |
+      The new todo should be numbered #3 (after existing #1 and #2).
+
+      Does the new todo item have #3 in it?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "New todo should be #3"

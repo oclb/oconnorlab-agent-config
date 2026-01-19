@@ -1,0 +1,22 @@
+# Meta-test: Hook detection
+# Tests that the framework detects when hooks fire
+
+name: meta-hook-fired-pass
+description: Validates that Stop hook is detected when task completes
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 2
+  allowed_tools: []
+
+prompt: "What is 1 + 1?"
+
+assertions:
+  - type: hook_fired
+    hook_type: Stop
+    description: "Stop hook should fire when task completes"
+
+  - type: output_contains
+    pattern: "2"
+    description: "Should answer correctly"

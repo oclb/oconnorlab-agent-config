@@ -1,0 +1,45 @@
+# Test 2.2: Entry Date Format Correct
+# Entry filename uses YYYY-MM-DD format
+
+name: entry-date-format
+description: Entry filename uses correct date format
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 10
+  allowed_tools:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+setup:
+  - command: |
+      cat > notebook/INDEX.md << 'EOF'
+      # Notebook Index
+
+      | Date | Name | Summary |
+      |------|------|---------|
+      EOF
+  - command: rm -f notebook/entries/*.md 2>/dev/null || true
+
+prompt: |
+  Create a simple notebook entry documenting that we decided to use Python 3.11 for this project.
+
+assertions:
+  - type: file_created
+    path: "notebook/entries/2026-01-*.md"
+    description: "Filename should start with today's date"
+
+  - type: evaluator
+    prompt: |
+      Check if the created file follows the pattern YYYY-MM-DD-slug.md.
+      Look for files in notebook/entries/ that match this pattern.
+
+      Does at least one file exist with a filename matching 2026-01-DD-*.md pattern?
+      Answer yes or no.
+    pass_if: "yes"
+    model: haiku
+    description: "Validate date format in filename"

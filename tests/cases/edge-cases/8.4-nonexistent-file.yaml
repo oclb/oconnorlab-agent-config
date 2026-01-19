@@ -1,0 +1,27 @@
+# Test 8.4: Handle Non-Existent File Reference
+# Claude handles gracefully when user references a file that doesn't exist
+
+name: nonexistent-file
+description: Handle non-existent file gracefully
+
+config:
+  model: haiku
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 5
+  allowed_tools:
+    - Read
+    - Glob
+
+setup:
+  - command: mkdir -p data
+  - command: rm -f data/results.csv 2>/dev/null || true
+
+prompt: |
+  Analyze the data in data/results.csv
+
+assertions:
+  - type: output_contains
+    pattern: "not found|doesn't exist|cannot find|no such file|not exist|could not"
+    case_insensitive: true
+    description: "Should report file not found"

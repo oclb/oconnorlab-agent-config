@@ -229,7 +229,29 @@ git commit -m "chore: add Claude Code project settings"
 
 **5.8 Create or update CLAUDE.md**
 
-If CLAUDE.md doesn't exist, create it with template:
+If CLAUDE.md doesn't exist, ask the user:
+
+> **Generate CLAUDE.md**
+>
+> Claude Code's `/init` command can scan your codebase and auto-generate a CLAUDE.md with:
+> - Detected tech stack and frameworks
+> - Project structure overview
+> - Build/test/lint commands
+> - Coding conventions
+>
+> How would you like to create CLAUDE.md?
+
+Options:
+- **Auto-generate with /init** (recommended) - Intelligent analysis of your codebase
+- **Use basic template** - Simple template you fill in manually
+
+If user chooses **Auto-generate with /init**:
+
+1. Run the `/init` command (this is Claude Code's built-in command)
+2. Wait for it to complete
+3. Continue to check for notebook reference (below)
+
+If user chooses **Use basic template**, create CLAUDE.md:
 
 ```markdown
 # Project Name
@@ -257,7 +279,7 @@ If CLAUDE.md doesn't exist, create it with template:
 [Important context for Claude]
 ```
 
-If CLAUDE.md exists, check if it has a notebook reference. If not, append:
+**After CLAUDE.md exists (either way)**, check if it has a notebook reference. If not, append:
 
 ```markdown
 

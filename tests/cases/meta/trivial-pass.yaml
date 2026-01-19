@@ -1,0 +1,18 @@
+# Meta-test: Should always pass
+# Tests that the framework correctly identifies passing tests
+
+name: meta-trivial-pass
+description: A trivial test that should always pass - validates framework basics
+
+config:
+  replicates: 1
+  pass_threshold: 1.0
+  max_turns: 1
+  allowed_tools: []
+
+prompt: "What is 2 + 2? Answer with just the number."
+
+assertions:
+  - type: output_contains
+    pattern: "4"
+    description: "Output should contain the number 4"
