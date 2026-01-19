@@ -963,6 +963,10 @@ impl RpcState {
             data: None,
         })?;
 
+        // Substitute %j with actual job ID in log paths
+        let stdout_path = generated.stdout_path.replace("%j", &job_id);
+        let stderr_path = generated.stderr_path.replace("%j", &job_id);
+
         Ok(commands::SandboxedSbatchResponse {
             job_id,
             script_path: script_path_str.to_string(),
@@ -973,6 +977,8 @@ impl RpcState {
             },
             image_used: generated.image,
             bind_mounts: generated.bind_mounts,
+            stdout_path,
+            stderr_path,
             duration_ms: start.elapsed().as_millis() as u64,
         })
     }

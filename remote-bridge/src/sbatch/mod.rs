@@ -40,6 +40,10 @@ pub struct GeneratedScript {
     pub image: String,
     /// All bind mounts that were configured
     pub bind_mounts: Vec<BindMount>,
+    /// Stdout file path pattern (contains %j for job ID)
+    pub stdout_path: String,
+    /// Stderr file path pattern (contains %j for job ID)
+    pub stderr_path: String,
 }
 
 /// Generate a sandboxed sbatch script
@@ -67,8 +71,18 @@ pub fn generate_script(
         validate_array_spec(array, config)?;
     }
 
+    // Determine logs directory and stdout/stderr paths
+    let (stdout_path, stderr_path) = compute_log_paths(request, singularity);
+
     // Generate the script content
-    let content = generate_script_content(request, &image, &bind_mounts, singularity);
+    let content = generate_script_content(
+        request,
+        &image,
+        &bind_mounts,
+        singularity,
+        &stdout_path,
+        &stderr_path,
+    );
 
     // Generate filename
     let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
@@ -80,7 +94,57 @@ pub fn generate_script(
         filename,
         image,
         bind_mounts,
+        stdout_path,
+        stderr_path,
     })
+}
+
+/// Compute stdout and stderr paths based on request and config
+fn compute_log_paths(
+    request: &SandboxedSbatchRequest,
+    singularity: &SingularityConfig,
+) -> (String, String) {
+    // Use request paths if specified
+    if let (Some(output), Some(error)) = (&request.output, &request.error) {
+        return (output.clone(), error.clone());
+    }
+
+    // Determine logs directory: use logs_dir if set, otherwise derive from scripts_dir
+    let logs_dir = singularity
+        .logs_dir
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .or_else(|| {
+            singularity.scripts_dir.as_ref().map(|scripts_dir| {
+                // Derive logs_dir as sibling to scripts_dir: .agent/logs
+                if let Some(parent) = scripts_dir.parent() {
+                    format!("{}/.agent/logs", parent.display())
+                } else {
+                    format!("{}/.agent/logs", scripts_dir.display())
+                }
+            })
+        });
+
+    match logs_dir {
+        Some(dir) => {
+            let dir = dir.trim_end_matches('/');
+            let stdout = request
+                .output
+                .clone()
+                .unwrap_or_else(|| format!("{}/{}.out", dir, "%j"));
+            let stderr = request
+                .error
+                .clone()
+                .unwrap_or_else(|| format!("{}/{}.err", dir, "%j"));
+            (stdout, stderr)
+        }
+        None => {
+            // No directory configured, use job-relative defaults
+            let stdout = request.output.clone().unwrap_or_else(|| "%j.out".to_string());
+            let stderr = request.error.clone().unwrap_or_else(|| "%j.err".to_string());
+            (stdout, stderr)
+        }
+    }
 }
 
 /// Collect and validate all bind mounts
@@ -251,6 +315,8 @@ fn generate_script_content(
     image: &str,
     bind_mounts: &[BindMount],
     singularity: &SingularityConfig,
+    stdout_path: &str,
+    stderr_path: &str,
 ) -> String {
     let mut script = String::new();
 
@@ -283,24 +349,9 @@ fn generate_script_content(
         writeln!(script, "#SBATCH --array={}", array).unwrap();
     }
 
-    // Output file - use scripts_dir as default location
-    if let Some(output) = &request.output {
-        writeln!(script, "#SBATCH --output={}", output).unwrap();
-    } else if let Some(scripts_dir) = &singularity.scripts_dir {
-        // Trim trailing slash to avoid double-slash
-        let dir = scripts_dir.display().to_string();
-        let dir = dir.trim_end_matches('/');
-        writeln!(script, "#SBATCH --output={}/{}.out", dir, "%j").unwrap();
-    }
-
-    // Error file - use scripts_dir as default location
-    if let Some(error) = &request.error {
-        writeln!(script, "#SBATCH --error={}", error).unwrap();
-    } else if let Some(scripts_dir) = &singularity.scripts_dir {
-        let dir = scripts_dir.display().to_string();
-        let dir = dir.trim_end_matches('/');
-        writeln!(script, "#SBATCH --error={}/{}.err", dir, "%j").unwrap();
-    }
+    // Output and error files
+    writeln!(script, "#SBATCH --output={}", stdout_path).unwrap();
+    writeln!(script, "#SBATCH --error={}", stderr_path).unwrap();
 
     // Extra directives
     for (key, value) in &request.extra_directives {
@@ -320,6 +371,13 @@ fn generate_script_content(
             mount.host, mount.container, mount.mode
         )
         .unwrap();
+    }
+
+    // Create logs directory if using a path with directory component
+    if let Some(logs_dir) = extract_directory(stdout_path) {
+        writeln!(script).unwrap();
+        writeln!(script, "# Ensure logs directory exists").unwrap();
+        writeln!(script, "mkdir -p '{}'", logs_dir).unwrap();
     }
     writeln!(script).unwrap();
 
@@ -377,6 +435,17 @@ fn generate_script_content(
     script
 }
 
+/// Extract directory component from a path (handling %j and other SLURM variables)
+fn extract_directory(path: &str) -> Option<String> {
+    // If path contains a directory separator, extract the directory part
+    if let Some(last_slash) = path.rfind('/') {
+        if last_slash > 0 {
+            return Some(path[..last_slash].to_string());
+        }
+    }
+    None
+}
+
 /// Sanitize job name for use in filename
 fn sanitize_job_name(name: &str) -> String {
     name.chars()
@@ -421,6 +490,7 @@ mod tests {
             singularity: SingularityConfig {
                 default_image: Some("/containers/python.sif".to_string()),
                 scripts_dir: Some(PathBuf::from("/scratch/scripts/")),
+                logs_dir: Some(PathBuf::from("/scratch/.agent/logs/")),
                 cache_dir: Some(PathBuf::from("/scratch/.singularity")),
                 extra_binds: vec!["/n/app:ro".to_string()],
                 module_name: "singularity/3.10.3".to_string(),

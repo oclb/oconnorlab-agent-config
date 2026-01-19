@@ -165,6 +165,7 @@ max_array_size = 1000
 [singularity]
 default_image = "/n/app/containers/python.sif"
 scripts_dir = "/n/scratch/user/scripts/"
+logs_dir = "/n/scratch/user/.agent/logs/"
 cache_dir = "/n/scratch/user/.singularity"
 extra_binds = ["/n/app:ro"]
 ```

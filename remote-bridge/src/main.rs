@@ -150,7 +150,7 @@ async fn main() -> Result<()> {
             // Verify the connection actually works by running a test command
             print!("Verifying connection... ");
             std::io::stdout().flush()?;
-            match ssh.execute("whoami", 10).await {
+            match ssh.execute("whoami", 60).await {
                 Ok(output) if output.exit_code == 0 => {
                     let remote_user = output.stdout.trim();
                     println!("OK (logged in as {})", remote_user);

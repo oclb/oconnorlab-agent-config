@@ -331,9 +331,13 @@ remote-bridge rpc o2 sandboxed_sbatch '{
     {"host": "/n/data1/.../input_data/", "container": "/n/data1/.../input_data/", "mode": "ro"},
     {"host": "/n/scratch/.../results/", "container": "/n/scratch/.../results/", "mode": "rw"}
   ],
+  "stdout_path": "/n/scratch/.../.agent/logs/12345678.out",
+  "stderr_path": "/n/scratch/.../.agent/logs/12345678.err",
   "duration_ms": 1234
 }
 ```
+
+**Note on log locations:** If `output`/`error` are not specified, logs default to `{logs_dir}/{job_id}.out` and `.err`. The `logs_dir` is configured in `permissions.toml` (defaults to `{scratch}/.agent/logs/`). The directory is created automatically if it doesn't exist.
 
 **Why use sandboxed_sbatch?**
 1. **Security**: The job can only access explicitly listed directories

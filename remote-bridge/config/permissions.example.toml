@@ -73,6 +73,11 @@ default_image = "/n/app/containers/users/ljo8/python-science.sif"
 # Directory where generated sbatch scripts are written (must be in paths.write)
 scripts_dir = "/n/scratch/users/l/ljo8/claude-tmp/scripts/"
 
+# Directory for job stdout/stderr logs (optional)
+# Defaults to {scripts_dir parent}/.agent/logs/ if not set
+# The directory is created automatically if it doesn't exist
+logs_dir = "/n/scratch/users/l/ljo8/.agent/logs/"
+
 # Singularity cache directory (for pulling images)
 cache_dir = "/n/scratch/users/l/ljo8/.singularity/cache"
 

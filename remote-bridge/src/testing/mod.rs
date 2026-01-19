@@ -41,6 +41,7 @@ pub fn test_config() -> PermissionConfig {
         singularity: SingularityConfig {
             default_image: Some("/containers/python.sif".to_string()),
             scripts_dir: Some(PathBuf::from("/scratch/scripts/")),
+            logs_dir: Some(PathBuf::from("/scratch/.agent/logs/")),
             cache_dir: Some(PathBuf::from("/scratch/.singularity")),
             extra_binds: vec!["/n/app:ro".to_string()],
             module_name: String::new(),  // Default: no module load

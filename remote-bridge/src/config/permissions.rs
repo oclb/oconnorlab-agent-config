@@ -66,6 +66,8 @@ pub struct SingularityConfig {
     pub default_image: Option<String>,
     /// Directory where generated sbatch scripts are written
     pub scripts_dir: Option<PathBuf>,
+    /// Directory for job stdout/stderr logs (defaults to scripts_dir/../.agent/logs)
+    pub logs_dir: Option<PathBuf>,
     /// Singularity cache directory
     pub cache_dir: Option<PathBuf>,
     /// Additional bind mounts (format: "path:mode" or "host:container:mode")

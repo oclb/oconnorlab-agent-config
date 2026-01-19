@@ -503,6 +503,12 @@ pub struct SandboxedSbatchResponse {
     /// Bind mounts that were configured
     pub bind_mounts: Vec<BindMount>,
 
+    /// Path where job stdout will be written (with job_id substituted for %j)
+    pub stdout_path: String,
+
+    /// Path where job stderr will be written (with job_id substituted for %j)
+    pub stderr_path: String,
+
     /// Execution time in milliseconds
     pub duration_ms: u64,
 }
