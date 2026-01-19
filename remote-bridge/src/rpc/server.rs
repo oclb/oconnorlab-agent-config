@@ -158,8 +158,91 @@ async fn handle_connection(
     Ok(())
 }
 
+/// Format parameters for logging (abbreviated for readability)
+fn format_params_for_log(method: &str, params: &Option<serde_json::Value>) -> String {
+    match params {
+        None => String::new(),
+        Some(p) => {
+            // Extract key identifying info based on method
+            match method {
+                "ls" | "cat" | "head" | "wc" | "find" | "download" | "git_pull" => {
+                    p.get("path")
+                        .and_then(|v| v.as_str())
+                        .map(|s| truncate_path(s))
+                        .unwrap_or_default()
+                }
+                "grep" => {
+                    let pattern = p.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
+                    let path = p.get("path").and_then(|v| v.as_str()).map(truncate_path).unwrap_or_default();
+                    if pattern.len() > 20 {
+                        format!("'{}...' {}", &pattern[..20], path)
+                    } else {
+                        format!("'{}' {}", pattern, path)
+                    }
+                }
+                "sbatch" | "sandboxed_sbatch" => {
+                    p.get("script_path")
+                        .and_then(|v| v.as_str())
+                        .map(|s| truncate_path(s))
+                        .or_else(|| p.get("name").and_then(|v| v.as_str()).map(String::from))
+                        .unwrap_or_else(|| "job".to_string())
+                }
+                "scancel" | "job_wait" => {
+                    p.get("job_id")
+                        .and_then(|v| v.as_str())
+                        .map(String::from)
+                        .unwrap_or_default()
+                }
+                _ => String::new(),
+            }
+        }
+    }
+}
+
+/// Truncate a path to show just the filename or last component
+fn truncate_path(path: &str) -> String {
+    std::path::Path::new(path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(String::from)
+        .unwrap_or_else(|| {
+            if path.len() > 30 {
+                format!("...{}", &path[path.len()-27..])
+            } else {
+                path.to_string()
+            }
+        })
+}
+
 /// Dispatch a method call to the appropriate handler
 async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcResponse {
+    let method = request.method.clone();
+    let start = std::time::Instant::now();
+
+    // Log the request (skip connection_status as it's called frequently for health checks)
+    let params_str = format_params_for_log(&method, &request.params);
+    if method != "connection_status" {
+        if params_str.is_empty() {
+            info!("--> {}", method);
+        } else {
+            info!("--> {} {}", method, params_str);
+        }
+    }
+
+    let response = dispatch_method_inner(state, request).await;
+
+    // Log completion (skip connection_status)
+    if method != "connection_status" {
+        let duration = start.elapsed();
+        let status = if response.error.is_some() { "ERR" } else { "OK" };
+        info!("<-- {} {} ({:.1?})", method, status, duration);
+    }
+
+    response
+}
+
+/// Inner dispatch logic
+async fn dispatch_method_inner(state: &RpcState, request: JsonRpcRequest) -> JsonRpcResponse {
     let id = request.id.clone();
 
     match request.method.as_str() {

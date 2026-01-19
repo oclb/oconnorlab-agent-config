@@ -146,7 +146,29 @@ async fn main() -> Result<()> {
             println!("Connecting to {}@{}...", username, host);
             println!("(You may need to approve Duo authentication)\n");
             ssh.connect().await?;
-            info!("SSH session established");
+
+            // Verify the connection actually works by running a test command
+            print!("Verifying connection... ");
+            std::io::stdout().flush()?;
+            match ssh.execute("whoami", 10).await {
+                Ok(output) if output.exit_code == 0 => {
+                    let remote_user = output.stdout.trim();
+                    println!("OK (logged in as {})", remote_user);
+                    info!("SSH session verified: {}", remote_user);
+                }
+                Ok(output) => {
+                    println!("FAILED");
+                    anyhow::bail!(
+                        "Connection test failed with exit code {}: {}",
+                        output.exit_code,
+                        output.stdout
+                    );
+                }
+                Err(e) => {
+                    println!("FAILED");
+                    anyhow::bail!("Connection test failed: {}. Did you approve Duo authentication?", e);
+                }
+            }
 
             // Set up cleanup on Ctrl+C
             let rpc_socket_clone = rpc_socket.clone();
