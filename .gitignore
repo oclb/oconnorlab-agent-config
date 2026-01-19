@@ -22,3 +22,6 @@ notebook/
 
 # Rust build artifacts
 remote-bridge/target/
+
+# Test results (generated per run)
+tests/results/

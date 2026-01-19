@@ -259,6 +259,7 @@ git -C notebook remote | grep -q origin && git -C notebook push
 3. **Validate before analyzing** - Catch issues early
 4. **Provide actionable recommendations** - Don't just identify issues
 5. **Save validation reports** - Create audit trail
+6. **Always create a notebook entry** - New datasets warrant memory creation; this skill handles it in Step 9
 
 ## Integration with Other Skills
 

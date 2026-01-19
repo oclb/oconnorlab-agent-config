@@ -447,6 +447,7 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
 5. **Communicate clearly** - Use STEP headers to show progress
 6. **Provide context for results** - Explain what numbers mean
 7. **Write to notebook incrementally** - Don't wait until the end
+8. **Always create a notebook entry** - Analyses always warrant memory creation; this skill handles it in Step 8
 
 ## Integration with Other Skills
 

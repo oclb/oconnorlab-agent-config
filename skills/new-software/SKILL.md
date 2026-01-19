@@ -186,6 +186,7 @@ git -C notebook remote | grep -q origin && git -C notebook push
 4. **Check before installing** - Don't reinstall if already present
 5. **Test minimally but thoroughly** - Confirm it works, don't overcomplicate
 6. **Handle errors gracefully** - Search for common issues, try alternatives
+7. **Always create a notebook entry** - New tool setups warrant memory creation; this skill handles it in Step 5
 
 ## Special Cases
 

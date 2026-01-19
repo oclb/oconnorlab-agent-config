@@ -218,6 +218,69 @@ Write entries incrementally during work, not just as a summary at the end. Start
 
 Git tracks entry history, so updating is fine when appropriate.
 
+## Memory Creation via Sub-Agent
+
+For every response, consider whether you, or the user, have made a tangible contribution to the project; if so, log it. Tangible contributions include:
+- Expressing an idea or explaining a concept or approach
+- Giving a new name to something
+- Articulating a new goal
+- Designing or completing an analysis 
+- Making a decision about high-level approach to a problem
+- Implementing a new feature
+- Setting up new tools or environments
+- Discovering or fixing a problem
+- Completing an item from the TODO list
+
+**When you determine memory creation is needed**, spawn a background memory agent:
+
+```
+Task tool call:
+- subagent_type: "general-purpose"
+- run_in_background: true
+- model: "sonnet"
+- prompt: (see template below)
+```
+
+**Memory agent prompt template:**
+
+```
+You are creating a notebook entry for the work done in this conversation.
+
+Entry target: notebook/entries/YYYY-MM-DD-<slug>.md
+- If this file already exists, APPEND to the Details section (the conversation may have continued work on the same topic)
+- If this is a new file, create it with the standard format
+
+Based on the conversation above, create/update the entry with:
+1. A descriptive title and slug (if new)
+2. Summary: one paragraph of what was done and why
+3. Details: the substantive work - decisions made, code written, issues resolved, findings
+4. References: link to any related entries that were consulted
+
+After writing the entry:
+1. Update notebook/INDEX.md (add row if new entry, or update summary if existing)
+2. Commit: git -C notebook add entries/ INDEX.md && git -C notebook commit -m "entry: <slug>" && git -C notebook remote | grep -q origin && git -C notebook push
+
+Return the entry path when done: "Created/Updated notebook entry: `<entry-name>`"
+```
+
+**After spawning the memory agent:**
+- The agent runs in background and returns the entry path when complete
+- Echo the result in your response so future turns see what entry was created
+- If continuing work in the same session, subsequent memory agents will see the existing entry and can append to it
+
+**What counts as significant work:**
+- ✓ Multi-file code changes
+- ✓ Debugging sessions that found root causes
+- ✓ Analysis with results
+- ✓ Tool setup with gotchas discovered
+- ✓ Architectural decisions with tradeoffs
+- ✗ Simple Q&A
+- ✗ Single-line fixes
+- ✗ Reading files without action
+- ✗ Failed attempts with no learning
+
+**Note:** If memory creation is critical, spawn the agent early in your response rather than at the end, giving it more time to complete before the user might exit.
+
 ## Index and Retrieval
 
 ### INDEX.md Format
