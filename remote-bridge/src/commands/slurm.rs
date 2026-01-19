@@ -479,6 +479,11 @@ pub struct SandboxedSbatchRequest {
     /// If true, also return the generated script content (for debugging)
     #[serde(default)]
     pub return_script: bool,
+
+    /// If true, generate and validate the script but don't submit it
+    /// Useful for testing script generation without creating actual jobs
+    #[serde(default)]
+    pub dry_run: bool,
 }
 
 fn default_cpus() -> u32 {

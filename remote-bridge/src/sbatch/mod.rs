@@ -528,6 +528,7 @@ mod tests {
                 .collect(),
             extra_directives: Default::default(),
             return_script: false,
+            dry_run: false,
         };
 
         let result = generate_script(&request, &config).unwrap();
@@ -565,6 +566,7 @@ mod tests {
             environment: Default::default(),
             extra_directives: Default::default(),
             return_script: false,
+            dry_run: false,
         };
 
         let result = generate_script(&request, &config);
@@ -592,6 +594,7 @@ mod tests {
             environment: Default::default(),
             extra_directives: Default::default(),
             return_script: false,
+            dry_run: false,
         };
 
         let result = generate_script(&request, &config);

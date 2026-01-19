@@ -944,24 +944,29 @@ impl RpcState {
                 data: None,
             })?;
 
-        // Submit the job
-        let sbatch_cmd = format!("sbatch '{}'", script_path_str);
-        let output = self
-            .ssh
-            .execute(&sbatch_cmd, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: format!("sbatch failed: {}", e),
-                data: None,
-            })?;
+        // For dry_run, skip submission and return the generated script
+        let job_id = if request.dry_run {
+            "DRY_RUN".to_string()
+        } else {
+            // Submit the job
+            let sbatch_cmd = format!("sbatch '{}'", script_path_str);
+            let output = self
+                .ssh
+                .execute(&sbatch_cmd, 30)
+                .await
+                .map_err(|e| RpcError {
+                    code: ERR_COMMAND_FAILED,
+                    message: format!("sbatch failed: {}", e),
+                    data: None,
+                })?;
 
-        // Parse job ID
-        let job_id = commands::parse_sbatch_output(&output.stdout).ok_or_else(|| RpcError {
-            code: ERR_COMMAND_FAILED,
-            message: format!("Failed to parse sbatch output: {}", output.stdout),
-            data: None,
-        })?;
+            // Parse job ID
+            commands::parse_sbatch_output(&output.stdout).ok_or_else(|| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: format!("Failed to parse sbatch output: {}", output.stdout),
+                data: None,
+            })?
+        };
 
         // Substitute %j with actual job ID in log paths
         let stdout_path = generated.stdout_path.replace("%j", &job_id);
@@ -970,7 +975,7 @@ impl RpcState {
         Ok(commands::SandboxedSbatchResponse {
             job_id,
             script_path: script_path_str.to_string(),
-            script_content: if request.return_script {
+            script_content: if request.return_script || request.dry_run {
                 Some(generated.content)
             } else {
                 None
