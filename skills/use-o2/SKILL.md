@@ -350,18 +350,41 @@ When working remotely via the bridge, use this workflow to create and submit SLU
 
 When using `sandboxed_sbatch`, jobs run inside Singularity containers for isolation. Available containers:
 
-### Python Container (Default)
+### Data Science Container (Recommended)
+
+**Image:** `/n/app/containers/shared/lindsley/nf-core/scdownstream/dev.bak/community.wave.seqera.io-library-scanpy-1.10.4--c2d474f46255931c.img`
+
+Python with scientific stack pre-installed:
+- **Core**: `numpy` 1.26, `scipy` 1.13, `pandas` 2.2
+- **ML**: `scikit-learn` 1.5, `statsmodels` 0.14, `umap-learn` 0.5
+- **Viz**: `matplotlib` 3.8, `seaborn` 0.13
+- **Performance**: `numba` 0.59, `h5py` 3.11
+- **Single-cell**: `scanpy` 1.10, `anndata` 0.10
+
+**Missing**: polars, anthropic, openai (pip install ~90s total)
+
+### API Container
 
 **Image:** `/n/app/containers/shared/RC/rhel9_o2_2025.sif`
 
-Python 3.9.21 with pre-installed packages:
-- **AI/ML**: `anthropic`, `openai`
+Python 3.9.21 for API/HTTP work:
+- **AI/ML APIs**: `anthropic`, `openai`
 - **Data**: `pydantic`, `PyYAML`, `python-dateutil`
 - **HTTP**: `requests`, `httpx`, `httpcore`
 - **CLI**: `click`, `rich`, `tqdm`, `prompt_toolkit`
-- **System**: `pip`, `setuptools`
 
-For packages not pre-installed, use `pip install --target=<writable-path>` and set `PYTHONPATH`.
+**Missing**: numpy, scipy, pandas (pip install ~90s total)
+
+### Installing Missing Packages
+
+For packages not pre-installed, use `pip install --target=<writable-path>` and set `PYTHONPATH`:
+
+```bash
+pip install --target=/n/scratch/users/$USER/pip-pkgs numpy scipy pandas polars
+export PYTHONPATH=/n/scratch/users/$USER/pip-pkgs:$PYTHONPATH
+```
+
+Benchmark: Installing numpy+scipy+pandas+polars takes ~90 seconds.
 
 ### R Container
 
@@ -378,9 +401,10 @@ Docker images (`docker://...`) require conversion to SIF format on first use, wh
 ### Container Selection
 
 ```
-Python analysis? → rhel9_o2_2025.sif (default)
-R/Bioconductor?  → bioconductor-*.img containers
-Custom needs?    → Build your own .sif or use pip install
+Data science (numpy/scipy/pandas/sklearn)?  → scanpy container (recommended)
+API work (anthropic/openai/requests)?       → rhel9_o2_2025.sif
+R/Bioconductor?                             → bioconductor-*.img containers
+Custom needs?                               → pip install (~90s) or build .sif
 ```
 
 ## Resources
