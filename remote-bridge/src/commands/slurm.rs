@@ -256,23 +256,6 @@ pub fn parse_squeue_output(output: &str) -> Vec<QueuedJob> {
     jobs
 }
 
-/// Request for sbatch command
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SbatchRequest {
-    /// Path to the sbatch script file (must exist on remote)
-    pub script_path: String,
-    /// Working directory for the job
-    pub working_dir: Option<String>,
-}
-
-/// Response from sbatch command
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SbatchResponse {
-    pub job_id: String,
-    pub script_path: String,
-    pub duration_ms: u64,
-}
-
 /// How to wait for job arrays
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

@@ -370,68 +370,6 @@ impl RpcState {
         })
     }
 
-    /// Execute sbatch command
-    pub async fn sbatch(
-        &self,
-        request: commands::SbatchRequest,
-    ) -> Result<commands::SbatchResponse, RpcError> {
-        let start = Instant::now();
-
-        // Validate script path (must be readable)
-        let validated_script = self
-            .validator
-            .validate_read_path(&request.script_path)
-            .map_err(|e| RpcError {
-                code: ERR_PERMISSION_DENIED,
-                message: e.to_string(),
-                data: None,
-            })?;
-
-        // Build sbatch command
-        let command = if let Some(ref working_dir) = request.working_dir {
-            // Validate working dir if provided
-            let validated_wd = self
-                .validator
-                .validate_read_path(working_dir)
-                .map_err(|e| RpcError {
-                    code: ERR_PERMISSION_DENIED,
-                    message: e.to_string(),
-                    data: None,
-                })?;
-            format!(
-                "cd '{}' && sbatch '{}'",
-                validated_wd.as_str(),
-                validated_script.as_str()
-            )
-        } else {
-            format!("sbatch '{}'", validated_script.as_str())
-        };
-
-        // Execute
-        let output = self
-            .ssh
-            .execute(&command, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
-
-        // Parse job ID from output
-        let job_id = commands::parse_sbatch_output(&output.stdout).ok_or_else(|| RpcError {
-            code: ERR_COMMAND_FAILED,
-            message: format!("Failed to parse sbatch output: {}", output.stdout),
-            data: None,
-        })?;
-
-        Ok(commands::SbatchResponse {
-            job_id,
-            script_path: validated_script.to_string(),
-            duration_ms: start.elapsed().as_millis() as u64,
-        })
-    }
-
     /// Execute download command - fetches file content with size limit
     pub async fn download(
         &self,

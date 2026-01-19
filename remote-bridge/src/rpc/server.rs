@@ -95,7 +95,7 @@ pub async fn start_server(
         info!("SSH not connected. Clients will receive connection instructions.");
     }
 
-    info!("RPC methods available: connection_status, ls, cat, grep, head, wc, find, download, git_pull, squeue, sacct, sbatch, sandboxed_sbatch, scancel, job_wait, shutdown");
+    info!("RPC methods available: connection_status, ls, cat, grep, head, wc, find, download, git_pull, squeue, sacct, sandboxed_sbatch, scancel, job_wait, shutdown");
 
     // Accept connections
     loop {
@@ -180,11 +180,10 @@ fn format_params_for_log(method: &str, params: &Option<serde_json::Value>) -> St
                         format!("'{}' {}", pattern, path)
                     }
                 }
-                "sbatch" | "sandboxed_sbatch" => {
-                    p.get("script_path")
+                "sandboxed_sbatch" => {
+                    p.get("job_name")
                         .and_then(|v| v.as_str())
-                        .map(|s| truncate_path(s))
-                        .or_else(|| p.get("name").and_then(|v| v.as_str()).map(String::from))
+                        .map(String::from)
                         .unwrap_or_else(|| "job".to_string())
                 }
                 "scancel" | "job_wait" => {
@@ -433,25 +432,6 @@ async fn dispatch_method_inner(state: &RpcState, request: JsonRpcRequest) -> Jso
 
             match serde_json::from_value::<commands::SacctRequest>(params) {
                 Ok(req) => match state.sacct(req).await {
-                    Ok(result) => {
-                        JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
-                    }
-                    Err(e) => JsonRpcResponse::error(id, e.code, e.message),
-                },
-                Err(e) => JsonRpcResponse::error(id, -32602, format!("Invalid params: {}", e)),
-            }
-        }
-
-        "sbatch" => {
-            let params = match request.params {
-                Some(p) => p,
-                None => {
-                    return JsonRpcResponse::error(id, -32602, "Missing params".to_string());
-                }
-            };
-
-            match serde_json::from_value::<commands::SbatchRequest>(params) {
-                Ok(req) => match state.sbatch(req).await {
                     Ok(result) => {
                         JsonRpcResponse::success(id, serde_json::to_value(result).unwrap())
                     }

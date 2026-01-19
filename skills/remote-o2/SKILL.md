@@ -235,21 +235,9 @@ remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'
 
 Optional params: `remote` (default: "origin"), `branch` (default: current)
 
-### Submit Job (sbatch)
+### Submit Job (sandboxed_sbatch)
 
-For pre-existing scripts that must run exactly as written:
-
-```bash
-remote-bridge rpc o2 sbatch '{"script_path":"/n/data1/.../job.sh"}'
-```
-
-Optional: `working_dir` - directory to run sbatch from
-
-Response includes `job_id` of submitted job.
-
-### Submit Sandboxed Job (sandboxed_sbatch)
-
-Generates an sbatch script that runs inside a Singularity container with restricted filesystem access.
+Generates and submits a SLURM job that runs inside a Singularity container with restricted filesystem access.
 
 ```bash
 remote-bridge rpc o2 sandboxed_sbatch '{
@@ -533,8 +521,7 @@ The requested path isn't in the user's permission config. Ask user to:
 | Find files | `remote-bridge rpc o2 find '{"path":"...","name":"*.py"}'` |
 | Download file | `remote-bridge rpc o2 download '{"path":"..."}'` |
 | Git pull | `remote-bridge rpc o2 git_pull '{"path":"..."}'` |
-| Submit job (raw) | `remote-bridge rpc o2 sbatch '{"script_path":"..."}'` |
-| Submit job (sandboxed) | `remote-bridge rpc o2 sandboxed_sbatch '{"job_name":"...","command":"..."}'` |
+| Submit job | `remote-bridge rpc o2 sandboxed_sbatch '{"job_name":"...","command":"..."}'` |
 | Cancel job | `remote-bridge rpc o2 scancel '{"job_ids":["..."]}'` |
 | Check queue | `remote-bridge rpc o2 squeue '{"user":"..."}'` |
 | Job accounting | `remote-bridge rpc o2 sacct '{"job_ids":["..."]}'` |
