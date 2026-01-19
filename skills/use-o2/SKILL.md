@@ -1,7 +1,7 @@
 ---
 name: use-o2
 description: SLURM and O2 cluster reference. This skill provides knowledge about partitions, resource estimation, job submission, and monitoring. Used by /remote-o2 when executing cluster commands.
-version: 2.0.0
+version: 2.1.0
 ---
 
 # O2 Cluster Reference
@@ -345,6 +345,43 @@ When working remotely via the bridge, use this workflow to create and submit SLU
 | `sbatch` | Submit job | `{"script_path":"/path/to/job.sh"}` |
 | `squeue` | Check queue | `{"user":"ljo8"}` or `{"job_ids":["123"]}` |
 | `sacct` | Job accounting | `{"job_ids":["123"],"start_time":"now-1day"}` |
+
+## Singularity Containers
+
+When using `sandboxed_sbatch`, jobs run inside Singularity containers for isolation. Available containers:
+
+### Python Container (Default)
+
+**Image:** `/n/app/containers/shared/RC/rhel9_o2_2025.sif`
+
+Python 3.9.21 with pre-installed packages:
+- **AI/ML**: `anthropic`, `openai`
+- **Data**: `pydantic`, `PyYAML`, `python-dateutil`
+- **HTTP**: `requests`, `httpx`, `httpcore`
+- **CLI**: `click`, `rich`, `tqdm`, `prompt_toolkit`
+- **System**: `pip`, `setuptools`
+
+For packages not pre-installed, use `pip install --target=<writable-path>` and set `PYTHONPATH`.
+
+### R Container
+
+**Image:** `/n/app/containers/shared/lindsley/nf-core/rnasplice/dev/depot.galaxyproject.org-singularity-bioconductor-isoformswitchanalyzer-2.2.0--r43ha9d7317_0.img`
+
+R 4.3.2 with Bioconductor packages. Use for R-based analyses.
+
+### Using Docker Images
+
+Docker images (`docker://...`) require conversion to SIF format on first use, which can take 10+ minutes for large images (e.g., tidyverse). The converted image is cached in `SINGULARITY_CACHEDIR`.
+
+**Note:** O2's apptainer security may block converted images. If you see "apptainer image is not in an allowed configured path", use a pre-built .sif container instead.
+
+### Container Selection
+
+```
+Python analysis? → rhel9_o2_2025.sif (default)
+R/Bioconductor?  → bioconductor-*.img containers
+Custom needs?    → Build your own .sif or use pip install
+```
 
 ## Resources
 
