@@ -1,2 +1,2 @@
 #!/bin/bash
-echo '<reminder>Consider creating memory agent.</reminder>'
+echo '<reminder>Important: spawn memory agent before ending your turn if you or the user made a tangible contribution to the project.</reminder>'
