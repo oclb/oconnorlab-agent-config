@@ -8,19 +8,13 @@ version: 1.0.0
 
 Systematic framework for data analyses and experiments, from planning through execution to results presentation.
 
-## Behavior Flags
-
-At the start, check `~/.claude/behavior.conf` for behavior flags.
-
-### Resource-Intensive Tasks
+## Resource-Intensive Tasks
 
 For resource-intensive tasks (>16GB RAM, >4 hours, GPUs), use the **remote-o2** skill to submit SLURM jobs to the O2 cluster.
 
-### AFK Mode
+## AFK Mode Behavior
 
-Check the `AFK` flag.
-
-**When AFK=true:**
+If `(afk)` appears in the user's message, apply autonomous mode for this turn:
 - Skip plan approval confirmations - proceed directly with the plan
 - Make reasonable methodological choices without asking (test selection, correction method, parameters, etc.)
 - Document all choices and reasoning in Step 7
@@ -28,7 +22,7 @@ Check the `AFK` flag.
 - Attempt autonomous troubleshooting on errors (max 2 attempts), then stop and report what failed
 - Only pause for: missing data files, ambiguous core requirements, critical irreversible decisions
 
-**When AFK=false (default):**
+**Without AFK mode (default):**
 - Follow standard workflow with confirmation checkpoints
 - Ask for clarification on methodological choices when multiple valid options exist
 
@@ -190,7 +184,7 @@ Follow these 8 steps systematically.
 - How will the results be used or interpreted?
 - What would different possible outcomes mean?
 
-**If unclear (and AFK=false):** Ask "What are you hoping to learn?" or "How will you use these results?"
+**If unclear (and not in AFK mode):** Ask "What are you hoping to learn?" or "How will you use these results?"
 
 **Notebook write:** Update the Motivation section in README.md with the context gathered.
 
@@ -260,7 +254,7 @@ If the analysis is expected to take **>1 minute**, plan a pilot first:
 - You may need multiple pilot iterations before the full run
 - This catches errors before committing to long runtimes
 
-**If AFK=false and plan is complex:** Ask "Does this approach make sense?"
+**If not in AFK mode and plan is complex:** Ask "Does this approach make sense?"
 
 **Notebook write:** Update the Plan section under the current version in README.md.
 
@@ -283,8 +277,8 @@ If the analysis is expected to take **>1 minute**, plan a pilot first:
 - Monitor progress periodically
 
 **Error handling:**
-- If AFK=true: Attempt autonomous fix (max 2 attempts per problem), then stop and report
-- If AFK=false: Report error and ask how to proceed
+- In AFK mode: Attempt autonomous fix (max 2 attempts per problem), then stop and report
+- Without AFK mode: Report error and ask how to proceed
 
 **Save all outputs:**
 - Scripts (even one-liners)

@@ -1,10 +1,10 @@
 # Claude Code Configuration for Scientific Research
 
-This repository contains Claude Code configuration and skills customized for scientific research workflows, including remote access to the Harvard O2 HPC cluster.
+This repository contains Claude Code configurations and skills customized for scientific research and a bridge which allows it to access to the Harvard O2 cluster.
 
 ## Background
 
-**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research compared with alternatives (like the agents that come with Cursor or Windsurf). 
+**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research. Currently, this repo is designed around Claude Code, but it is likely that it could be adapted for use with other agents (like Cursor or Codex). 
 
 In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/support how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research. 
 
@@ -68,12 +68,6 @@ Use the `/remote-o2` skill to access the O2 cluster from your local machine. The
 
 
 
-### Notifications
-Notification hooks are triggered when Claude needs input or completes a task. Notifications use [ntfy.sh](https://ntfy.sh) for push notifications to your phone/desktop. Setup scripts automatically configure your shell with:
-- `NTFY_TOPIC` environment variable (your unique notification channel)
-- Helper functions: `notify <msg>`, `test_notify`, `notifyme <long-running-command>`
-
-To receive notifications, run `test_notify`, and visit the URL on your browser.
 
 ### Performing analyses
 The `/perform-analysis` skill is intended to improve Claude's ability to design, run, troubleshoot, and log analyses. 
@@ -133,13 +127,13 @@ my-project/           # Main repo (your code)
 - **Additional skills**: Teaching mode, scientific writing revision, document handling (PDF, DOCX, PPTX)
 
 
-### Behavioral Configuration
+### AFK Mode
 
-Claude reads `~/.claude/behavior.conf` at startup for runtime flags:
+Include `(afk)` in any message to enable autonomous operation for that turn. Claude will proceed independently without asking clarifying questions, only pausing for irreversible actions or critical decision points.
 
-- **AFK mode**: For autonomous operation. Include `(afk)` in a message to enable, `(back)` to disable.
-- **O2 cluster access**: Use `/remote-o2` for cluster computing; Claude handles connection and SLURM job submission.
-- **Terminal notifications**: Desktop alerts on task completion via ntfy.sh.
+### Notifications
+
+Desktop notifications alert you when Claude needs input or completes a task. Requires `terminal-notifier` on macOS (`brew install terminal-notifier`).
 
 ## Additional Configuration Files
 

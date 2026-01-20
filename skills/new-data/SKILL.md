@@ -21,9 +21,7 @@ If an entry exists, read it to see what's already known. You may just need to up
 
 ## AFK Mode Behavior
 
-At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
-
-**When AFK=true:**
+If `(afk)` appears in the user's message, apply autonomous mode for this turn:
 - Proceed directly with domain-appropriate validation checks without asking
 - Auto-select tools based on file type (pandas for CSV, bcftools for VCF, etc.)
 - Document tool selection and reasoning in the report
@@ -31,7 +29,7 @@ At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
 - Attempt autonomous troubleshooting on errors (max 2 attempts), then stop and report
 - Only pause for: inaccessible files, ambiguous data source, critical format issues
 
-**When AFK=false (default):**
+**Without AFK mode (default):**
 - Ask which tool the user plans to use if multiple options exist
 - Confirm before downloading large files
 - Ask about specific validation checks if domain is unclear

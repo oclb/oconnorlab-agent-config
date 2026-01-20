@@ -21,9 +21,7 @@ If an entry exists, read it to see what's already known. You may just need to up
 
 ## AFK Mode Behavior
 
-At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
-
-**When AFK=true:**
+If `(afk)` appears in the user's message, apply autonomous mode for this turn:
 - Auto-select recommended installation method without asking (prefer official/standard approach)
 - Proceed with installation without "do you want me to proceed?" prompts
 - Respect current tool permissions (sandbox settings) - only use allowed tools
@@ -31,7 +29,7 @@ At the start, check `~/.claude/behavior.conf` for the `AFK` flag.
 - Document installation choices and any issues encountered
 - Only pause for: requires credentials/API keys, conflicts with existing tools, needs sudo
 
-**When AFK=false (default):**
+**Without AFK mode (default):**
 - Confirm installation method if multiple valid options exist
 - Ask before global vs. local installation if unclear
 - Confirm before making system-wide changes

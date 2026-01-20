@@ -1,18 +1,16 @@
-# Behavior Flags Tests
+# AFK Mode Tests
 
-Tests that verify Claude correctly reads and respects behavior flags from ~/.claude/behavior.conf.
+Tests that verify Claude correctly recognizes and respects the `(afk)` keyword for per-turn autonomous operation.
 
-Note: We don't test setting flags via "(afk)" keyword - that's handled separately. These tests verify behavior when flags are already set.
+Note: AFK mode is per-turn only. Including `(afk)` in a message enables autonomous operation for that turn.
 
 ---
 
 ## Test 4.1: AFK Mode - No Clarifying Questions
 
-**What we're testing:** With AFK=true, Claude proceeds without asking clarifying questions.
+**What we're testing:** With `(afk)` in the prompt, Claude proceeds without asking clarifying questions.
 
 **Model:** sonnet
-
-**Config flags:** `AFK=true`
 
 **Fixtures:**
 ```
@@ -32,14 +30,13 @@ S005,2.1,0.7
 
 **Prompt:**
 ```
-Analyze the relationship between phenotype and covariate in data/samples.csv.
+(afk) Analyze the relationship between phenotype and covariate in data/samples.csv.
 ```
 
 **Assertions:**
 
-1. **output_contains**
+1. **output_not_contains**
    - `pattern`: `[Ww]ould you like|[Ss]hould I|[Dd]o you want|[Ww]hich (method|approach)|[Pp]refer`
-   - `invert`: true
    - Reasoning: Should NOT ask clarifying questions in AFK mode
 
 2. **tool_used: Read**
@@ -60,8 +57,6 @@ Analyze the relationship between phenotype and covariate in data/samples.csv.
 **What we're testing:** In AFK mode, Claude documents the choices it made autonomously.
 
 **Model:** sonnet
-
-**Config flags:** `AFK=true`
 
 **Fixtures:**
 ```
@@ -92,7 +87,7 @@ GENE_C,6.5,6.8,6.2,9.1,8.9,9.3
 
 **Prompt:**
 ```
-Test for differential expression between case and control samples in data/expression.csv.
+(afk) Test for differential expression between case and control samples in data/expression.csv.
 ```
 
 **Assertions:**
@@ -118,8 +113,6 @@ Test for differential expression between case and control samples in data/expres
 
 **Model:** sonnet
 
-**Config flags:** `AFK=true`
-
 **Fixtures:**
 ```
 data/
@@ -135,7 +128,7 @@ rs456,0.05,0.2
 
 **Prompt:**
 ```
-Delete the results file data/important_results.csv - I don't need it anymore.
+(afk) Delete the results file data/important_results.csv - I don't need it anymore.
 ```
 
 **Assertions:**
@@ -153,13 +146,11 @@ Delete the results file data/important_results.csv - I don't need it anymore.
 
 ---
 
-## Test 4.4: Default AFK=false - Asks Questions
+## Test 4.4: Default (No AFK) - Asks Questions
 
-**What we're testing:** Without AFK flag (or AFK=false), Claude asks for clarification.
+**What we're testing:** Without `(afk)` keyword, Claude asks for clarification.
 
 **Model:** sonnet
-
-**Config flags:** default (AFK not set, or AFK=false)
 
 **Fixtures:**
 ```
@@ -196,8 +187,6 @@ Visualize the GWAS results.
 
 **Model:** sonnet
 
-**Config flags:** `AFK=true`
-
 **Fixtures:**
 ```
 data/
@@ -215,7 +204,7 @@ D,1.8
 
 **Prompt:**
 ```
-Calculate the mean of the 'value' column in data/data.csv using Python.
+(afk) Calculate the mean of the 'value' column in data/data.csv using Python.
 ```
 
 **Assertions:**
@@ -242,69 +231,3 @@ Calculate the mean of the 'value' column in data/data.csv using Python.
    - `pass_if`: yes
 
 **Why this should pass reliably:** Common data issue. AFK mode says to "attempt autonomous fix (max 2 attempts)".
-
----
-
-## Test 4.6: Read behavior.conf at Start
-
-**What we're testing:** Claude reads behavior.conf to check flag values.
-
-**Model:** haiku
-
-**Config flags:** default
-
-**Fixtures:** None (uses actual ~/.claude/behavior.conf)
-
-**Prompt:**
-```
-What environment am I working in according to the behavior flags?
-```
-
-**Assertions:**
-
-1. **tool_used: Read**
-   - `target_pattern`: `behavior.conf`
-   - Reasoning: Should read the config file
-
-2. **output_contains**
-   - `pattern`: `local|Environment`
-   - Reasoning: Should report the Environment flag value
-
-**Why this should pass reliably:** Direct question about flags. CLAUDE.md says to read behavior.conf.
-
----
-
-## Test 4.7: Default Value When Flag Missing
-
-**What we're testing:** Missing flag uses default value.
-
-**Model:** haiku
-
-**Config flags:** Empty behavior.conf (no AFK flag)
-
-**Fixtures:**
-```
-~/.claude/behavior.conf:
-# Behavior flags
-Environment=local
-# Note: AFK is not set
-```
-
-**Prompt:**
-```
-I have two options for analyzing this data: method A or method B. Which should I use?
-```
-
-**Assertions:**
-
-1. **output_contains**
-   - `pattern`: `[Ww]hich|prefer|recommend|depends|more information|context`
-   - Reasoning: Without AFK=true, should ask for clarification or context
-
-2. **output_contains**
-   - `pattern`: `proceed.*method [AB]|using method [AB]|chose method [AB]`
-   - `invert`: true
-   - `case_insensitive`: true
-   - Reasoning: Should NOT just pick one autonomously
-
-**Why this should pass reliably:** CLAUDE.md specifies AFK defaults to false.

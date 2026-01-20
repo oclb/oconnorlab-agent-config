@@ -1,5 +1,5 @@
 # Test 4.1: AFK Mode - No Clarifying Questions
-# With AFK=true, Claude proceeds without asking clarifying questions
+# With (afk) in the prompt, Claude proceeds without asking clarifying questions
 
 name: afk-no-questions
 description: AFK mode proceeds without questions
@@ -15,8 +15,6 @@ config:
     - Edit
     - Bash
     - Glob
-  behavior_flags:
-    AFK: "true"
 
 setup:
   - command: |
@@ -30,7 +28,7 @@ setup:
       EOF
 
 prompt: |
-  Analyze the relationship between phenotype and covariate in data/samples.csv.
+  (afk) Analyze the relationship between phenotype and covariate in data/samples.csv.
 
 assertions:
   - type: output_not_contains

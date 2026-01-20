@@ -49,8 +49,8 @@ The documentation is organized in `$DOCS_DIR/docs/` with files like:
 Read the config repo README for skill-specific information:
 
 ```bash
-# Get config repo location from behavior.conf
-CONFIG_REPO=$(grep "^CONFIG_REPO=" ~/.claude/behavior.conf 2>/dev/null | cut -d= -f2)
+# Get config repo location by resolving the CLAUDE.md symlink
+CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
 
 # Fall back to default location if not set
 CONFIG_REPO="${CONFIG_REPO:-$HOME/Dropbox/GitHub/claude-config}"
@@ -113,18 +113,17 @@ See the `remote-o2` skill for detailed setup and usage.
 
 ### AFK Mode
 
-AFK (Away From Keyboard) mode allows Claude Code to work more autonomously:
+AFK (Away From Keyboard) mode allows Claude Code to work more autonomously for a single turn:
 
-- **Enable**: Include `(afk)` in your message
-- **Disable**: Include `(back)` in your message
+- **Enable**: Include `(afk)` in any message to enable autonomous operation for that turn
 
 When AFK mode is enabled:
 - Claude makes reasonable decisions without asking for confirmation
 - Proceeds with likely interpretations rather than clarifying ambiguities
 - Completes multi-step tasks autonomously
-- Only pauses for critical decisions that would be difficult to reverse
+- Only pauses for irreversible actions or critical decisions
 
-This is useful for longer-running tasks where you want Claude to proceed independently.
+AFK mode applies only to the turn where `(afk)` appears. Each new message starts fresh.
 
 ### Feedback and Contributions
 

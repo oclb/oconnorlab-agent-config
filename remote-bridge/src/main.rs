@@ -131,6 +131,23 @@ async fn main() -> Result<()> {
             let permissions = config::load_and_verify(&config_path).await?;
             info!("Config loaded: {}", config_path.display());
 
+            // Display permissions for user verification
+            println!("\n╭─ Permissions ─────────────────────────────────────────╮");
+            println!("│ READ:  {:50} │", "");
+            for path in &permissions.paths.read {
+                println!("│   • {:49} │", path.display());
+            }
+            println!("│ WRITE: {:50} │", "");
+            for path in &permissions.paths.write {
+                println!("│   • {:49} │", path.display());
+            }
+            if let Some(ref limits) = permissions.resources {
+                println!("│ LIMITS: cpu={}, mem={}GB, time={}h, gpu={}, array={} │",
+                    limits.max_cpus, limits.max_memory_gb, limits.max_time_hours,
+                    limits.max_gpus, limits.max_array_size);
+            }
+            println!("╰───────────────────────────────────────────────────────╯\n");
+
             // Get username
             let username = user.unwrap_or_else(|| {
                 std::env::var("USER").unwrap_or_else(|_| "unknown".to_string())

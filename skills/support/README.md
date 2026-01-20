@@ -30,4 +30,4 @@ When providing a general overview, covers:
 ## Documentation Sources
 
 - **Official docs**: https://github.com/ericbuess/claude-code-docs (auto-updated every 3 hours)
-- **Config repo**: `$CONFIG_REPO/README.md` (location stored in `~/.claude/behavior.conf`)
+- **Config repo**: Found by resolving the `~/.claude/CLAUDE.md` symlink

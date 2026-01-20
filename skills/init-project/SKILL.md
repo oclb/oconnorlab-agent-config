@@ -11,49 +11,9 @@ This skill sets up a project with:
 
 ## Execution Flow
 
-### Phase 1: Create Project Permissions (FIRST)
+### Phase 1: Check Prerequisites
 
-**Why first:** Claude Code loads permissions at session startup. Creating permissions early means:
-- Current session will still prompt (unavoidable)
-- Future sessions will have permissions pre-approved
-
-**1.1 Create .claude directory and settings.json**
-
-```bash
-mkdir -p .claude
-```
-
-Create `.claude/settings.json`:
-```json
-{
-  "permissions": {
-    "allow": [
-      "Edit(~/.claude/behavior.conf)",
-      "Read(/notebook/**)",
-      "Edit(/notebook/**)",
-      "Write(/notebook/**)",
-      "Bash(mkdir -p notebook:*)",
-      "Bash(git -C notebook *)",
-      "Bash(ls notebook:*)",
-      "Bash(cp * notebook/*)",
-      "Bash(mv * notebook/*)",
-      "Bash(git init *)",
-      "Bash(git remote add *)"
-    ]
-  }
-}
-```
-
-Tell user:
-> **Permissions created.** To avoid permission prompts during setup, restart Claude Code now:
-> 1. Type `/exit` to quit
-> 2. Run `claude -c` to continue this conversation
->
-> Or continue now (you'll see some permission prompts, but setup will still work).
-
-### Phase 2: Check Prerequisites
-
-**2.1 Check if in a git repository**
+**1.1 Check if in a git repository**
 
 ```bash
 git rev-parse --git-dir 2>/dev/null
@@ -61,58 +21,20 @@ git rev-parse --git-dir 2>/dev/null
 
 If NOT a git repo:
 - Run `git init`
-- Continue to 2.2
+- Continue to 1.2
 
-**2.2 Ensure GitHub CLI is available**
-
-Check if `gh` CLI is available:
-```bash
-which gh
-```
-
-If `gh` not available, **install it directly**:
-
-macOS:
-```bash
-brew install gh
-```
-
-Linux (Debian/Ubuntu):
-```bash
-sudo apt install gh
-```
-
-After installation, source the shell to make `gh` available:
-```bash
-source ~/.zshrc  # or ~/.bashrc
-```
-
-**2.3 Ensure GitHub CLI is authenticated**
-
-Check auth status:
-```bash
-gh auth status
-```
-
-If not authenticated, tell user:
-> **GitHub authentication required**
->
-> Follow the prompts below to authorize the GitHub CLI:
-
-Then run:
-```bash
-gh auth login --web --git-protocol https && gh auth setup-git
-```
-
-This opens a browser for authentication and configures git to use GitHub credentials.
-
-**2.4 Check if main repo has a remote**
+**1.2 Check if main repo has a remote**
 
 ```bash
 git remote -v
 ```
 
-If NO remote configured, ask user:
+If NO remote configured:
+- Check if `gh` CLI is available: `which gh`
+- If `gh` not available, display GitHub CLI setup instructions (see Appendix A)
+- If `gh` available but not authenticated: `gh auth status`
+  - If not authenticated, run `gh auth login` and guide user through it
+- Once `gh` is ready, ask user:
 
 > Your project doesn't have a GitHub remote yet. To continue, I'll help you create one.
 >
@@ -125,7 +47,11 @@ gh repo create <account>/<repo-name> --private --source=. --push
 
 (Use current directory name as repo name by default)
 
-### Phase 3: Inform User of Plan
+**1.3 Verify `gh` CLI for notebook remote**
+
+We'll need `gh` later for the notebook remote. If not available/authenticated, handle it now (same as 1.2).
+
+### Phase 2: Inform User of Plan
 
 Display this message (do NOT ask for confirmation - just inform):
 
@@ -134,11 +60,12 @@ Display this message (do NOT ask for confirmation - just inform):
 > I'll now:
 > 1. Create `notebook/` directory structure (as a separate git repo)
 > 2. Add `notebook/` to `.gitignore`
-> 3. Create or update `CLAUDE.md` with project template
+> 3. Create `.claude/settings.json` with notebook permissions
+> 4. Create or update `CLAUDE.md` with project template
 >
 > The notebook will be a separate git repository, keeping your main repo clean while preserving full history of analyses.
 
-### Phase 4: Ask About Notebook Remote
+### Phase 3: Ask About Notebook Remote
 
 > **Notebook backup (recommended)**
 >
@@ -151,22 +78,22 @@ Options:
 - **Yes, create remote** (recommended) - Will create `<repo-name>-notebook` on your GitHub
 - **No, local only** - Notebook stays local, no backup
 
-### Phase 5: Execute Setup
+### Phase 4: Execute Setup
 
-**5.1 Create notebook structure**
+**4.1 Create notebook structure**
 
 ```bash
 mkdir -p notebook/{entries,feedback}
 ```
 
-**5.2 Initialize notebook git repo**
+**4.2 Initialize notebook git repo**
 
 ```bash
 cd notebook
 git init
 ```
 
-**5.3 Create notebook template files**
+**4.3 Create notebook template files**
 
 Create `notebook/INDEX.md`:
 ```markdown
@@ -188,7 +115,7 @@ Create `notebook/DONE.md`:
 
 ```
 
-**5.4 Initial notebook commit**
+**4.4 Initial notebook commit**
 
 ```bash
 cd notebook
@@ -196,7 +123,7 @@ git add -A
 git commit -m "Initialize notebook"
 ```
 
-**5.5 Create notebook remote (if user chose yes)**
+**4.5 Create notebook remote (if user chose yes)**
 
 ```bash
 cd notebook
@@ -205,7 +132,7 @@ gh repo create <account>/<main-repo-name>-notebook --private --source=. --push
 
 Use the same account as the main repo. Derive repo name from main repo name.
 
-**5.6 Add notebook to main .gitignore**
+**4.6 Add notebook to main .gitignore**
 
 Append to `.gitignore` (create if doesn't exist):
 ```
@@ -219,15 +146,32 @@ git add .gitignore
 git commit -m "chore: gitignore notebook (separate repo)"
 ```
 
-**5.7 Commit project permissions**
+**4.7 Create project permissions**
 
-The `.claude/settings.json` was created in Phase 1. Now commit it:
+Create `.claude/settings.json`:
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(/**)",
+      "Read(/notebook/**)",
+      "Edit(/notebook/**)",
+      "Write(/notebook/**)",
+      "Bash(git -C notebook *)"
+    ]
+  }
+}
+```
+
+Note: `Read(/**)` enables Glob and Grep tools across the project. Notebook permissions allow full read/write access plus git operations.
+
+Commit:
 ```bash
 git add .claude/settings.json
 git commit -m "chore: add Claude Code project settings"
 ```
 
-**5.8 Create or update CLAUDE.md**
+**4.8 Create or update CLAUDE.md**
 
 If CLAUDE.md doesn't exist, ask the user:
 
@@ -294,7 +238,7 @@ git add CLAUDE.md
 git commit -m "docs: initialize/update CLAUDE.md"
 ```
 
-### Phase 6: Offer Update Notebook
+### Phase 5: Offer Update Notebook
 
 If the project has existing git history (more than just the commits we made):
 
@@ -302,7 +246,7 @@ If the project has existing git history (more than just the commits we made):
 
 If yes, invoke the `/update-notebook` skill.
 
-### Phase 7: O2 Cluster Setup (Optional)
+### Phase 6: O2 Cluster Setup (Optional)
 
 Ask the user:
 
@@ -316,11 +260,11 @@ Ask the user:
 
 If yes, proceed with O2 setup:
 
-**7.1 Check O2 access configuration**
+**6.1 Check O2 access configuration**
 
-Check `~/.claude/behavior.conf` for `O2_USER`. If not set, invoke `/remote-o2` skill first to establish O2 connection.
+Check if remote-bridge is configured by looking for `~/.config/remote-bridge/permissions.toml`. If not set up, invoke `/remote-o2` skill first to establish O2 connection.
 
-**7.2 Check GitHub SSH key on O2**
+**6.2 Check GitHub SSH key on O2**
 
 Via the O2 tmux session, check if SSH key exists:
 
@@ -331,18 +275,18 @@ ls ~/.ssh/id_ed25519.pub 2>/dev/null
 
 If key doesn't exist, set it up:
 
-**7.2.1 Get user's GitHub email**
+**6.2.1 Get user's GitHub email**
 
 > What email address is associated with your GitHub account?
 
-**7.2.2 Generate SSH key on O2**
+**6.2.2 Generate SSH key on O2**
 
 ```bash
 # On O2
 ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/id_ed25519 -N ""
 ```
 
-**7.2.3 Display public key and guide user**
+**6.2.3 Display public key and guide user**
 
 ```bash
 # On O2
@@ -361,7 +305,7 @@ Display to user:
 >
 > Let me know when done.
 
-**7.2.4 Test GitHub connection**
+**6.2.4 Test GitHub connection**
 
 ```bash
 # On O2
@@ -372,18 +316,18 @@ Should see: "Hi <username>! You've successfully authenticated..."
 
 If it fails, troubleshoot (may need to accept GitHub's host key first).
 
-**7.3 Clone project on O2**
+**6.3 Clone project on O2**
 
-**7.3.1 Determine O2 project location**
+**6.3.1 Determine O2 project location**
 
-Check if `O2_LAB_DIR` is set in behavior.conf. If so, suggest:
+Ask the user:
 
 > Where should I clone this project on O2?
-> Suggested: `<O2_LAB_DIR>/projects/<repo-name>`
+> (Common locations: `/n/data1/.../<username>/projects/<repo-name>` or `/n/scratch/users/.../projects/<repo-name>`)
 
 Get user confirmation or custom path.
 
-**7.3.2 Get SSH URLs**
+**6.3.2 Get SSH URLs**
 
 ```bash
 # Local - get SSH URLs for both repos
@@ -391,7 +335,7 @@ git remote get-url origin | sed 's|https://github.com/|git@github.com:|'
 git -C notebook remote get-url origin | sed 's|https://github.com/|git@github.com:|'
 ```
 
-**7.3.3 Clone repos on O2**
+**6.3.3 Clone repos on O2**
 
 ```bash
 # On O2
@@ -401,16 +345,18 @@ git clone git@github.com:<user>/<repo>.git .
 git clone git@github.com:<user>/<repo>-notebook.git notebook
 ```
 
-**7.3.4 Store O2 project path**
+**6.3.4 Store O2 project path**
 
-Add to `~/.claude/behavior.conf`:
+Add a note to the project's CLAUDE.md about the O2 location:
+
+```markdown
+## O2 Cluster
+- Project location: `<path-on-o2>`
 ```
-O2_PROJECT_<REPO_NAME>=<path-on-o2>
-```
 
-This enables future `/remote-o2` invocations to know where the project lives on O2.
+This enables future work to know where the project lives on O2.
 
-**7.4 Verify setup**
+**6.4 Verify setup**
 
 ```bash
 # On O2
@@ -421,7 +367,7 @@ git -C notebook status
 
 Both should show clean working directories.
 
-### Phase 8: Summary
+### Phase 7: Summary
 
 Display completion message:
 
@@ -448,24 +394,53 @@ Display completion message:
 
 ---
 
-## Appendix A: GitHub CLI Setup Reference
+## Appendix A: GitHub CLI Setup Instructions
 
-**Note:** Phase 2 handles gh installation and authentication directly. This appendix provides additional context if manual intervention is needed.
+When `gh` CLI is not available, display:
 
-**Installation (if automated install fails):**
-- macOS: `brew install gh`
-- Linux (Debian/Ubuntu): `sudo apt install gh`
-- Other: See https://cli.github.com/
-
-**Authentication flow:**
-
-The command `gh auth login --web --git-protocol https && gh auth setup-git`:
-1. Displays a one-time code (e.g., `XXXX-XXXX`)
-2. Opens browser to https://github.com/login/device
-3. User enters code and authorizes
-4. `gh auth setup-git` configures git to use GitHub credentials
-
-If authentication fails or times out, user can re-run the auth command manually.
+> **GitHub CLI Required**
+>
+> This setup uses the GitHub CLI (`gh`) to create repositories. It's the easiest way to manage GitHub from the command line.
+>
+> **Install GitHub CLI:**
+>
+> macOS:
+> ```bash
+> brew install gh
+> ```
+>
+> Linux (Debian/Ubuntu):
+> ```bash
+> sudo apt install gh
+> ```
+>
+> Other: See https://cli.github.com/
+>
+> **After installing, authenticate:**
+>
+> Run this command (it will run in the background):
+> ```bash
+> gh auth login --web --git-protocol https
+> ```
+>
+> The command will display:
+> ```
+> ! First copy your one-time code: XXXX-XXXX
+> Open this URL to continue in your web browser: https://github.com/login/device
+> ```
+>
+> **Steps to complete:**
+> 1. Copy the one-time code shown
+> 2. Open https://github.com/login/device in your browser
+> 3. Enter the code and authorize
+>
+> Once you see "✓ Logged in as <username>", run one more command to configure git:
+> ```bash
+> gh auth setup-git
+> ```
+> This enables git to use your GitHub credentials automatically.
+>
+> Once complete, run `/init-project` again.
 
 ---
 

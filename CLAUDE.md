@@ -7,7 +7,7 @@ This repository customizes Claude Code for scientific research workflows. It con
 **What this repo provides:**
 - Custom skills for research: data analysis, data validation, tool learning, scientific writing
 - O2 cluster access via remote SSH connection
-- Behavioral flags (AFK mode, environment detection)
+- AFK mode for autonomous operation (per-turn)
 - Local notifications via terminal-notifier
 
 **When working in this repo:**
@@ -59,19 +59,9 @@ Running `setup.sh` creates symlinks:
 ~/.claude/hooks/         → hooks/
 ```
 
-Setup also creates `~/.claude/behavior.conf`.
+### AFK Mode
 
-### Behavior Flags
-
-Claude reads `~/.claude/behavior.conf` at session start:
-
-| Flag | Values | Effect |
-|------|--------|--------|
-| `AFK` | `true`/`false` | When true, work autonomously without asking questions |
-| `Environment` | `local` | Always local; use `/remote-o2` for cluster access |
-| `CONFIG_REPO` | Path | Location of this repo (for `/support` skill) |
-
-Toggle AFK by including `(afk)` or `(back)` in a message.
+Include `(afk)` in any message for autonomous operation on that turn. Claude proceeds independently, only pausing for irreversible actions or critical decisions.
 
 ### Skills
 
@@ -147,8 +137,6 @@ Enables Claude Code to access O2 from a local machine via SSH + tmux:
 - **Connection management**: Establishes SSH connection; prompts reconnection when needed (Duo auth)
 - **Command execution**: Sends commands via `tmux send-keys`, captures output
 - **Duo behavior**: Each command = 1 Duo push off-campus; use harvard-secure wifi to avoid
-
-Stores config in `~/.claude/behavior.conf`: `O2_USER`, `O2_LAB_DIR`, `O2_SCRATCH_DIR`, `O2_SOCKET`, `O2_REMOTE_SETUP`
 
 ### use-o2 (SLURM Reference)
 
@@ -228,7 +216,7 @@ The **References** section records which previous entries informed this work and
 
 ### Feedback
 
-Feedback about Claude's behavior goes directly to `$CONFIG_REPO/feedback/` (the central claude-config repository), not the project's notebook. This centralizes feedback for contribution back to the project.
+Feedback about Claude's behavior goes to this repository's `feedback/` directory (not the project's notebook). This centralizes feedback for contribution back to the project.
 
 ## Notifications
 
@@ -247,7 +235,6 @@ Falls back to `osascript` if terminal-notifier is not installed.
 | `global/CLAUDE.md` | Behavioral instructions Claude follows |
 | `global/settings.json` | Model, permissions, hooks configuration (git-tracked) |
 | `~/.claude/settings.local.json` | User-specific permissions (created by setup.sh) |
-| `~/.claude/behavior.conf` | Runtime flags (created by setup scripts) |
 | `templates/project-settings.json` | Template for project notebook permissions |
 | `o2-scripts/` | Generated scripts for remote O2 access (gitignored) |
 | `skills/<name>/SKILL.md` | Skill prompt definition |
@@ -283,21 +270,23 @@ Claude Code uses a layered permission system. This repo configures permissions a
 ### What This Repo Configures
 
 **Global settings** (`global/settings.json`):
-- `Read`/`Edit` for `~/.claude/behavior.conf` (behavioral flags)
 - `WebFetch(domain:*)` for any domain
 - `Bash` for remote-bridge
 
 **User local settings** (`~/.claude/settings.local.json`, created by `setup.sh`):
 - `Bash` permissions for O2 scripts (user-specific paths)
+- `Read`/`Write` for feedback directory
 
 ### Project Setup
 
-For projects using the notebook system, copy the template to enable notebook permissions:
+For projects using the notebook system, run `/init-project` to automatically set up permissions, or manually copy the template:
 
 ```bash
 mkdir -p .claude
-cp $CONFIG_REPO/templates/project-settings.json .claude/settings.json
+cp <config-repo>/templates/project-settings.json .claude/settings.json
 ```
+
+(where `<config-repo>` is this repository's location)
 
 This pre-approves:
 - `Read(/**)` for project-wide search (enables Glob/Grep tools)

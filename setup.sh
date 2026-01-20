@@ -4,9 +4,9 @@
 # This script sets up Claude Code configuration for any machine
 #
 # What it does:
-#   1. Creates ~/.claude directory and behavior.conf
+#   1. Creates ~/.claude directory
 #   2. Symlinks CLAUDE.md, skills, hooks, and settings.json to ~/.claude/
-#   3. Sets up ntfy.sh notifications in shell config
+#   3. Sets up local notification dependencies
 
 set -e
 
@@ -70,31 +70,10 @@ echo "Step 1: Creating Claude configuration directory..."
 mkdir -p "$CLAUDE_DIR"
 echo "  Created: $CLAUDE_DIR"
 
-# Step 1b: Update CONFIG_REPO and Environment in behavior.conf
-echo ""
-echo "Step 1b: Recording config repo location and environment..."
+# Clean up old behavior.conf if it exists (no longer used)
 if [ -f "$CLAUDE_DIR/behavior.conf" ]; then
-    if grep -q "^CONFIG_REPO=" "$CLAUDE_DIR/behavior.conf"; then
-        sed -i.bak "s|^CONFIG_REPO=.*|CONFIG_REPO=$REPO_DIR|" "$CLAUDE_DIR/behavior.conf"
-        rm -f "$CLAUDE_DIR/behavior.conf.bak"
-    else
-        echo "CONFIG_REPO=$REPO_DIR" >> "$CLAUDE_DIR/behavior.conf"
-    fi
-    if grep -q "^Environment=" "$CLAUDE_DIR/behavior.conf"; then
-        sed -i.bak "s|^Environment=.*|Environment=local|" "$CLAUDE_DIR/behavior.conf"
-        rm -f "$CLAUDE_DIR/behavior.conf.bak"
-    else
-        echo "Environment=local" >> "$CLAUDE_DIR/behavior.conf"
-    fi
-    echo "  Set CONFIG_REPO=$REPO_DIR in behavior.conf"
-    echo "  Set Environment=local in behavior.conf"
-else
-    cat > "$CLAUDE_DIR/behavior.conf" <<EOF
-CONFIG_REPO=$REPO_DIR
-Environment=local
-EOF
-    echo "  Created behavior.conf with CONFIG_REPO=$REPO_DIR"
-    echo "  Set Environment=local"
+    echo "  Removing deprecated behavior.conf (no longer used)"
+    rm -f "$CLAUDE_DIR/behavior.conf"
 fi
 
 # Helper function to create symlink with backup
@@ -142,19 +121,21 @@ echo "Step 4: Creating local settings with user-specific permissions..."
 
 LOCAL_SETTINGS="$CLAUDE_DIR/settings.local.json"
 
-# Create settings.local.json with O2 script permissions
+# Create settings.local.json with user-specific permissions
 cat > "$LOCAL_SETTINGS" <<EOF
 {
   "permissions": {
     "allow": [
       "Bash($REPO_DIR/o2-scripts/o2-run.sh:*)",
       "Bash($REPO_DIR/o2-scripts/connect-o2.sh:*)",
-      "Bash($REPO_DIR/o2-scripts/o2-setup.sh:*)"
+      "Bash($REPO_DIR/o2-scripts/o2-setup.sh:*)",
+      "Read(//$REPO_DIR/feedback/**)",
+      "Write(//$REPO_DIR/feedback/**)"
     ]
   }
 }
 EOF
-echo "  Created $LOCAL_SETTINGS with O2 script permissions"
+echo "  Created $LOCAL_SETTINGS with O2 script and feedback permissions"
 
 echo ""
 echo "======================================"

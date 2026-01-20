@@ -15,8 +15,6 @@ config:
     - Edit
     - Bash
     - Glob
-  behavior_flags:
-    AFK: "true"
 
 setup:
   - command: |
@@ -36,7 +34,7 @@ setup:
       EOF
 
 prompt: |
-  Test for differential expression between case and control samples in data/expression.csv.
+  (afk) Test for differential expression between case and control samples in data/expression.csv.
 
 assertions:
   - type: file_created

@@ -71,33 +71,36 @@ which remote-bridge
    Let me know when Rust is installed.
    ```
 
-3. Build the bridge:
+3. Find the config repo and build the bridge:
    ```bash
-   cd $CONFIG_REPO/remote-bridge && cargo build --release
+   # Find config repo by resolving the CLAUDE.md symlink
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   cd "$CONFIG_REPO/remote-bridge" && cargo build --release
    ```
 
 4. Add to PATH (detect shell with `echo $SHELL`):
 
    **For zsh (~/.zshrc):**
    ```bash
-   echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.zshrc
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   echo "export PATH=\"\$PATH:$CONFIG_REPO/remote-bridge/target/release\"" >> ~/.zshrc
    source ~/.zshrc
    ```
 
    **For bash (~/.bashrc):**
    ```bash
-   echo 'export PATH="$PATH:/path/to/claude-config/remote-bridge/target/release"' >> ~/.bashrc
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   echo "export PATH=\"\$PATH:$CONFIG_REPO/remote-bridge/target/release\"" >> ~/.bashrc
    source ~/.bashrc
    ```
-
-   Replace `/path/to/claude-config` with the actual CONFIG_REPO path.
 
 ### Phase 2: Permission Configuration
 
 1. Create the config directory:
    ```bash
    mkdir -p ~/.config/remote-bridge
-   cp $CONFIG_REPO/remote-bridge/config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   cp "$CONFIG_REPO/remote-bridge/config/permissions.example.toml" ~/.config/remote-bridge/permissions.toml
    ```
 
 2. Ask the user for their O2 paths:

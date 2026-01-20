@@ -9,13 +9,13 @@ Detailed specifications for behavioral tests of the Claude Code configuration.
 | [01-memory-retrieval.md](01-memory-retrieval.md) | 6 | INDEX.md reading and entry retrieval |
 | [02-memory-creation.md](02-memory-creation.md) | 8 | Entry format, naming, structure |
 | [03-todo-management.md](03-todo-management.md) | 7 | TODO.md and DONE.md management |
-| [04-behavior-flags.md](04-behavior-flags.md) | 7 | AFK mode and behavior.conf |
+| [04-behavior-flags.md](04-behavior-flags.md) | 5 | AFK mode (per-turn keyword) |
 | [05-skill-auto-detection.md](05-skill-auto-detection.md) | 9 | Skill trigger phrase detection |
 | [06-skill-workflows.md](06-skill-workflows.md) | 8 | Skill step compliance |
 | [07-feedback-logging.md](07-feedback-logging.md) | 4 | Feedback file creation |
 | [08-edge-cases.md](08-edge-cases.md) | 8 | Error handling, edge cases |
 | [09-explicit-skills.md](09-explicit-skills.md) | 5 | /skill-name invocation |
-| **Total** | **62** | |
+| **Total** | **60** | |
 
 ## Test Categories by Priority
 
@@ -66,14 +66,11 @@ These tests validate core functionality:
 - Use haiku for tests that just check "did it read this file" or "does output contain X"
 - Use sonnet for tests requiring reasoning about skill workflows or semantic retrieval
 
-## Config Flag Reference
+## AFK Mode
 
-| Flag | Default | Usage |
-|------|---------|-------|
-| `AFK=true` | false | Set for tests where Claude should proceed autonomously |
-| `AFK=false` | - | Default; Claude asks questions |
+AFK mode is enabled per-turn by including `(afk)` in the prompt. Tests that need autonomous behavior should include `(afk)` in their prompt text.
 
-Tests that set `AFK=true`:
+Tests that use `(afk)`:
 - 2.1, 2.2, 2.3, 2.4, 2.5, 2.7, 2.8 (memory creation)
 - 3.6, 3.7 (TODO with context)
 - 4.1, 4.2, 4.3, 4.5 (AFK behavior tests)
@@ -143,8 +140,8 @@ Each test translates to YAML like this:
 ```markdown
 ## Test 2.1: Entry Created for Substantive Work
 Model: sonnet
-Config flags: AFK=true
-Prompt: Analyze the expression data...
+AFK: yes (via (afk) in prompt)
+Prompt: (afk) Analyze the expression data...
 Assertions:
 1. file_created: notebook/entries/*.md
 2. output_contains: BRCA1.*5\.0|TP53
@@ -160,8 +157,6 @@ config:
   replicates: 3
   pass_threshold: 0.67
   max_turns: 10
-  behavior_flags:
-    AFK: "true"
   allowed_tools:
     - Read
     - Write
@@ -174,7 +169,7 @@ setup:
   - command: "mkdir -p data && echo 'gene,sample1,...' > data/expression.csv"
 
 prompt: |
-  Analyze the expression data in data/expression.csv. Calculate the mean expression for each gene.
+  (afk) Analyze the expression data in data/expression.csv. Calculate the mean expression for each gene.
 
 assertions:
   - type: file_created

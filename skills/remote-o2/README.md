@@ -102,26 +102,7 @@ The skill auto-triggers when:
 
 ## Configuration
 
-Settings are stored in `~/.claude/behavior.conf`:
-
-```bash
-# O2 Remote Access
-O2_USER=lukeo
-O2_LAB_DIR=/n/data1/hms/dbmi/xxx/lukeo
-O2_SCRATCH_DIR=/n/scratch/users/l/lukeo
-O2_SOCKET=/tmp/o2-socket
-O2_TMUX_SESSION=claude
-O2_REMOTE_SETUP=true
-```
-
-| Variable | Purpose |
-|----------|---------|
-| `O2_USER` | Your O2 username |
-| `O2_LAB_DIR` | Permanent storage (code, results) |
-| `O2_SCRATCH_DIR` | Temporary storage (large outputs) |
-| `O2_SOCKET` | SSH master socket path |
-| `O2_TMUX_SESSION` | tmux session name |
-| `O2_REMOTE_SETUP` | Whether setup is complete |
+Settings are stored in `~/.config/remote-bridge/permissions.toml`. See the skill documentation for details on the permission configuration format.
 
 ## Directory Structure on O2
 

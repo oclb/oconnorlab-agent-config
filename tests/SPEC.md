@@ -828,7 +828,7 @@ assertions:
     description: "Should answer the question correctly"
 ```
 
-### Behavioral Flag Test
+### AFK Mode Test
 
 ```yaml
 # cases/behavior/afk-mode.yaml
@@ -843,14 +843,8 @@ config:
     - Read
     - Edit
 
-setup:
-  - command: "sed -i '' 's/AFK=.*/AFK=true/' ~/.claude/behavior.conf"
-
-teardown:
-  - command: "sed -i '' 's/AFK=.*/AFK=false/' ~/.claude/behavior.conf"
-
 prompt: |
-  Update the README.md to mention the new testing framework.
+  (afk) Update the README.md to mention the new testing framework.
 
 assertions:
   - type: output_contains

@@ -15,8 +15,6 @@ config:
     - Edit
     - Bash
     - Glob
-  behavior_flags:
-    AFK: "true"
 
 setup:
   - command: |
@@ -29,7 +27,7 @@ setup:
       EOF
 
 prompt: |
-  Calculate the mean of the 'value' column in data/data.csv using Python.
+  (afk) Calculate the mean of the 'value' column in data/data.csv using Python.
 
 assertions:
   - type: output_contains
