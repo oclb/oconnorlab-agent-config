@@ -101,6 +101,8 @@ Create `notebook/entries/YYYY-MM-DD-<slug>.md`:
 # <Descriptive Title>
 
 **Date:** YYYY-MM-DD
+**Author:** Claude
+**User:** <github-username>
 
 ## Summary
 [One paragraph: what was done and why]
@@ -111,6 +113,8 @@ Create `notebook/entries/YYYY-MM-DD-<slug>.md`:
 ## References
 - `<entry-name>`: <why it was useful>
 ```
+
+**Author** is always "Claude" (the agent creating the entry). **User** is the GitHub username from `git config user.name` - this identifies who was working with Claude when the entry was created.
 
 The **References** section records which previous entries informed this work and why. Examples:
 - `ssh-socket-validation`: debugging pattern for stale sockets
@@ -124,6 +128,8 @@ The **References** section records which previous entries informed this work and
 # Gene Expression Batch Effect Analysis
 
 **Date:** 2026-01-15
+**Author:** Claude
+**User:** jsmith
 
 ## Summary
 Investigated unexpected clustering in PCA of RNA-seq data. Identified sequencing batch as primary driver of PC1 (explaining 23% of variance). Recommended ComBat correction before downstream analysis.
@@ -150,6 +156,8 @@ Batch correction with ComBat reduced batch-PC1 correlation to 0.11 while preserv
 # User Authentication with OAuth2
 
 **Date:** 2026-01-10
+**Author:** Claude
+**User:** jsmith
 
 ## Summary
 Implemented OAuth2 authentication flow with Google provider. Users can now sign in via Google account, with session persistence via HTTP-only cookies.
@@ -179,6 +187,8 @@ Edge cases handled:
 # SSH Socket Validation Findings
 
 **Date:** 2026-01-17
+**Author:** Claude
+**User:** jsmith
 
 ## Summary
 Discovered that ControlMaster `-O check` returns success even for stale sockets. Implemented inode-based validation as reliable alternative.
@@ -248,11 +258,15 @@ Entry target: notebook/entries/YYYY-MM-DD-<slug>.md
 - If this file already exists, APPEND to the Details section (the conversation may have continued work on the same topic)
 - If this is a new file, create it with the standard format
 
+First, get the current user's GitHub username:
+  git config user.name
+
 Based on the conversation above, create/update the entry with:
 1. A descriptive title and slug (if new)
-2. Summary: one paragraph of what was done and why
-3. Details: the substantive work - decisions made, code written, issues resolved, findings
-4. References: link to any related entries that were consulted
+2. Metadata: Date, Author (always "Claude"), User (the GitHub username from above)
+3. Summary: one paragraph of what was done and why
+4. Details: the substantive work - decisions made, code written, issues resolved, findings
+5. References: link to any related entries that were consulted
 
 After writing the entry:
 1. Update notebook/INDEX.md (add row if new entry, or update summary if existing)
@@ -311,6 +325,17 @@ Use **Explore subagent** when ANY of these patterns appear in user messages:
 - You're about to start work that might duplicate an existing entry
 
 Direct the Explore agent to start at `notebook/INDEX.md`, identify potentially relevant entries, then read full entries as needed. The References section in entries provides hints about whether linked entries are worth exploring.
+
+### Cross-User Entry Attribution
+
+When referencing notebook entries, check the **User** field. If the entry was created by a different user than the current one (compare with `git config user.name`), mention this explicitly:
+
+> "Based on the analysis in `batch-effect-analysis` (created with user jsmith)..."
+
+This alerts the current user that they may not be familiar with this context, since the work was done in a session they weren't part of. This is especially important for:
+- Decisions or architectural choices the current user didn't participate in
+- Findings that affect current work but originated elsewhere
+- References to code or artifacts the user may not have seen
 
 ## Project CLAUDE.md Integration
 
