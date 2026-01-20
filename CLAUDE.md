@@ -42,8 +42,6 @@ claude-config/
 │   └── notify.sh             # Local notification hook (macOS)
 ├── templates/                 # Templates for project setup
 │   └── project-settings.json # Project permissions template (notebook access)
-├── feedback/                  # Centralized feedback about Claude's behavior
-│   └── YYYY-MM-DD-<description>.md
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 └── setup.sh                   # Setup script for local machines
 ```
@@ -230,7 +228,7 @@ The **References** section records which previous entries informed this work and
 
 ### Feedback
 
-Feedback about Claude's behavior is logged centrally in `$CONFIG_REPO/feedback/`, not in project notebooks. See the global CLAUDE.md for feedback triggers and format.
+Feedback about Claude's behavior goes directly to `$CONFIG_REPO/feedback/` (the central claude-config repository), not the project's notebook. This centralizes feedback for contribution back to the project.
 
 ## Notifications
 
@@ -286,7 +284,8 @@ Claude Code uses a layered permission system. This repo configures permissions a
 
 **Global settings** (`global/settings.json`):
 - `Read`/`Edit` for `~/.claude/behavior.conf` (behavioral flags)
-- `WebFetch` for allowed domains (GitHub, O2 docs)
+- `WebFetch(domain:*)` for any domain
+- `Bash` for remote-bridge
 
 **User local settings** (`~/.claude/settings.local.json`, created by `setup.sh`):
 - `Bash` permissions for O2 scripts (user-specific paths)
@@ -301,8 +300,9 @@ cp $CONFIG_REPO/templates/project-settings.json .claude/settings.json
 ```
 
 This pre-approves:
+- `Read(/**)` for project-wide search (enables Glob/Grep tools)
 - `Read`/`Edit`/`Write` for `notebook/**`
-- `Bash` for notebook-related git commits
+- `Bash(git -C notebook *)` for notebook git operations
 
 ### Permission Syntax Reference
 
