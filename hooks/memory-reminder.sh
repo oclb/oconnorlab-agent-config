@@ -1,2 +1,2 @@
 #!/bin/bash
-echo '<reminder>Important: spawn memory agent before ending your turn if you or the user made a tangible contribution to the project.</reminder>'
+echo '<reminder>DECIDE NOW: Will this turn produce a tangible contribution (idea, decision, implementation, discovery)? If yes, you MUST spawn a memory agent before your turn ends. Make this decision before you begin your response.</reminder>'
