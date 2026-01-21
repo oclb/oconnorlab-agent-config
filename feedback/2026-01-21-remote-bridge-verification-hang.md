@@ -72,3 +72,25 @@ Direct SSH to O2 works fine. Can run jobs manually via SSH.
 1. Check what the `verify_connection` step actually does
 2. Check if there's a timeout or expected response that's not being received
 3. Consider if SSH key auth changes the Duo flow in a way the bridge doesn't expect
+
+## Resolution
+
+**Fixed in commit 68d806b** (2026-01-21)
+
+### Root Causes
+
+1. **False shell detection**: Local PTY echo caused the sentinel probe (`echo __READY__`) to be immediately reflected back, triggering false "shell ready" detection before authentication completed.
+
+2. **Missing SSH agent**: `SSH_AUTH_SOCK` wasn't passed to the spawned SSH process, preventing key-based auth.
+
+3. **Probe sent during Duo prompt**: The probe was being typed into the Duo passcode prompt instead of a shell.
+
+### Fixes Applied
+
+1. **Shell expansion detection**: Changed probe to `echo __READY__$$` and detect `__READY__<digits>`. Local echo shows literal `$$`, but shell expands to PID - proving actual execution.
+
+2. **SSH agent passthrough**: Added `SSH_AUTH_SOCK` environment variable to spawned SSH command.
+
+3. **Auto Duo push**: Detect "Passcode or option" prompt and automatically send "1" to trigger push notification. Only start shell probes after Duo auth initiated (5s delay).
+
+**Status: RESOLVED**
