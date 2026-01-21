@@ -42,6 +42,8 @@ claude-config/
 │   └── notify.sh             # Cross-platform notification hook
 ├── templates/                 # Templates for project setup
 │   └── project-settings.json # Project permissions template (notebook access)
+├── feedback/                  # Centralized feedback about Claude's behavior
+│   └── YYYY-MM-DD-<description>.md
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 ├── notify-helpers.sh          # Shell functions for notifications
 └── setup.sh                   # Setup script for local machines
@@ -179,10 +181,8 @@ project/                              # Main git repo
     ├── INDEX.md                      # Entry index (Date, Name, Summary)
     ├── TODO.md                       # Active tasks
     ├── DONE.md                       # Completed tasks
-    ├── entries/                      # All memories
-    │   └── YYYY-MM-DD-<slug>.md
-    └── feedback/                     # Feedback for claude-config (not indexed)
-        └── YYYY-MM-DD-<description>.md
+    └── entries/                      # All memories
+        └── YYYY-MM-DD-<slug>.md
 ```
 
 **Setup:** Run `/init-project` to create this structure automatically.
@@ -231,7 +231,7 @@ The **References** section records which previous entries informed this work and
 
 ### Feedback
 
-`notebook/feedback/` captures issues with Claude's skills for improvement. Feedback is for the claude-config repo, not indexed with project memories.
+Feedback about Claude's behavior is logged centrally in `$CONFIG_REPO/feedback/`, not in project notebooks. See the global CLAUDE.md for feedback triggers and format.
 
 ## Notifications
 

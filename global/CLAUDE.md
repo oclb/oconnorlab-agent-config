@@ -63,10 +63,8 @@ notebook/
 ├── INDEX.md              # Entry index for retrieval (Explore agents start here)
 ├── TODO.md               # Active tasks
 ├── DONE.md               # Completed tasks
-├── entries/              # All memories (analyses, features, research, discussions, etc.)
-│   └── YYYY-MM-DD-<slug>.md
-└── feedback/             # Feedback about Claude's behavior (separate, not indexed)
-    └── YYYY-MM-DD-<description>.md
+└── entries/              # All memories (analyses, features, research, discussions, etc.)
+    └── YYYY-MM-DD-<slug>.md
 ```
 
 ### Notebook Commit Pattern
@@ -417,7 +415,7 @@ Most completed todos should result in a notebook entry. The `Result:` link in DO
 
 ## Feedback Logging
 
-Log feedback about Claude's behavior to `notebook/feedback/`. This feedback is for propagating improvements back to the claude-config repository (skills, settings, CLAUDE.md instructions). It is **not indexed** in INDEX.md - it's separate from project memories.
+Log feedback about Claude's behavior to `$CONFIG_REPO/feedback/`. This feedback is centralized in the claude-config repository for propagating improvements to skills, settings, and CLAUDE.md instructions. It is separate from project notebooks.
 
 ### Feedback Triggers
 
@@ -434,12 +432,12 @@ Log feedback about Claude's behavior to `notebook/feedback/`. This feedback is f
 
 ### How to Log Feedback
 
-1. Create `notebook/feedback/YYYY-MM-DD-brief-description.md`
+1. Create `$CONFIG_REPO/feedback/YYYY-MM-DD-brief-description.md`
 2. Content is freeform - whatever the user wants to capture
 3. Commit:
    ```bash
-   git -C notebook add feedback/ && git -C notebook commit -m "feedback: <brief description>"
-   git -C notebook remote | grep -q origin && git -C notebook push
+   git -C "$CONFIG_REPO" add feedback/ && git -C "$CONFIG_REPO" commit -m "feedback: <brief description>"
+   git -C "$CONFIG_REPO" remote | grep -q origin && git -C "$CONFIG_REPO" push
    ```
 
 No template, no index - just capture the feedback and commit.
