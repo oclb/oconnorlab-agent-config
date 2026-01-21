@@ -45,7 +45,11 @@ Create `.claude/settings.json`:
 ```
 
 Tell user:
-> **Note:** Permissions take effect on next Claude Code restart. You may see some permission prompts during this setup, but future sessions will be smoother.
+> **Permissions created.** To avoid permission prompts during setup, restart Claude Code now:
+> 1. Type `/exit` to quit
+> 2. Run `claude -c` to continue this conversation
+>
+> Or continue now (you'll see some permission prompts, but setup will still work).
 
 ### Phase 2: Check Prerequisites
 
