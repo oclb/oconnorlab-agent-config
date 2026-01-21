@@ -1,8 +1,9 @@
 # macOS
 .DS_Store
 
-# User-specific overrides (not committed to repo)
-global/CLAUDE.user.md
+# User-specific settings (created by setup.sh, contains user paths)
+# Note: CLAUDE.md customization is now done in user's own ~/.claude/CLAUDE.md
+# which imports this repo via @import syntax
 
 # Backup files
 *.backup

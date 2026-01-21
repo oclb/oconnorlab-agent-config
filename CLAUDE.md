@@ -13,7 +13,7 @@ This repository customizes Claude Code for scientific research workflows. It con
 **When working in this repo:**
 - Skills are in `skills/<skill-name>/SKILL.md` (the actual prompt) and `README.md` (documentation)
 - Global config is in `global/CLAUDE.md` (behavioral instructions) and `global/settings.json` (hooks, permissions)
-- Setup scripts symlink these files to `~/.claude/` where Claude Code reads them
+- Setup scripts configure `~/.claude/` to import/symlink these files (see "Setup Architecture" below)
 - **Keep docs updated**: Significant changes should be reflected in this file (`CLAUDE.md`) and possibly `README.md`
 
 ## Directory Structure
@@ -21,8 +21,7 @@ This repository customizes Claude Code for scientific research workflows. It con
 ```
 claude-config/
 ├── global/                    # Global configuration files
-│   ├── CLAUDE.md             # Behavioral instructions for Claude
-│   ├── CLAUDE.user.md        # User-specific overrides (gitignored)
+│   ├── CLAUDE.md             # Behavioral instructions for Claude (imported by user's CLAUDE.md)
 │   └── settings.json         # Claude Code settings (hooks, permissions, model)
 ├── skills/                    # Custom skills for scientific research
 │   ├── support/              # Documentation and help system
@@ -48,16 +47,22 @@ claude-config/
 
 ## How It Works
 
-### Setup and Symlinks
+### Setup Architecture
 
-Running `setup.sh` creates symlinks:
+Running `setup.sh` configures Claude Code with a mix of user-owned and repo-owned files:
 
-```
-~/.claude/CLAUDE.md      → global/CLAUDE.md
-~/.claude/settings.json  → global/settings.json
-~/.claude/skills/        → skills/
-~/.claude/hooks/         → hooks/
-```
+| File | Type | Description |
+|------|------|-------------|
+| `~/.claude/CLAUDE.md` | User-owned | User's file with `@import` to repo's global/CLAUDE.md |
+| `~/.claude/settings.json` | Symlink → repo | Shared settings, auto-updates when repo changes |
+| `~/.claude/settings.local.json` | User-owned | User's personal settings + O2 permissions |
+| `~/.claude/skills/` | Symlink → repo | Shared skills |
+| `~/.claude/hooks/` | Symlink → repo | Notification hooks |
+
+**Key benefits:**
+- User keeps ownership of their CLAUDE.md (can add personal instructions before/after import)
+- Repo updates to settings.json and skills are picked up automatically
+- User's existing settings are preserved (renamed to settings.local.json if needed)
 
 ### AFK Mode
 
@@ -232,9 +237,10 @@ Falls back to `osascript` if terminal-notifier is not installed.
 
 | File | Purpose |
 |------|---------|
-| `global/CLAUDE.md` | Behavioral instructions Claude follows |
-| `global/settings.json` | Model, permissions, hooks configuration (git-tracked) |
-| `~/.claude/settings.local.json` | User-specific permissions (created by setup.sh) |
+| `global/CLAUDE.md` | Behavioral instructions (imported via `@import` by user's CLAUDE.md) |
+| `global/settings.json` | Model, permissions, hooks configuration (symlinked to ~/.claude/) |
+| `~/.claude/CLAUDE.md` | User-owned file that imports global/CLAUDE.md |
+| `~/.claude/settings.local.json` | User-specific permissions (user-owned, O2 perms added by setup.sh) |
 | `templates/project-settings.json` | Template for project notebook permissions |
 | `o2-scripts/` | Generated scripts for remote O2 access (gitignored) |
 | `skills/<name>/SKILL.md` | Skill prompt definition |
@@ -243,11 +249,16 @@ Falls back to `osascript` if terminal-notifier is not installed.
 
 ## Customization
 
-**User-specific behavioral instructions** (not committed to git):
-- Create `global/CLAUDE.user.md` with personal preferences
-- Claude reads this after `global/CLAUDE.md` and applies overrides
+**User-specific behavioral instructions:**
+- Edit your `~/.claude/CLAUDE.md` directly (it's user-owned, not a symlink)
+- Add personal instructions before or after the `@import` line
+- The imported repo config provides the base; your additions override or extend it
 
-**Adding or modifying skills**:
+**User-specific settings:**
+- Edit `~/.claude/settings.local.json` (takes precedence over the symlinked settings.json)
+- Add your own permissions, model preferences, etc.
+
+**Adding or modifying skills:**
 ```
 skills/my-skill/
 ├── SKILL.md          # The prompt Claude follows

@@ -1,41 +1,34 @@
 # Claude Code Configuration for Scientific Research
 
-This repository contains Claude Code configurations and skills customized for scientific research and a bridge which allows it to access to the Harvard O2 cluster.
+This repository contains Claude Code configurations, skills, and tools intended to make it more useful for scientific research.
+
+As of early 2026, a current trend is the application of AI coding agents beyond "coding". The goal of this project is for us to integrate AI agents more deeply into our scientific work, while mitigating forseeable pitfalls of doing so.
+
+This project has three major features:
+1. **O2 Cluster bridge.** It includes an application that enables Claude to interact with O2, submit jobs, and read results. Its interactions are sandboxed to avoid accidental data deletion.
+2. **Project notebook.** Claude will automatically keep a project notebook that sketches the current state of the project and permanently logs any work that you do together. This notebook is intended both to provide context to Claude and to mitigate non-reproducibility, which is a potential pitfall when you rely on agents without long-term memory.
+3. **Specialized prompts.** Claude recently added support for "skills", which are specialized prompts that it retrieves automatically when they are relevant to a task. The project includes scientific skills that aim to improve the AI's performance at various tasks, like inspecting a new dataset or performing an analysis. Currently, these prompts are mostly untested; my hope is that they will improve over time.
+
+Unlike basically everything else in this project, this README was written by Luke, not the AI.
 
 ## Background
 
-**Claude Code** is an AI agent with tools to read and edit files, run bash commands, search codebases, and access the internet. It is widely used in software engineering, and it has a rich set of features that make it an attractive choice for scientific research. Currently, this repo is designed around Claude Code, but it is likely that it could be adapted for use with other agents (like Cursor or Codex). 
+**AI Agents** typically pair an LLM, like Claude Sonnet, with a set of tools that the LLM uses to perform actions and retrieve information. In particular, coding agents have tools to read and edit files (code), and often also to run bash commands and other code. **Claude Code** is a very popular coding agent whose abilities make it an attractive choice for scientific research. Claude Code is traditionally used via the terminal but can also be used inside of an IDE or via a web app.
 
 In particular, Claude Code makes it convenient to add **skills**. A Claude skill is a specialized prompt that explains to Claude how to perform a task, potentially in great detail. Skills can be invoked explicitly using slash commands (e.g., `/support how do I use claude code?`), or Claude can automatically detect when a skill should be used. This repository includes skills that are designed to make Claude Code more useful for scientific research. 
 
-Claude Code is traditionally used via its CLI. It can also be used inside of an IDE or via a web app.
-
-## What's Included
-
-- `global/` - Global configuration files
-  - `CLAUDE.md` - Behavioral configuration and instructions
-  - `settings.json` - Claude Code settings (hooks, permissions)
-- `skills/` - Custom Claude Code skills for scientific research
-  - `init-project/` - Initialize a project with notebook system and permissions
-  - `support/` - Gives Claude Code access to its own up-to-date documentation, as well as documentation for this repository
-  - `remote-o2/` - Remote O2 cluster access via SSH
-  - `use-o2/` - SLURM reference material (used by remote-o2)
-  - `perform-analysis/` - Systematic analysis framework with lab notebook integration
-  - `update-notebook/` - Sync notebook when work is done outside Claude Code
-  - `new-data/` - Gives instructions for exploring and performing sanity checks on a new dataset
-  - `new-software/` - Gives instructions for installing and learning a new library or software tool
-  - Additional skills for teaching, editing scientific writing, and editing .docx, .pptx, and .pdf file formats
-- `hooks/` - Shell scripts for Claude Code hooks (notifications)
-- `setup.sh` - Setup script for local machines (macOS/Linux)
 
 ## Quick start
 
 Claude Code requires configuration files to be found at specific locations. This repository uses symlinks (shortcuts) to keep the actual files in a synced location while Claude Code reads them from the expected paths.
 
+Using Claude Code requires an Anthropic paid plan.
+
 0. Install Claude Code if you haven't already: on macOS, 
   ```bash
   brew install claude
   ```
+  Then, you must connect Claude with your Anthropic account; enter Claude by running `claude`, then enter `/login`.
 
 1. Clone this repository at a chosen location:
    ```bash
@@ -61,75 +54,56 @@ Claude Code requires configuration files to be found at specific locations. This
    ```
    This creates the notebook system, sets up permissions, and optionally creates GitHub remotes.
 
-## Configuration Features
+## Features
+
+### Project notebook
+A major limitation of existing AI models is their lack of long-term memory. One problem this creates is that you often need to provide  lots of project context to the AI. Even when the AI can infer what you mean from context - e.g., by reading your project's source code - you may not trust that it will do so. Another problem is that when the AI performs analyses, even with your close guidance, it can be easy to forget details of those analyses. If the AI also forgets those details, then they are simply lost.
+
+To address these problems, the agent is instructed to maintain two types of project memory. First, it contains a state-of-the-project file (`~/my_project/CLAUDE.md`), which is loaded at the beginning of every conversation. Previously, I have done this manually using a project README file. Now, the agent is instructed to actively maintain this file for you. This file should contain information about the goals of the project, major progress so far, key datasets, and sofware usage.
+
+Second, it maintains a notebook which acts as a stable repository for long-term memory. All substantive work done with the agent should be recorded in this notebook. The notebook is indexed, and the agent is instructed to search for relevant entries when it determines that it needs context. Although many approaches to AI memory and recall have been proposed, this one - just let it use the filesystem to search for relavent files - seems to be the simplest and the best.
+
+The notebook lives in a GitHub repository that should be separate from your project repository and is managed entirely by the agent. Entries of this notebook include text files which describe what was done or learned, code which can be used to reproduce results, and results files. I envision that this notebook will be maintained by the agent independently, but of course, you can create entries yourself as well. An issue right now is that the AI may fail to create notebook entries without manual prompting. 
+
+The notebook also includes a to-do list, which is totally optional; I find that it is a nice, low-effort way to start conversations ("what are our to-dos?").
 
 ### Remote O2 Access
-Use the `/remote-o2` skill to access the O2 cluster from your local machine. The first time you run `/remote-o2`, Claude will guide you through setup (SSH configuration, connection scripts), then execute commands on O2, submit SLURM jobs, and monitor progress.
+The `bridge/` directory contains a Rust application which allows Claude (or a human) to interact with O2 from inside of a sandbox. To set this up, enter Claude Code and invoke `/remote-o2`; the first time, Claude will guide you through setup (SSH configuration, connection scripts). Subsequently, the `/use-o2` skill provides Claude with instructions to submit and monitor jobs on O2.
 
-
-
+This bridge maintains a connetion over `ssh` with an O2 login node. It exposes an API with certain read-only commands (like `cat`), allowing Claude to read any file that you can read. It also exposes two commands that allow Claude to modify files: `git pull`, so that it can pull updates to your project repo, and `sbatch`, so that it can run jobs. Jobs run by Claude are dispatched into a sandboxed Singularity container. Containerization could make it minorly annoying to manage dependencies, but it brings major peace of mind: the agent cannot edit or delete files outside of the directories that you specify when you set up the sandbox.
 
 ### Performing analyses
-The `/perform-analysis` skill is intended to improve Claude's ability to design, run, troubleshoot, and log analyses. 
-It:
-- Determines motivation and expected results
-- Retrieves context from related past analyses
-- Determines if it has all of the context, data, and tools that it needs
-- Makes a plan
-  - Presents plan to user for approval (except in `afk` mode)
-  - For long-running analyses, uses pilot runs and tracks progress
-  - For resource-intensive work, uses O2 cluster via `/remote-o2`
-- Troubleshoots iteratively
-- Names the analysis, tracks versions, and logs it in the `notebook/` directory
+The `/perform-analysis` skill is intended to improve the agent's ability to perform scientific analyses semi-autonomously. It instructs the agent to find notebook entries about related analyses; to understand motivation and expected results; to make a plan with the user; to perform troubleshooting and iteration; to produce digestible results; and to log its work in a notebook entry.
 
-### Lab Notebook
+In my experience, AI agents do not have these skills without special prompting. I am unsure the extent to which special prompting will help. I would really value your feedback on this. 
 
-The notebook is a **separate git repository** inside your project, keeping your main repo clean while preserving full analysis history. Run `/init-project` to set this up automatically.
-
-```
-my-project/           # Main repo (your code)
-├── .gitignore        # Contains: notebook/
-├── CLAUDE.md
-└── notebook/         # Separate repo (analysis logs)
-    ├── .git/
-    ├── INDEX.md
-    ├── analyses/
-    └── methods/
-```
-
-**Why separate repos?**
-- Main repo git log stays clean (only code changes)
-- Notebook can have different backup/sharing rules
-- Easy to share code without sharing exploratory work
-
-**How it works:**
-- Each analysis gets its own directory with a README, scripts, and outputs
-- Claude writes to the notebook incrementally during analysis
-- When starting a new analysis, Claude retrieves related past analyses for context
-- Commits go to the notebook repo; pushes to its own GitHub remote
-
-**Managing the notebook:** Use `/perform-analysis` for new analyses, `/update-notebook` to sync work done outside Claude Code.
+### Getting help
+Using the `/support` skill gives Claude Code access to its own up-to-date documentation, as well as the contents of this repository.
 
 ### Additional skills
-- **new-data** - Dataset handling and validation
+To an extent, these are aspirational placeholders for abilities I would like the AI to have. Please try them and provide feedback. 
+- **/new-data** - initial investigation of a new dataset
   - Downloads and acquires datasets from various sources
-  - Validates data format and structure
-  - Computes descriptive statistics
-  - Identifies data quality issues
-  - Provides actionable recommendations
+  - Determines data format and describes contents
+  - Reports basic statistics, like the number of genes
+  - Hopefully identifies data quality issues
 
-- **new-software** - Tool learning and setup
+- **new-software** - onboarding existing tools and libraries
   - Searches documentation and best practices
   - Installs and configures tools
   - Runs sanity checks
   - Provides usage examples
+  
+- **revise-scientific-writing** - I do not yet recommend this skill.
 
-- **Additional skills**: Teaching mode, scientific writing revision, document handling (PDF, DOCX, PPTX)
+- **teaching-mode** - I do not yet recommend this skill.
+
+- **File format support**: There are skills copied from Anthropic so that the AI can manipulate .docx, .pptx, and .pdf files. For example, you could ask it to create a powerpoint with figures from the last week's notebook entries - I have not actually tried this!
 
 
 ### AFK Mode
 
-Include `(afk)` in any message to enable autonomous operation for that turn. Claude will proceed independently without asking clarifying questions, only pausing for irreversible actions or critical decision points.
+Include `(afk)` in any message to encourage Claude to act autonomously, without asking for your help or feedback.
 
 ### Notifications
 
@@ -151,24 +125,9 @@ For personal project-specific settings (not shared with team):
 - Create `.claude/settings.local.json` in your project
 - Add `settings.local.json` to your project's `.gitignore`
 
-### MCP Servers
-
-MCP (Model Context Protocol) server configurations can be added to `settings.json` under the `mcpServers` key. See [Claude Code MCP documentation](https://docs.claude.ai/claude-code/mcp) for details.
-
 ## Resources
 
-### Claude Code Documentation
 - [Claude Code Documentation](https://docs.claude.ai/claude-code)
-- [Claude Code Settings Reference](https://docs.claude.ai/claude-code/settings)
-- [Claude Code Skills](https://docs.claude.ai/claude-code/skills)
-- [Claude Code Hooks](https://docs.claude.ai/claude-code/hooks)
-
-### O2 Cluster Resources
 - [O2 User Guide](https://harvardmed.atlassian.net/wiki/spaces/O2/overview)
 - [O2 SLURM Documentation](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1586793619/Using+Slurm+Basic)
 - [O2 Research Computing Portal](https://rc.hms.harvard.edu/)
-
-### Getting Help
-- For Claude Code questions: Run the `/support` skill or check Claude Code documentation
-- For configuration issues: Check this README or open an issue in the repository
-- For O2 cluster issues: Contact RC help (rchelp@hms.harvard.edu)

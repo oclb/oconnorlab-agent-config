@@ -2,54 +2,19 @@
 
 ## Configuration Repository
 
-Your settings and skills are managed in a Git repository, symlinked to their standard locations by setup scripts. Everything should "just work" - no special paths needed.
+Your settings and skills are managed in a Git repository. The user's `~/.claude/CLAUDE.md` imports this file using Claude Code's native `@import` syntax, so updates to the repo are automatically picked up.
 
-The repo location is stored in `~/.claude/behavior.conf` as `CONFIG_REPO`. If you need to understand the configuration setup, modify settings at the source, or read documentation about available skills, check `$CONFIG_REPO/README.md`.
+To find the config repo location, look for the `@` import line in `~/.claude/CLAUDE.md`.
 
-## User-Specific Configuration
+## AFK Mode (Per-Turn)
 
-**IMPORTANT:** If the file `$CONFIG_REPO/global/CLAUDE.user.md` exists, read it AFTER reading this file. It contains user-specific instructions and preferences that override or extend these global settings. The user file is gitignored and won't cause conflicts when pulling from the repo.
+When a user includes `(afk)` in their message, apply **AFK mode for that turn only**:
+- Be more independent - proceed if 80%+ confident in interpretation
+- Document assumptions in notebook entries
+- Only pause for: irreversible actions (destructive git operations, file deletions), external API calls with side effects, or decisions where wrong choice would require significant rework
+- When pausing, state the specific decision point
 
-## Behavior Flags
-
-At the start of each session, read `~/.claude/behavior.conf` to check the current flag values. These flags modify how you should behave.
-
-### Flag Definitions
-
-| Flag | Default | Behavior |
-|------|---------|----------|
-| `AFK` | `false` | When `true`: Be more independent. Proceed if 80%+ confident in interpretation. Document assumptions in notebook entries. Only pause for: irreversible actions (destructive git operations, file deletions), external API calls with side effects, or decisions where wrong choice would require significant rework. When pausing, state the specific decision point. |
-| `Environment` | `local` | Always `local`. For O2 cluster access, use the `/remote-o2` skill which connects via SSH. |
-
-### Auto-Detection Keywords
-
-Watch for these keywords in user prompts and automatically update the behavior.conf file:
-
-| Keyword | Action |
-|---------|--------|
-| `(afk)` | Set `AFK=true` in behavior.conf |
-| `(back)` | Set `AFK=false` in behavior.conf |
-
-When you detect these keywords:
-1. Use sed or similar to update the flag in `~/.claude/behavior.conf`
-2. Confirm the change briefly (e.g., "AFK mode enabled")
-3. Apply the new behavior immediately
-
-### Flag File Format
-
-The file uses simple `KEY=value` format:
-- Lines starting with `#` are comments
-- Blank lines are ignored
-- Flag names are case-sensitive
-- Boolean flags use `true` or `false`
-- String flags use their defined values (e.g., `Environment=local`)
-
-### How to Apply Flags
-
-1. Read `~/.claude/behavior.conf` at session start
-2. For each flag defined above, check if it exists in behavior.conf
-3. If a flag is missing from behavior.conf (or the file doesn't exist), use the Default from the table above
-4. Adjust your behavior according to the flag definitions
+AFK mode does not persist across turns. Each message starts fresh unless it contains `(afk)`.
 
 ## Notebook System
 
@@ -440,7 +405,9 @@ Most completed todos should result in a notebook entry. The `Result:` link in DO
 
 ## Feedback Logging
 
-Log feedback about Claude's behavior to `$CONFIG_REPO/feedback/`. This feedback is centralized in the claude-config repository for propagating improvements to skills, settings, and CLAUDE.md instructions. It is separate from project notebooks.
+Log feedback about Claude's behavior to the config repository's `feedback/` directory. This ensures feedback is collected in one place for contribution back to the project.
+
+To find the config repo: `readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname` (resolves symlink to find repo root).
 
 ### Feedback Triggers
 
@@ -457,9 +424,10 @@ Log feedback about Claude's behavior to `$CONFIG_REPO/feedback/`. This feedback 
 
 ### How to Log Feedback
 
-1. Create `$CONFIG_REPO/feedback/YYYY-MM-DD-brief-description.md`
-2. Content is freeform - whatever the user wants to capture
-3. Commit:
+1. Find the config repo: `CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)`
+2. Create `$CONFIG_REPO/feedback/YYYY-MM-DD-brief-description.md`
+3. Content is freeform - whatever the user wants to capture
+4. Commit:
    ```bash
    git -C "$CONFIG_REPO" add feedback/ && git -C "$CONFIG_REPO" commit -m "feedback: <brief description>"
    git -C "$CONFIG_REPO" remote | grep -q origin && git -C "$CONFIG_REPO" push
