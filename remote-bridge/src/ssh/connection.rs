@@ -71,6 +71,11 @@ impl SshConnection {
         cmd.arg("ServerAliveCountMax=3");
         cmd.arg(format!("{}@{}", self.user, self.host));
 
+        // Pass through SSH agent socket for key-based auth
+        if let Ok(auth_sock) = std::env::var("SSH_AUTH_SOCK") {
+            cmd.env("SSH_AUTH_SOCK", auth_sock);
+        }
+
         // Spawn SSH in the PTY
         let _child = pair
             .slave
@@ -122,9 +127,12 @@ impl SshConnection {
         // Shared state
         let done = Arc::new(AtomicBool::new(false));
         let sentinel_sent = Arc::new(AtomicBool::new(false));
+        let duo_requested = Arc::new(AtomicBool::new(false)); // True after we've sent "1" for Duo push
 
         // Channel to send keyboard input to writer thread
         let (key_tx, key_rx) = mpsc::channel::<Vec<u8>>();
+        // Channel to signal Duo prompt detected (reader -> writer)
+        let (duo_tx, duo_rx) = mpsc::channel::<()>();
 
         // Use raw mode for stdin to get individual keystrokes
         crossterm::terminal::enable_raw_mode()
@@ -133,8 +141,9 @@ impl SshConnection {
         let sentinel_clone = sentinel.clone();
         let done_clone = done.clone();
         let sentinel_sent_clone = sentinel_sent.clone();
+        let duo_requested_clone = duo_requested.clone();
 
-        // Thread 1: Read from PTY and display, detect sentinel
+        // Thread 1: Read from PTY and display, detect Duo prompt and sentinel
         let reader_handle = std::thread::spawn(move || {
             let mut reader = reader;
             let mut buf = [0u8; 1024];
@@ -158,19 +167,31 @@ impl SshConnection {
                         term_stdout.write_all(output).ok();
                         term_stdout.flush().ok();
 
-                        // Accumulate for sentinel detection
+                        // Accumulate for detection
                         if let Ok(s) = std::str::from_utf8(output) {
                             accumulated.push_str(s);
                             if accumulated.len() > 4000 {
                                 accumulated = accumulated[accumulated.len() - 2000..].to_string();
                             }
 
-                            // Check for sentinel
-                            if sentinel_sent_clone.load(Ordering::Relaxed)
-                                && accumulated.contains(&sentinel_clone)
+                            // Detect Duo prompt and signal writer to send "1" for push
+                            if !duo_requested_clone.load(Ordering::Relaxed)
+                                && accumulated.contains("Passcode or option")
                             {
-                                done_clone.store(true, Ordering::Relaxed);
-                                break;
+                                duo_tx.send(()).ok();
+                                duo_requested_clone.store(true, Ordering::Relaxed);
+                            }
+
+                            // Check for sentinel followed by digits (proves shell expansion, not local echo)
+                            // Local echo shows literal "$$", but shell expands to PID
+                            if sentinel_sent_clone.load(Ordering::Relaxed) {
+                                let pattern = format!(r"{}\d+", regex::escape(&sentinel_clone));
+                                if let Ok(re) = regex::Regex::new(&pattern) {
+                                    if re.is_match(&accumulated) {
+                                        done_clone.store(true, Ordering::Relaxed);
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -182,14 +203,14 @@ impl SshConnection {
             reader
         });
 
-        // Thread 2: Write keyboard input and probes to PTY
+        // Thread 2: Write keyboard input, Duo response, and probes to PTY
         let done_clone2 = done.clone();
         let sentinel_sent_clone2 = sentinel_sent.clone();
         let sentinel_clone2 = sentinel.clone();
 
         let writer_handle = std::thread::spawn(move || {
             let mut writer = writer;
-            let start = std::time::Instant::now();
+            let mut duo_sent_time: Option<std::time::Instant> = None;
             let mut last_probe = std::time::Instant::now();
 
             loop {
@@ -207,15 +228,25 @@ impl SshConnection {
                     Err(mpsc::RecvTimeoutError::Disconnected) => break,
                 }
 
-                // Periodically send sentinel probe (after 5 seconds, every 3 seconds)
-                if start.elapsed() > std::time::Duration::from_secs(5)
-                    && last_probe.elapsed() > std::time::Duration::from_secs(3)
-                {
-                    let probe = format!("echo {}\n", sentinel_clone2);
-                    writer.write_all(probe.as_bytes()).ok();
+                // Check for Duo prompt signal - send "1" to request push
+                if duo_rx.try_recv().is_ok() && duo_sent_time.is_none() {
+                    writer.write_all(b"1\n").ok();
                     writer.flush().ok();
-                    sentinel_sent_clone2.store(true, Ordering::Relaxed);
-                    last_probe = std::time::Instant::now();
+                    duo_sent_time = Some(std::time::Instant::now());
+                }
+
+                // Only send shell probes after Duo auth started and 5 seconds passed
+                // (gives time for user to approve push)
+                if let Some(duo_time) = duo_sent_time {
+                    if duo_time.elapsed() > std::time::Duration::from_secs(5)
+                        && last_probe.elapsed() > std::time::Duration::from_secs(3)
+                    {
+                        let probe = format!("echo {}$$\n", sentinel_clone2);
+                        writer.write_all(probe.as_bytes()).ok();
+                        writer.flush().ok();
+                        sentinel_sent_clone2.store(true, Ordering::Relaxed);
+                        last_probe = std::time::Instant::now();
+                    }
                 }
             }
             writer
