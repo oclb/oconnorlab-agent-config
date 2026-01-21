@@ -91,8 +91,8 @@ impl PermissionConfig {
         }
 
         let content = std::fs::read_to_string(path)?;
-        let config: Self = toml::from_str(&content)
-            .map_err(|e| ConfigError::Parse(e.to_string()))?;
+        let config: Self =
+            toml::from_str(&content).map_err(|e| ConfigError::Parse(e.to_string()))?;
 
         Ok(config)
     }
@@ -101,9 +101,11 @@ impl PermissionConfig {
     pub fn validate(&self) -> Result<(), ConfigError> {
         // Ensure write paths are subsets of read paths
         for write_path in &self.paths.write {
-            let is_readable = self.paths.read.iter().any(|read_path| {
-                write_path.starts_with(read_path)
-            });
+            let is_readable = self
+                .paths
+                .read
+                .iter()
+                .any(|read_path| write_path.starts_with(read_path));
             if !is_readable {
                 return Err(ConfigError::Validation(format!(
                     "Write path {} is not under any read path",
@@ -118,10 +120,14 @@ impl PermissionConfig {
                 return Err(ConfigError::Validation("max_cpus must be > 0".to_string()));
             }
             if resources.max_memory_gb == 0 {
-                return Err(ConfigError::Validation("max_memory_gb must be > 0".to_string()));
+                return Err(ConfigError::Validation(
+                    "max_memory_gb must be > 0".to_string(),
+                ));
             }
             if resources.max_time_hours == 0 {
-                return Err(ConfigError::Validation("max_time_hours must be > 0".to_string()));
+                return Err(ConfigError::Validation(
+                    "max_time_hours must be > 0".to_string(),
+                ));
             }
         }
 
@@ -130,12 +136,18 @@ impl PermissionConfig {
 
     /// Check if a path is allowed for reading
     pub fn is_read_allowed(&self, path: &Path) -> bool {
-        self.paths.read.iter().any(|allowed| path.starts_with(allowed))
+        self.paths
+            .read
+            .iter()
+            .any(|allowed| path.starts_with(allowed))
     }
 
     /// Check if a path is allowed for writing
     pub fn is_write_allowed(&self, path: &Path) -> bool {
-        self.paths.write.iter().any(|allowed| path.starts_with(allowed))
+        self.paths
+            .write
+            .iter()
+            .any(|allowed| path.starts_with(allowed))
     }
 
     /// Check if a container image is allowed
@@ -197,7 +209,7 @@ allowed = ["gcc/9.2.0", "python/3.9.14"]
                 read: vec![PathBuf::from("/data/lab/")],
                 write: vec![PathBuf::from("/data/lab/projects/")],
             },
-            resources: None,  // No resource limits
+            resources: None, // No resource limits
             containers: ContainerConfig::default(),
             modules: ModuleConfig::default(),
             singularity: SingularityConfig::default(),

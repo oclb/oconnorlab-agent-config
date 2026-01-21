@@ -47,7 +47,10 @@ impl SshConnection {
             return Ok(()); // Already connected
         }
 
-        info!("Starting persistent SSH session to {}@{}", self.user, self.host);
+        info!(
+            "Starting persistent SSH session to {}@{}",
+            self.user, self.host
+        );
 
         // Create a PTY - this gives SSH a real terminal
         let pty_system = native_pty_system();
@@ -96,9 +99,7 @@ impl SshConnection {
         drop(session_guard);
 
         // Do interactive authentication (user sees prompts, can type password/Duo)
-        let (reader, writer) = self
-            .interactive_auth(reader, writer)
-            .await?;
+        let (reader, writer) = self.interactive_auth(reader, writer).await?;
 
         // Re-acquire lock and store session
         let mut session_guard = self.session.lock().await;
@@ -118,8 +119,8 @@ impl SshConnection {
         reader: Box<dyn Read + Send>,
         writer: Box<dyn Write + Send>,
     ) -> Result<(Box<dyn Read + Send>, Box<dyn Write + Send>), SshError> {
-        use std::sync::mpsc;
         use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::mpsc;
 
         // Sentinel for detecting shell readiness
         let sentinel = format!("__READY_{}__", Uuid::new_v4().to_string().replace("-", ""));
@@ -282,12 +283,12 @@ impl SshConnection {
         crossterm::terminal::disable_raw_mode().ok();
 
         // Wait for threads and get reader/writer back
-        let reader = reader_handle.join().map_err(|_| {
-            SshError::CommandFailed("Reader thread panicked".to_string())
-        })?;
-        let writer = writer_handle.join().map_err(|_| {
-            SshError::CommandFailed("Writer thread panicked".to_string())
-        })?;
+        let reader = reader_handle
+            .join()
+            .map_err(|_| SshError::CommandFailed("Reader thread panicked".to_string()))?;
+        let writer = writer_handle
+            .join()
+            .map_err(|_| SshError::CommandFailed("Writer thread panicked".to_string()))?;
 
         info!("Shell ready (sentinel received)");
         Ok((reader, writer))
@@ -300,7 +301,11 @@ impl SshConnection {
     }
 
     /// Execute a command in the persistent session
-    pub async fn execute(&self, command: &str, timeout_secs: u64) -> Result<CommandOutput, SshError> {
+    pub async fn execute(
+        &self,
+        command: &str,
+        timeout_secs: u64,
+    ) -> Result<CommandOutput, SshError> {
         let mut session_guard = self.session.lock().await;
 
         let session = session_guard
@@ -352,7 +357,9 @@ impl SshConnection {
 
                     // Process complete lines
                     while let Some(newline_pos) = accumulated.find('\n') {
-                        let line = accumulated[..newline_pos].trim_end_matches('\r').to_string();
+                        let line = accumulated[..newline_pos]
+                            .trim_end_matches('\r')
+                            .to_string();
                         accumulated = accumulated[newline_pos + 1..].to_string();
 
                         debug!("Read line: {}", line);

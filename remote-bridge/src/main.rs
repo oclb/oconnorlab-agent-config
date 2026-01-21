@@ -2,17 +2,17 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
-mod config;
-mod ssh;
-mod rpc;
 mod commands;
+mod config;
 mod error;
+mod rpc;
 mod sbatch;
+mod ssh;
 #[cfg(test)]
 mod testing;
 
@@ -41,7 +41,11 @@ enum Commands {
         host: String,
 
         /// Path to permissions config file
-        #[arg(short, long, default_value = "~/.config/remote-bridge/permissions.toml")]
+        #[arg(
+            short,
+            long,
+            default_value = "~/.config/remote-bridge/permissions.toml"
+        )]
         config: PathBuf,
     },
 
@@ -60,14 +64,22 @@ enum Commands {
     /// Verify config file integrity
     VerifyConfig {
         /// Path to permissions config file
-        #[arg(short, long, default_value = "~/.config/remote-bridge/permissions.toml")]
+        #[arg(
+            short,
+            long,
+            default_value = "~/.config/remote-bridge/permissions.toml"
+        )]
         config: PathBuf,
     },
 
     /// Update config checksum (after intentional changes)
     UpdateChecksum {
         /// Path to permissions config file
-        #[arg(short, long, default_value = "~/.config/remote-bridge/permissions.toml")]
+        #[arg(
+            short,
+            long,
+            default_value = "~/.config/remote-bridge/permissions.toml"
+        )]
         config: PathBuf,
     },
 
@@ -84,15 +96,15 @@ enum Commands {
     },
 }
 
-fn expand_tilde(path: &PathBuf) -> PathBuf {
+fn expand_tilde(path: &Path) -> PathBuf {
     if let Some(path_str) = path.to_str() {
-        if path_str.starts_with("~/") {
+        if let Some(suffix) = path_str.strip_prefix("~/") {
             if let Some(home) = dirs::home_dir() {
-                return home.join(&path_str[2..]);
+                return home.join(suffix);
             }
         }
     }
-    path.clone()
+    path.to_path_buf()
 }
 
 fn socket_path(name: &str) -> PathBuf {
@@ -107,7 +119,12 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Start { name, user, host, config } => {
+        Commands::Start {
+            name,
+            user,
+            host,
+            config,
+        } => {
             // Initialize logging after arg parsing
             FmtSubscriber::builder()
                 .with_max_level(Level::INFO)
@@ -121,7 +138,8 @@ async fn main() -> Result<()> {
             if rpc_socket.exists() {
                 anyhow::bail!(
                     "Bridge '{}' appears to be running. Use 'remote-bridge stop {}' first.",
-                    name, name
+                    name,
+                    name
                 );
             }
 
@@ -142,22 +160,23 @@ async fn main() -> Result<()> {
                 println!("│   • {:49} │", path.display());
             }
             if let Some(ref limits) = permissions.resources {
-                println!("│ LIMITS: cpu={}, mem={}GB, time={}h, gpu={}, array={} │",
-                    limits.max_cpus, limits.max_memory_gb, limits.max_time_hours,
-                    limits.max_gpus, limits.max_array_size);
+                println!(
+                    "│ LIMITS: cpu={}, mem={}GB, time={}h, gpu={}, array={} │",
+                    limits.max_cpus,
+                    limits.max_memory_gb,
+                    limits.max_time_hours,
+                    limits.max_gpus,
+                    limits.max_array_size
+                );
             }
             println!("╰───────────────────────────────────────────────────────╯\n");
 
             // Get username
-            let username = user.unwrap_or_else(|| {
-                std::env::var("USER").unwrap_or_else(|_| "unknown".to_string())
-            });
+            let username = user
+                .unwrap_or_else(|| std::env::var("USER").unwrap_or_else(|_| "unknown".to_string()));
 
             // Create SSH connection (persistent session with piped stdin/stdout)
-            let ssh = Arc::new(ssh::SshConnection::new(
-                username.clone(),
-                host.clone(),
-            ));
+            let ssh = Arc::new(ssh::SshConnection::new(username.clone(), host.clone()));
 
             // Establish the persistent SSH session (user sees login/Duo prompt here)
             println!("Connecting to {}@{}...", username, host);
@@ -183,7 +202,10 @@ async fn main() -> Result<()> {
                 }
                 Err(e) => {
                     println!("FAILED");
-                    anyhow::bail!("Connection test failed: {}. Did you approve Duo authentication?", e);
+                    anyhow::bail!(
+                        "Connection test failed: {}. Did you approve Duo authentication?",
+                        e
+                    );
                 }
             }
 
@@ -194,7 +216,8 @@ async fn main() -> Result<()> {
                 // SSH session is cleaned up when process exits
                 let _ = std::fs::remove_file(&rpc_socket_clone);
                 std::process::exit(0);
-            }).expect("Error setting Ctrl-C handler");
+            })
+            .expect("Error setting Ctrl-C handler");
 
             // Start RPC server
             info!("RPC socket: {}", rpc_socket.display());
@@ -218,7 +241,10 @@ async fn main() -> Result<()> {
             // Note: SSH status is tied to the bridge process now
             // If RPC socket exists, the bridge (and its SSH session) should be running
 
-            println!("Status: {}", if rpc_running { "running" } else { "stopped" });
+            println!(
+                "Status: {}",
+                if rpc_running { "running" } else { "stopped" }
+            );
         }
 
         Commands::Stop { name } => {
@@ -232,7 +258,9 @@ async fn main() -> Result<()> {
             if rpc_socket.exists() {
                 std::fs::remove_file(&rpc_socket)?;
                 println!("RPC socket removed");
-                println!("Note: The bridge process may still be running. Use Ctrl+C or kill to stop it.");
+                println!(
+                    "Note: The bridge process may still be running. Use Ctrl+C or kill to stop it."
+                );
             } else {
                 println!("Bridge '{}' is not running.", name);
             }
@@ -241,23 +269,24 @@ async fn main() -> Result<()> {
         Commands::VerifyConfig { config } => {
             let config_path = expand_tilde(&config);
             match config::verify_integrity(&config_path).await {
-                Ok(status) => {
-                    match status {
-                        config::IntegrityStatus::Valid => {
-                            println!("Config integrity verified.");
-                        }
-                        config::IntegrityStatus::Modified { stored, current } => {
-                            println!("WARNING: Config has been modified!");
-                            println!("Stored checksum:  {}", stored);
-                            println!("Current checksum: {}", current);
-                            println!("\nIf you made intentional changes, run:");
-                            println!("  remote-bridge update-checksum -c {}", config_path.display());
-                        }
-                        config::IntegrityStatus::NoBaseline => {
-                            println!("No checksum baseline found. Run update-checksum to create one.");
-                        }
+                Ok(status) => match status {
+                    config::IntegrityStatus::Valid => {
+                        println!("Config integrity verified.");
                     }
-                }
+                    config::IntegrityStatus::Modified { stored, current } => {
+                        println!("WARNING: Config has been modified!");
+                        println!("Stored checksum:  {}", stored);
+                        println!("Current checksum: {}", current);
+                        println!("\nIf you made intentional changes, run:");
+                        println!(
+                            "  remote-bridge update-checksum -c {}",
+                            config_path.display()
+                        );
+                    }
+                    config::IntegrityStatus::NoBaseline => {
+                        println!("No checksum baseline found. Run update-checksum to create one.");
+                    }
+                },
                 Err(e) => {
                     eprintln!("Error verifying config: {}", e);
                     std::process::exit(1);
@@ -271,12 +300,19 @@ async fn main() -> Result<()> {
             println!("Checksum updated for {}", config_path.display());
         }
 
-        Commands::Rpc { name, method, params } => {
+        Commands::Rpc {
+            name,
+            method,
+            params,
+        } => {
             let rpc_socket = socket_path(&name);
 
             if !rpc_socket.exists() {
                 eprintln!("Bridge '{}' is not running.", name);
-                eprintln!("Start it with: remote-bridge start {} --user YOUR_USERNAME", name);
+                eprintln!(
+                    "Start it with: remote-bridge start {} --user YOUR_USERNAME",
+                    name
+                );
                 std::process::exit(1);
             }
 

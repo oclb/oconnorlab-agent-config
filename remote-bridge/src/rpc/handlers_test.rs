@@ -98,7 +98,10 @@ async fn test_ls_permission_denied() {
 
 #[tokio::test]
 async fn test_cat_basic() {
-    let mock = MockExecutor::new().expect("cat '/data/input/file.txt'", MockResponse::ok(responses::CAT_RESPONSE));
+    let mock = MockExecutor::new().expect(
+        "cat '/data/input/file.txt'",
+        MockResponse::ok(responses::CAT_RESPONSE),
+    );
     let state = create_state(mock);
 
     let request = crate::commands::CatRequest {
@@ -190,11 +193,10 @@ async fn test_sacct_by_job_id() {
 #[tokio::test]
 async fn test_git_pull_up_to_date() {
     // git_pull quotes the remote and branch args
-    let mock = MockExecutor::new()
-        .expect(
-            "cd '/data/output/project' && git pull 'origin' 'main'",
-            MockResponse::ok(responses::GIT_PULL_UP_TO_DATE),
-        );
+    let mock = MockExecutor::new().expect(
+        "cd '/data/output/project' && git pull 'origin' 'main'",
+        MockResponse::ok(responses::GIT_PULL_UP_TO_DATE),
+    );
     let state = create_state(mock);
 
     let request = crate::commands::GitPullRequest {
@@ -543,7 +545,10 @@ async fn test_sandboxed_sbatch_sbatch_failure() {
         .expect("mkdir -p '/scratch/scripts/'", MockResponse::ok(""))
         .expect("cat > '/scratch/scripts/", MockResponse::ok(""))
         .expect("chmod +x '/scratch/scripts/", MockResponse::ok(""))
-        .expect("sbatch '/scratch/scripts/", MockResponse::fail("sbatch: error: Batch job submission failed"));
+        .expect(
+            "sbatch '/scratch/scripts/",
+            MockResponse::fail("sbatch: error: Batch job submission failed"),
+        );
 
     let state = create_state(mock);
 
@@ -967,10 +972,7 @@ async fn test_download_basic() {
             "stat -c%s '/data/input/file.txt' 2>/dev/null || stat -f%z '/data/input/file.txt'",
             MockResponse::ok("13"), // Size of "Hello, World!"
         )
-        .expect(
-            "base64 '/data/input/file.txt'",
-            MockResponse::ok(&encoded),
-        );
+        .expect("base64 '/data/input/file.txt'", MockResponse::ok(&encoded));
     let state = create_state(mock);
 
     let request = crate::commands::DownloadRequest {
@@ -982,7 +984,10 @@ async fn test_download_basic() {
     let response = result.unwrap();
     assert_eq!(response.size_bytes, 13);
     // Verify content can be decoded
-    let decoded = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &response.content);
+    let decoded = base64::Engine::decode(
+        &base64::engine::general_purpose::STANDARD,
+        &response.content,
+    );
     assert!(decoded.is_ok());
 }
 
@@ -1023,10 +1028,7 @@ async fn test_download_permission_denied() {
 
 #[tokio::test]
 async fn test_scancel_basic() {
-    let mock = MockExecutor::new().expect(
-        "scancel 12345678",
-        MockResponse::ok(""),
-    );
+    let mock = MockExecutor::new().expect("scancel 12345678", MockResponse::ok(""));
     let state = create_state(mock);
 
     let request = crate::commands::ScancelRequest {
@@ -1041,14 +1043,16 @@ async fn test_scancel_basic() {
 
 #[tokio::test]
 async fn test_scancel_multiple_jobs() {
-    let mock = MockExecutor::new().expect(
-        "scancel 12345678 12345679 12345680",
-        MockResponse::ok(""),
-    );
+    let mock =
+        MockExecutor::new().expect("scancel 12345678 12345679 12345680", MockResponse::ok(""));
     let state = create_state(mock);
 
     let request = crate::commands::ScancelRequest {
-        job_ids: vec!["12345678".to_string(), "12345679".to_string(), "12345680".to_string()],
+        job_ids: vec![
+            "12345678".to_string(),
+            "12345679".to_string(),
+            "12345680".to_string(),
+        ],
     };
 
     let result = state.scancel(request).await;
@@ -1062,9 +1066,7 @@ async fn test_scancel_empty_job_ids() {
     let mock = MockExecutor::new();
     let state = create_state(mock);
 
-    let request = crate::commands::ScancelRequest {
-        job_ids: vec![],
-    };
+    let request = crate::commands::ScancelRequest { job_ids: vec![] };
 
     let result = state.scancel(request).await;
     assert!(result.is_err());
@@ -1122,11 +1124,10 @@ async fn test_job_wait_failed_job() {
 #[tokio::test]
 async fn test_job_wait_array_any() {
     // First call returns pending, second returns one completed
-    let mock = MockExecutor::new()
-        .expect(
-            "sacct -j 12345678 --parsable2 --noheader --format=JobID,State,ExitCode,Elapsed",
-            MockResponse::ok("12345678_1|COMPLETED|0:0|00:02:00\n12345678_2|RUNNING||"),
-        );
+    let mock = MockExecutor::new().expect(
+        "sacct -j 12345678 --parsable2 --noheader --format=JobID,State,ExitCode,Elapsed",
+        MockResponse::ok("12345678_1|COMPLETED|0:0|00:02:00\n12345678_2|RUNNING||"),
+    );
     let state = create_state(mock);
 
     let request = crate::commands::JobWaitRequest {

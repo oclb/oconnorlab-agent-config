@@ -30,18 +30,14 @@ pub struct GitPullResponse {
 
 /// Parse git pull output to extract info
 pub fn parse_git_pull_output(output: &str) -> (bool, usize) {
-    let already_up_to_date = output.contains("Already up to date")
-        || output.contains("Already up-to-date");
+    let already_up_to_date =
+        output.contains("Already up to date") || output.contains("Already up-to-date");
 
     // Count files changed from output like "2 files changed, 10 insertions(+)"
     let files_changed = output
         .lines()
         .find(|line| line.contains("files changed") || line.contains("file changed"))
-        .and_then(|line| {
-            line.split_whitespace()
-                .next()
-                .and_then(|n| n.parse().ok())
-        })
+        .and_then(|line| line.split_whitespace().next().and_then(|n| n.parse().ok()))
         .unwrap_or(0);
 
     (already_up_to_date, files_changed)

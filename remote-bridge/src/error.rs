@@ -44,7 +44,9 @@ pub enum ConfigError {
 
 #[derive(Debug, Error)]
 pub enum SshError {
-    #[error("SSH connection not established. Run: ssh -M -S <socket> -o ControlPersist=yes -fN {0}@{1}")]
+    #[error(
+        "SSH connection not established. Run: ssh -M -S <socket> -o ControlPersist=yes -fN {0}@{1}"
+    )]
     NotConnected(String, String),
 
     #[error("SSH connection check failed: {0}")]

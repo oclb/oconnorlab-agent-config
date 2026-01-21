@@ -15,6 +15,7 @@ pub enum ScriptError {
     NoImage,
 
     #[error("Singularity scripts_dir not configured")]
+    #[allow(dead_code)]
     NoScriptsDir,
 
     #[error("Input path not allowed: {0}")]
@@ -140,8 +141,14 @@ fn compute_log_paths(
         }
         None => {
             // No directory configured, use job-relative defaults
-            let stdout = request.output.clone().unwrap_or_else(|| "%j.out".to_string());
-            let stderr = request.error.clone().unwrap_or_else(|| "%j.err".to_string());
+            let stdout = request
+                .output
+                .clone()
+                .unwrap_or_else(|| "%j.out".to_string());
+            let stderr = request
+                .error
+                .clone()
+                .unwrap_or_else(|| "%j.err".to_string());
             (stdout, stderr)
         }
     }
@@ -251,8 +258,7 @@ fn validate_resources(
         if mem_gb > limits.max_memory_gb {
             return Err(ScriptError::ResourceLimitExceeded(format!(
                 "Memory {}GB exceeds max {}GB",
-                mem_gb,
-                limits.max_memory_gb
+                mem_gb, limits.max_memory_gb
             )));
         }
     }
@@ -262,8 +268,7 @@ fn validate_resources(
         if total_hours > limits.max_time_hours {
             return Err(ScriptError::ResourceLimitExceeded(format!(
                 "Time {}h exceeds max {}h",
-                total_hours,
-                limits.max_time_hours
+                total_hours, limits.max_time_hours
             )));
         }
     }
@@ -539,8 +544,12 @@ mod tests {
         assert!(result.content.contains("#SBATCH --mem=16G"));
         assert!(result.content.contains("module load singularity"));
         assert!(result.content.contains("singularity exec"));
-        assert!(result.content.contains("/data/input/dataset:/data/input/dataset:ro"));
-        assert!(result.content.contains("/data/output/results:/data/output/results:rw"));
+        assert!(result
+            .content
+            .contains("/data/input/dataset:/data/input/dataset:ro"));
+        assert!(result
+            .content
+            .contains("/data/output/results:/data/output/results:rw"));
         assert!(result.content.contains("python script.py"));
         assert_eq!(result.image, "/containers/python.sif");
     }

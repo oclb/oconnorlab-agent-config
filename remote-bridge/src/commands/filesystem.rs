@@ -4,16 +4,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LsFlag {
-    Long,        // -l
-    All,         // -a (include hidden)
-    Human,       // -h (human-readable sizes)
-    Recursive,   // -R
-    SortByTime,  // -t
-    SortBySize,  // -S
+    Long,       // -l
+    All,        // -a (include hidden)
+    Human,      // -h (human-readable sizes)
+    Recursive,  // -R
+    SortByTime, // -t
+    SortBySize, // -S
 }
 
 impl LsFlag {
-    pub fn to_arg(&self) -> &'static str {
+    pub fn to_arg(self) -> &'static str {
         match self {
             LsFlag::Long => "-l",
             LsFlag::All => "-a",
@@ -151,7 +151,7 @@ pub enum GrepFlag {
 }
 
 impl GrepFlag {
-    pub fn to_arg(&self) -> &'static str {
+    pub fn to_arg(self) -> &'static str {
         match self {
             GrepFlag::IgnoreCase => "-i",
             GrepFlag::Recursive => "-r",
@@ -250,7 +250,7 @@ pub struct DownloadRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadResponse {
     pub path: String,
-    pub content: String,       // base64-encoded
+    pub content: String, // base64-encoded
     pub size_bytes: u64,
     pub duration_ms: u64,
 }
@@ -268,13 +268,13 @@ pub struct DownloadTooLargeError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FindType {
-    File,       // -type f
-    Directory,  // -type d
-    Symlink,    // -type l
+    File,      // -type f
+    Directory, // -type d
+    Symlink,   // -type l
 }
 
 impl FindType {
-    pub fn to_arg(&self) -> &'static str {
+    pub fn to_arg(self) -> &'static str {
         match self {
             FindType::File => "f",
             FindType::Directory => "d",

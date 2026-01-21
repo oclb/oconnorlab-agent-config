@@ -1,8 +1,8 @@
-mod permissions;
 mod integrity;
+mod permissions;
 
-pub use permissions::*;
 pub use integrity::*;
+pub use permissions::*;
 
 use crate::error::ConfigError;
 use std::path::Path;

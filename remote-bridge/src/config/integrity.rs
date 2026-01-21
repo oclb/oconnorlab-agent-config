@@ -39,9 +39,7 @@ pub async fn verify_integrity(config_path: &Path) -> Result<IntegrityStatus, Con
         return Ok(IntegrityStatus::NoBaseline);
     }
 
-    let stored = std::fs::read_to_string(&checksum_file)?
-        .trim()
-        .to_string();
+    let stored = std::fs::read_to_string(&checksum_file)?.trim().to_string();
     let current = compute_checksum(config_path)?;
 
     if stored == current {
@@ -90,10 +88,7 @@ mod tests {
         assert!(matches!(status, IntegrityStatus::Valid));
 
         // Modify the file
-        let mut file = std::fs::OpenOptions::new()
-            .append(true)
-            .open(path)
-            .unwrap();
+        let mut file = std::fs::OpenOptions::new().append(true).open(path).unwrap();
         writeln!(file, "# modified").unwrap();
 
         // Should detect modification

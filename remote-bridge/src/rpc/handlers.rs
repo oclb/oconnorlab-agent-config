@@ -1,11 +1,14 @@
 #![allow(dead_code)]
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use crate::commands::{self, PathValidator};
 use crate::config::PermissionConfig;
-use crate::rpc::types::{ConnectionStatus, RpcError, ERR_COMMAND_FAILED, ERR_FILE_TOO_LARGE, ERR_INVALID_REGEX, ERR_PERMISSION_DENIED, ERR_CONFIG_ERROR};
+use crate::rpc::types::{
+    ConnectionStatus, RpcError, ERR_COMMAND_FAILED, ERR_CONFIG_ERROR, ERR_FILE_TOO_LARGE,
+    ERR_INVALID_REGEX, ERR_PERMISSION_DENIED,
+};
 use crate::sbatch;
 use crate::ssh::RemoteExecutor;
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -44,10 +47,7 @@ impl RpcState {
     }
 
     /// Execute ls command
-    pub async fn ls(
-        &self,
-        request: commands::LsRequest,
-    ) -> Result<commands::LsResponse, RpcError> {
+    pub async fn ls(&self, request: commands::LsRequest) -> Result<commands::LsResponse, RpcError> {
         let start = Instant::now();
 
         // Validate path
@@ -80,7 +80,10 @@ impl RpcState {
             })?;
 
         // Parse output
-        let entries = commands::parse_ls_output(&output.stdout, request.flags.contains(&commands::LsFlag::Long));
+        let entries = commands::parse_ls_output(
+            &output.stdout,
+            request.flags.contains(&commands::LsFlag::Long),
+        );
 
         Ok(commands::LsResponse {
             entries,
@@ -113,7 +116,12 @@ impl RpcState {
             format!("tail -n {} '{}'", tail, validated.as_str())
         } else if let Some(offset) = request.offset {
             if let Some(limit) = request.limit {
-                format!("sed -n '{},{}p' '{}'", offset, offset + limit - 1, validated.as_str())
+                format!(
+                    "sed -n '{},{}p' '{}'",
+                    offset,
+                    offset + limit - 1,
+                    validated.as_str()
+                )
             } else {
                 format!("tail -n +{} '{}'", offset, validated.as_str())
             }
@@ -122,15 +130,11 @@ impl RpcState {
         };
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&command, 60)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&command, 60).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         let total_lines = output.stdout.lines().count();
 
@@ -161,9 +165,7 @@ impl RpcState {
         let validated_paths: Vec<String> = request
             .paths
             .iter()
-            .map(|p| {
-                self.validator.validate_read_path(p).map(|v| v.to_string())
-            })
+            .map(|p| self.validator.validate_read_path(p).map(|v| v.to_string()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| RpcError {
                 code: ERR_PERMISSION_DENIED,
@@ -235,7 +237,11 @@ impl RpcState {
         // Build git pull command
         let branch_arg = request.branch.as_deref().unwrap_or("");
         let command = if branch_arg.is_empty() {
-            format!("cd '{}' && git pull '{}'", validated.as_str(), request.remote)
+            format!(
+                "cd '{}' && git pull '{}'",
+                validated.as_str(),
+                request.remote
+            )
         } else {
             format!(
                 "cd '{}' && git pull '{}' '{}'",
@@ -256,8 +262,7 @@ impl RpcState {
                 data: None,
             })?;
 
-        let (already_up_to_date, files_changed) =
-            commands::parse_git_pull_output(&output.stdout);
+        let (already_up_to_date, files_changed) = commands::parse_git_pull_output(&output.stdout);
 
         Ok(commands::GitPullResponse {
             path: validated.to_string(),
@@ -297,15 +302,11 @@ impl RpcState {
         let command = args.join(" ");
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&command, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&command, 30).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         let jobs = commands::parse_squeue_output(&output.stdout);
 
@@ -326,7 +327,8 @@ impl RpcState {
         let mut args = vec![
             "sacct".to_string(),
             "--parsable2".to_string(),
-            "--format=JobID,JobName,Partition,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,NCPUs,NTasks".to_string(),
+            "--format=JobID,JobName,Partition,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,NCPUs,NTasks"
+                .to_string(),
         ];
 
         if !request.job_ids.is_empty() {
@@ -352,15 +354,11 @@ impl RpcState {
         let command = args.join(" ");
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&command, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&command, 30).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         let jobs = commands::parse_sacct_output(&output.stdout);
 
@@ -388,8 +386,11 @@ impl RpcState {
             })?;
 
         // Check file size first
-        let size_cmd = format!("stat -c%s '{}' 2>/dev/null || stat -f%z '{}'",
-            validated.as_str(), validated.as_str());
+        let size_cmd = format!(
+            "stat -c%s '{}' 2>/dev/null || stat -f%z '{}'",
+            validated.as_str(),
+            validated.as_str()
+        );
         let size_output = self
             .ssh
             .execute(&size_cmd, 10)
@@ -400,15 +401,11 @@ impl RpcState {
                 data: None,
             })?;
 
-        let size_bytes: u64 = size_output
-            .stdout
-            .trim()
-            .parse()
-            .map_err(|_| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: format!("Could not determine file size: {}", size_output.stdout),
-                data: None,
-            })?;
+        let size_bytes: u64 = size_output.stdout.trim().parse().map_err(|_| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: format!("Could not determine file size: {}", size_output.stdout),
+            data: None,
+        })?;
 
         // Check size limit
         if size_bytes > commands::MAX_DOWNLOAD_SIZE {
@@ -434,18 +431,14 @@ impl RpcState {
 
         // Read file and base64 encode on remote (more efficient)
         let cmd = format!("base64 '{}'", validated.as_str());
-        let output = self
-            .ssh
-            .execute(&cmd, 60)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&cmd, 60).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         // Verify the base64 decodes properly (sanity check)
-        let content = output.stdout.replace('\n', "").replace('\r', "");
+        let content = output.stdout.replace(['\n', '\r'], "");
         if BASE64.decode(&content).is_err() {
             return Err(RpcError {
                 code: ERR_COMMAND_FAILED,
@@ -500,15 +493,11 @@ impl RpcState {
         cmd.push_str(&format!(" 2>/dev/null | head -n {}", request.limit + 1));
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&cmd, 120)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&cmd, 120).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         let mut files: Vec<String> = output
             .stdout
@@ -533,10 +522,7 @@ impl RpcState {
     }
 
     /// Execute wc command
-    pub async fn wc(
-        &self,
-        request: commands::WcRequest,
-    ) -> Result<commands::WcResponse, RpcError> {
+    pub async fn wc(&self, request: commands::WcRequest) -> Result<commands::WcResponse, RpcError> {
         let start = Instant::now();
 
         // Validate path
@@ -563,18 +549,14 @@ impl RpcState {
         let cmd = format!("wc {} '{}'", flag, validated.as_str());
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&cmd, 60)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&cmd, 60).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         // Parse wc output
-        let parts: Vec<&str> = output.stdout.trim().split_whitespace().collect();
+        let parts: Vec<&str> = output.stdout.split_whitespace().collect();
 
         let (lines, words, bytes) = if request.lines_only {
             (parts.first().and_then(|s| s.parse().ok()), None, None)
@@ -620,15 +602,11 @@ impl RpcState {
         let cmd = format!("head -n {} '{}'", request.lines, validated.as_str());
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&cmd, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&cmd, 30).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         let lines_returned = output.stdout.lines().count();
 
@@ -659,15 +637,11 @@ impl RpcState {
         let cmd = format!("scancel {}", request.job_ids.join(" "));
 
         // Execute
-        let output = self
-            .ssh
-            .execute(&cmd, 30)
-            .await
-            .map_err(|e| RpcError {
-                code: ERR_COMMAND_FAILED,
-                message: e.to_string(),
-                data: None,
-            })?;
+        let output = self.ssh.execute(&cmd, 30).await.map_err(|e| RpcError {
+            code: ERR_COMMAND_FAILED,
+            message: e.to_string(),
+            data: None,
+        })?;
 
         Ok(commands::ScancelResponse {
             cancelled_jobs: request.job_ids.clone(),
@@ -715,15 +689,11 @@ impl RpcState {
                 base_job_id
             );
 
-            let output = self
-                .ssh
-                .execute(&command, 30)
-                .await
-                .map_err(|e| RpcError {
-                    code: ERR_COMMAND_FAILED,
-                    message: e.to_string(),
-                    data: None,
-                })?;
+            let output = self.ssh.execute(&command, 30).await.map_err(|e| RpcError {
+                code: ERR_COMMAND_FAILED,
+                message: e.to_string(),
+                data: None,
+            })?;
 
             // Parse sacct output
             // Format: JobID|State|ExitCode|Elapsed
@@ -857,10 +827,7 @@ impl RpcState {
 
         // Write script to remote using base64 (more reliable than heredoc over PTY)
         let encoded = BASE64.encode(generated.content.as_bytes());
-        let write_cmd = format!(
-            "echo '{}' | base64 -d > '{}'",
-            encoded, script_path_str
-        );
+        let write_cmd = format!("echo '{}' | base64 -d > '{}'", encoded, script_path_str);
 
         self.ssh
             .execute(&write_cmd, 30)

@@ -121,7 +121,11 @@ impl MockExecutor {
 
     /// Check if a specific command was called
     pub fn was_called(&self, command: &str) -> bool {
-        self.call_history.lock().unwrap().iter().any(|c| c == command)
+        self.call_history
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|c| c == command)
     }
 
     /// Check if a command containing the given substring was called
@@ -158,10 +162,7 @@ impl RemoteExecutor for MockExecutor {
 
         // Check if not connected
         if !self.connected {
-            return Err(SshError::NotConnected(
-                self.user.clone(),
-                self.host.clone(),
-            ));
+            return Err(SshError::NotConnected(self.user.clone(), self.host.clone()));
         }
 
         // Look up exact match first
@@ -176,9 +177,7 @@ impl RemoteExecutor for MockExecutor {
                     stderr: stderr.clone(),
                     exit_code: *exit_code,
                 }),
-                MockResponse::Failure { error } => {
-                    Err(SshError::CommandFailed(error.clone()))
-                }
+                MockResponse::Failure { error } => Err(SshError::CommandFailed(error.clone())),
                 MockResponse::Timeout => Err(SshError::Timeout(0)),
             };
         }
@@ -197,9 +196,7 @@ impl RemoteExecutor for MockExecutor {
                         stderr: stderr.clone(),
                         exit_code: *exit_code,
                     }),
-                    MockResponse::Failure { error } => {
-                        Err(SshError::CommandFailed(error.clone()))
-                    }
+                    MockResponse::Failure { error } => Err(SshError::CommandFailed(error.clone())),
                     MockResponse::Timeout => Err(SshError::Timeout(0)),
                 };
             }
@@ -217,9 +214,7 @@ impl RemoteExecutor for MockExecutor {
                     stderr: stderr.clone(),
                     exit_code: *exit_code,
                 }),
-                MockResponse::Failure { error } => {
-                    Err(SshError::CommandFailed(error.clone()))
-                }
+                MockResponse::Failure { error } => Err(SshError::CommandFailed(error.clone())),
                 MockResponse::Timeout => Err(SshError::Timeout(0)),
             };
         }
@@ -250,8 +245,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_executor_success() {
-        let mock = MockExecutor::new()
-            .expect("ls -la", MockResponse::ok("file1.txt\nfile2.txt"));
+        let mock = MockExecutor::new().expect("ls -la", MockResponse::ok("file1.txt\nfile2.txt"));
 
         let result = mock.execute("ls -la", 10).await.unwrap();
         assert_eq!(result.stdout, "file1.txt\nfile2.txt");
@@ -261,8 +255,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_executor_failure() {
-        let mock = MockExecutor::new()
-            .expect("bad_command", MockResponse::fail("command not found"));
+        let mock =
+            MockExecutor::new().expect("bad_command", MockResponse::fail("command not found"));
 
         let result = mock.execute("bad_command", 10).await;
         assert!(result.is_err());
@@ -286,8 +280,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_executor_default_response() {
-        let mock = MockExecutor::new()
-            .with_default(MockResponse::ok("default output"));
+        let mock = MockExecutor::new().with_default(MockResponse::ok("default output"));
 
         let result = mock.execute("any_command", 10).await.unwrap();
         assert_eq!(result.stdout, "default output");
@@ -295,8 +288,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_executor_call_history() {
-        let mock = MockExecutor::new()
-            .with_default(MockResponse::ok(""));
+        let mock = MockExecutor::new().with_default(MockResponse::ok(""));
 
         mock.execute("cmd1", 10).await.unwrap();
         mock.execute("cmd2", 10).await.unwrap();

@@ -17,7 +17,7 @@ pub enum JobState {
 }
 
 impl JobState {
-    pub fn to_slurm_filter(&self) -> &'static str {
+    pub fn to_slurm_filter(self) -> &'static str {
         match self {
             JobState::Pending => "PD",
             JobState::Running => "R",
@@ -133,10 +133,10 @@ impl Partition {
 
     pub fn max_time_hours(&self) -> u32 {
         match self {
-            Partition::Priority => 120,    // 5 days
+            Partition::Priority => 120, // 5 days
             Partition::Short => 12,
-            Partition::Medium => 120,      // 5 days
-            Partition::Long => 720,        // 30 days
+            Partition::Medium => 120, // 5 days
+            Partition::Long => 720,   // 30 days
             Partition::Interactive => 12,
             Partition::Highmem => 120,
             Partition::Gpu => 120,
@@ -257,21 +257,16 @@ pub fn parse_squeue_output(output: &str) -> Vec<QueuedJob> {
 }
 
 /// How to wait for job arrays
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ArrayWaitMode {
     /// Wait for any array task to complete (default)
+    #[default]
     Any,
     /// Wait for all array tasks to complete
     All,
     /// Wait for a specific array index
     Index(u32),
-}
-
-impl Default for ArrayWaitMode {
-    fn default() -> Self {
-        ArrayWaitMode::Any
-    }
 }
 
 /// Request for job_wait command
@@ -331,8 +326,15 @@ pub struct ScancelResponse {
 pub fn is_terminal_state(state: &str) -> bool {
     matches!(
         state.to_uppercase().as_str(),
-        "COMPLETED" | "FAILED" | "CANCELLED" | "TIMEOUT" | "OUT_OF_MEMORY"
-        | "NODE_FAIL" | "PREEMPTED" | "BOOT_FAIL" | "DEADLINE"
+        "COMPLETED"
+            | "FAILED"
+            | "CANCELLED"
+            | "TIMEOUT"
+            | "OUT_OF_MEMORY"
+            | "NODE_FAIL"
+            | "PREEMPTED"
+            | "BOOT_FAIL"
+            | "DEADLINE"
     )
 }
 

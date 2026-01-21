@@ -24,10 +24,7 @@ pub fn test_config() -> PermissionConfig {
                 PathBuf::from("/data/output/"),
                 PathBuf::from("/scratch/"),
             ],
-            write: vec![
-                PathBuf::from("/data/output/"),
-                PathBuf::from("/scratch/"),
-            ],
+            write: vec![PathBuf::from("/data/output/"), PathBuf::from("/scratch/")],
         },
         resources: Some(ResourceLimits {
             max_cpus: 32,
@@ -44,7 +41,7 @@ pub fn test_config() -> PermissionConfig {
             logs_dir: Some(PathBuf::from("/scratch/.agent/logs/")),
             cache_dir: Some(PathBuf::from("/scratch/.singularity")),
             extra_binds: vec!["/n/app:ro".to_string()],
-            module_name: String::new(),  // Default: no module load
+            module_name: String::new(), // Default: no module load
         },
     }
 }
@@ -56,7 +53,7 @@ pub fn minimal_config() -> PermissionConfig {
             read: vec![PathBuf::from("/data/")],
             write: vec![PathBuf::from("/data/output/")],
         },
-        resources: None,  // Let O2 handle resource limits
+        resources: None, // Let O2 handle resource limits
         containers: ContainerConfig::default(),
         modules: ModuleConfig::default(),
         singularity: SingularityConfig::default(),
@@ -109,7 +106,8 @@ drwxr-xr-x  3 user group 4096 Jan 17 09:00 ..
 12345679 medium analysis testuser PD 0:00:00 1 (Resources)";
 
     /// Successful sacct response
-    pub const SACCT_RESPONSE: &str = "JobID|JobName|Partition|State|ExitCode|Elapsed|MaxRSS|MaxVMSize|NCPUS|NTasks
+    pub const SACCT_RESPONSE: &str =
+        "JobID|JobName|Partition|State|ExitCode|Elapsed|MaxRSS|MaxVMSize|NCPUS|NTasks
 12345678|test-job|short|COMPLETED|0:0|00:05:32|1024K|2048K|4|1";
 
     /// Successful git pull (up to date)

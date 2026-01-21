@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
+use crate::commands;
 use crate::config::PermissionConfig;
 use crate::rpc::handlers::RpcState;
 use crate::ssh::RemoteExecutor;
-use crate::commands;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -117,10 +117,7 @@ pub async fn start_server(
 }
 
 /// Handle a single client connection
-async fn handle_connection(
-    stream: tokio::net::UnixStream,
-    state: Arc<RpcState>,
-) -> Result<()> {
+async fn handle_connection(stream: tokio::net::UnixStream, state: Arc<RpcState>) -> Result<()> {
     let (reader, mut writer) = stream.into_split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
@@ -165,33 +162,34 @@ fn format_params_for_log(method: &str, params: &Option<serde_json::Value>) -> St
         Some(p) => {
             // Extract key identifying info based on method
             match method {
-                "ls" | "cat" | "head" | "wc" | "find" | "download" | "git_pull" => {
-                    p.get("path")
-                        .and_then(|v| v.as_str())
-                        .map(|s| truncate_path(s))
-                        .unwrap_or_default()
-                }
+                "ls" | "cat" | "head" | "wc" | "find" | "download" | "git_pull" => p
+                    .get("path")
+                    .and_then(|v| v.as_str())
+                    .map(truncate_path)
+                    .unwrap_or_default(),
                 "grep" => {
                     let pattern = p.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
-                    let path = p.get("path").and_then(|v| v.as_str()).map(truncate_path).unwrap_or_default();
+                    let path = p
+                        .get("path")
+                        .and_then(|v| v.as_str())
+                        .map(truncate_path)
+                        .unwrap_or_default();
                     if pattern.len() > 20 {
                         format!("'{}...' {}", &pattern[..20], path)
                     } else {
                         format!("'{}' {}", pattern, path)
                     }
                 }
-                "sandboxed_sbatch" => {
-                    p.get("job_name")
-                        .and_then(|v| v.as_str())
-                        .map(String::from)
-                        .unwrap_or_else(|| "job".to_string())
-                }
-                "scancel" | "job_wait" => {
-                    p.get("job_id")
-                        .and_then(|v| v.as_str())
-                        .map(String::from)
-                        .unwrap_or_default()
-                }
+                "sandboxed_sbatch" => p
+                    .get("job_name")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+                    .unwrap_or_else(|| "job".to_string()),
+                "scancel" | "job_wait" => p
+                    .get("job_id")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+                    .unwrap_or_default(),
                 _ => String::new(),
             }
         }
@@ -206,7 +204,7 @@ fn truncate_path(path: &str) -> String {
         .map(String::from)
         .unwrap_or_else(|| {
             if path.len() > 30 {
-                format!("...{}", &path[path.len()-27..])
+                format!("...{}", &path[path.len() - 27..])
             } else {
                 path.to_string()
             }
@@ -233,7 +231,11 @@ async fn dispatch_method(state: &RpcState, request: JsonRpcRequest) -> JsonRpcRe
     // Log completion (skip connection_status)
     if method != "connection_status" {
         let duration = start.elapsed();
-        let status = if response.error.is_some() { "ERR" } else { "OK" };
+        let status = if response.error.is_some() {
+            "ERR"
+        } else {
+            "OK"
+        };
         info!("<-- {} {} ({:.1?})", method, status, duration);
     }
 

@@ -102,9 +102,9 @@ impl PathValidator {
         }
 
         // Expand ~ if we have home dir
-        let expanded = if path.starts_with("~/") {
+        let expanded = if let Some(suffix) = path.strip_prefix("~/") {
             if let Some(ref home) = self.home_dir {
-                home.join(&path[2..])
+                home.join(suffix)
             } else {
                 // Keep the ~ for now; will be expanded on remote
                 PathBuf::from(path)
@@ -167,7 +167,7 @@ mod tests {
                 read: vec![PathBuf::from("/data/lab/"), PathBuf::from("/scratch/")],
                 write: vec![PathBuf::from("/data/lab/projects/")],
             },
-            resources: None,  // No resource limits
+            resources: None, // No resource limits
             containers: Default::default(),
             modules: Default::default(),
             singularity: Default::default(),
