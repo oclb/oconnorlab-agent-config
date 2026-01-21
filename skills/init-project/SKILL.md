@@ -11,9 +11,63 @@ This skill sets up a project with:
 
 ## Execution Flow
 
-### Phase 1: Check Prerequisites
+### Phase 1: Configure Project Settings (FIRST)
 
-**1.1 Check if in a git repository**
+**Check if settings already exist:**
+
+```bash
+test -f .claude/settings.json && echo "exists"
+```
+
+If `.claude/settings.json` already exists, **skip to Phase 2** (user has already restarted after initial setup).
+
+**1.1 Create `.claude/settings.json`**
+
+```bash
+mkdir -p .claude
+```
+
+Create `.claude/settings.json`:
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(/**)",
+      "Edit(/notebook/**)",
+      "Write(/notebook/**)",
+      "Bash(git *)",
+      "Bash(gh *)"
+    ]
+  }
+}
+```
+
+This pre-approves:
+- `Read(/**)` - Project-wide search (enables Glob/Grep tools)
+- `Edit`/`Write` for notebook
+- `Bash(git *)` - All git operations (init, remote, commit, push, etc.)
+- `Bash(gh *)` - All GitHub CLI operations (repo create, auth, etc.)
+
+Note: After setup is complete, we'll tighten permissions by replacing `Bash(git *)` with `Bash(git -C notebook *)`.
+
+**1.2 Prompt user to restart**
+
+Settings only take effect when Claude Code starts. After creating the file, display:
+
+> **Restart required**
+>
+> I've created `.claude/settings.json` with setup permissions. For these to take effect, please:
+>
+> 1. Exit this conversation (Ctrl+C)
+> 2. Run: `claude -c continue`
+>
+> This will continue setup with the new permissions active.
+
+**Stop here.** Do not continue to Phase 2 until the user has restarted.
+
+### Phase 2: Check Prerequisites
+
+**2.1 Check if in a git repository**
 
 ```bash
 git rev-parse --git-dir 2>/dev/null
@@ -21,9 +75,9 @@ git rev-parse --git-dir 2>/dev/null
 
 If NOT a git repo:
 - Run `git init`
-- Continue to 1.2
+- Continue to 2.2
 
-**1.2 Check if main repo has a remote**
+**2.2 Check if main repo has a remote**
 
 ```bash
 git remote -v
@@ -47,11 +101,11 @@ gh repo create <account>/<repo-name> --private --source=. --push
 
 (Use current directory name as repo name by default)
 
-**1.3 Verify `gh` CLI for notebook remote**
+**2.3 Verify `gh` CLI for notebook remote**
 
-We'll need `gh` later for the notebook remote. If not available/authenticated, handle it now (same as 1.2).
+We'll need `gh` later for the notebook remote. If not available/authenticated, handle it now (same as 2.2).
 
-**1.4 Check notification dependencies (macOS only)**
+**2.4 Check notification dependencies (macOS only)**
 
 ```bash
 uname -s
@@ -77,7 +131,7 @@ If not installed:
 >
 > (Requires Homebrew: https://brew.sh)
 
-### Phase 2: Inform User of Plan
+### Phase 3: Inform User of Plan
 
 Display this message (do NOT ask for confirmation - just inform):
 
@@ -86,12 +140,11 @@ Display this message (do NOT ask for confirmation - just inform):
 > I'll now:
 > 1. Create `notebook/` directory structure (as a separate git repo)
 > 2. Add `notebook/` to `.gitignore`
-> 3. Create `.claude/settings.json` with notebook permissions
-> 4. Create or update `CLAUDE.md` with project template
+> 3. Create or update `CLAUDE.md` with project template
 >
 > The notebook will be a separate git repository, keeping your main repo clean while preserving full history of analyses.
 
-### Phase 3: Ask About Notebook Remote
+### Phase 4: Ask About Notebook Remote
 
 > **Notebook backup (recommended)**
 >
@@ -104,22 +157,22 @@ Options:
 - **Yes, create remote** (recommended) - Will create `<repo-name>-notebook` on your GitHub
 - **No, local only** - Notebook stays local, no backup
 
-### Phase 4: Execute Setup
+### Phase 5: Execute Setup
 
-**4.1 Create notebook structure**
+**5.1 Create notebook structure**
 
 ```bash
 mkdir -p notebook/{entries,feedback}
 ```
 
-**4.2 Initialize notebook git repo**
+**5.2 Initialize notebook git repo**
 
 ```bash
 cd notebook
 git init
 ```
 
-**4.3 Create notebook template files**
+**5.3 Create notebook template files**
 
 Create `notebook/INDEX.md`:
 ```markdown
@@ -141,7 +194,7 @@ Create `notebook/DONE.md`:
 
 ```
 
-**4.4 Initial notebook commit**
+**5.4 Initial notebook commit**
 
 ```bash
 cd notebook
@@ -149,7 +202,7 @@ git add -A
 git commit -m "Initialize notebook"
 ```
 
-**4.5 Create notebook remote (if user chose yes)**
+**5.5 Create notebook remote (if user chose yes)**
 
 ```bash
 cd notebook
@@ -158,7 +211,7 @@ gh repo create <account>/<main-repo-name>-notebook --private --source=. --push
 
 Use the same account as the main repo. Derive repo name from main repo name.
 
-**4.6 Add notebook to main .gitignore**
+**5.6 Add notebook to main .gitignore**
 
 Append to `.gitignore` (create if doesn't exist):
 ```
@@ -172,32 +225,7 @@ git add .gitignore
 git commit -m "chore: gitignore notebook (separate repo)"
 ```
 
-**4.7 Create project permissions**
-
-Create `.claude/settings.json`:
-```json
-{
-  "permissions": {
-    "allow": [
-      "Read(/**)",
-      "Read(/notebook/**)",
-      "Edit(/notebook/**)",
-      "Write(/notebook/**)",
-      "Bash(git -C notebook *)"
-    ]
-  }
-}
-```
-
-Note: `Read(/**)` enables Glob and Grep tools across the project. Notebook permissions allow full read/write access plus git operations.
-
-Commit:
-```bash
-git add .claude/settings.json
-git commit -m "chore: add Claude Code project settings"
-```
-
-**4.8 Create or update CLAUDE.md**
+**5.7 Create or update CLAUDE.md**
 
 If CLAUDE.md doesn't exist, ask the user:
 
@@ -264,7 +292,30 @@ git add CLAUDE.md
 git commit -m "docs: initialize/update CLAUDE.md"
 ```
 
-### Phase 5: Offer Update Notebook
+**5.8 Tighten project permissions**
+
+Now that setup is complete, update `.claude/settings.json` to remove the broad `Bash(git *)` and `Bash(gh *)` permissions, keeping only what's needed for ongoing work:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(/**)",
+      "Edit(/notebook/**)",
+      "Write(/notebook/**)",
+      "Bash(git -C notebook *)"
+    ]
+  }
+}
+```
+
+Commit:
+```bash
+git add .claude/settings.json
+git commit -m "chore: add Claude Code project settings"
+```
+
+### Phase 6: Offer Update Notebook
 
 If the project has existing git history (more than just the commits we made):
 
@@ -272,7 +323,7 @@ If the project has existing git history (more than just the commits we made):
 
 If yes, invoke the `/update-notebook` skill.
 
-### Phase 6: O2 Cluster Setup (Optional)
+### Phase 7: O2 Cluster Setup (Optional)
 
 Ask the user:
 
@@ -286,11 +337,11 @@ Ask the user:
 
 If yes, proceed with O2 setup:
 
-**6.1 Check O2 access configuration**
+**7.1 Check O2 access configuration**
 
 Check if remote-bridge is configured by looking for `~/.config/remote-bridge/permissions.toml`. If not set up, invoke `/remote-o2` skill first to establish O2 connection.
 
-**6.2 Check GitHub SSH key on O2**
+**7.2 Check GitHub SSH key on O2**
 
 Via the O2 tmux session, check if SSH key exists:
 
@@ -301,18 +352,18 @@ ls ~/.ssh/id_ed25519.pub 2>/dev/null
 
 If key doesn't exist, set it up:
 
-**6.2.1 Get user's GitHub email**
+**7.2.1 Get user's GitHub email**
 
 > What email address is associated with your GitHub account?
 
-**6.2.2 Generate SSH key on O2**
+**7.2.2 Generate SSH key on O2**
 
 ```bash
 # On O2
 ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/id_ed25519 -N ""
 ```
 
-**6.2.3 Display public key and guide user**
+**7.2.3 Display public key and guide user**
 
 ```bash
 # On O2
@@ -331,7 +382,7 @@ Display to user:
 >
 > Let me know when done.
 
-**6.2.4 Test GitHub connection**
+**7.2.4 Test GitHub connection**
 
 ```bash
 # On O2
@@ -342,9 +393,9 @@ Should see: "Hi <username>! You've successfully authenticated..."
 
 If it fails, troubleshoot (may need to accept GitHub's host key first).
 
-**6.3 Clone project on O2**
+**7.3 Clone project on O2**
 
-**6.3.1 Determine O2 project location**
+**7.3.1 Determine O2 project location**
 
 Ask the user:
 
@@ -353,7 +404,7 @@ Ask the user:
 
 Get user confirmation or custom path.
 
-**6.3.2 Get SSH URLs**
+**7.3.2 Get SSH URLs**
 
 ```bash
 # Local - get SSH URLs for both repos
@@ -361,7 +412,7 @@ git remote get-url origin | sed 's|https://github.com/|git@github.com:|'
 git -C notebook remote get-url origin | sed 's|https://github.com/|git@github.com:|'
 ```
 
-**6.3.3 Clone repos on O2**
+**7.3.3 Clone repos on O2**
 
 ```bash
 # On O2
@@ -371,7 +422,7 @@ git clone git@github.com:<user>/<repo>.git .
 git clone git@github.com:<user>/<repo>-notebook.git notebook
 ```
 
-**6.3.4 Store O2 project path**
+**7.3.4 Store O2 project path**
 
 Add a note to the project's CLAUDE.md about the O2 location:
 
@@ -382,7 +433,7 @@ Add a note to the project's CLAUDE.md about the O2 location:
 
 This enables future work to know where the project lives on O2.
 
-**6.4 Verify setup**
+**7.4 Verify setup**
 
 ```bash
 # On O2
@@ -393,7 +444,7 @@ git -C notebook status
 
 Both should show clean working directories.
 
-### Phase 7: Summary
+### Phase 8: Summary
 
 Display completion message:
 

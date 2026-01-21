@@ -9,12 +9,13 @@ Initialize a project for use with Claude Code and the notebook system.
 
 ## What It Does
 
-1. **Ensures main repo has a GitHub remote** - Guides user through setup if needed
-2. **Creates notebook structure** - `notebook/{entries,feedback}/`
-3. **Initializes notebook as separate git repo** - Keeps main repo clean
-4. **Offers notebook remote** - Recommended for backup/sync
-5. **Configures permissions** - Creates `.claude/settings.json`
+1. **Configures permissions first** - Creates `.claude/settings.json` with broad permissions to avoid prompts during setup
+2. **Ensures main repo has a GitHub remote** - Guides user through setup if needed
+3. **Creates notebook structure** - `notebook/{entries,feedback}/`
+4. **Initializes notebook as separate git repo** - Keeps main repo clean
+5. **Offers notebook remote** - Recommended for backup/sync
 6. **Creates or enhances CLAUDE.md** - Offers to run `/init` for intelligent auto-generation, or uses a basic template
+7. **Tightens permissions** - Removes broad setup permissions, keeping only what's needed for ongoing work
 
 ## Integration with `/init`
 
@@ -46,6 +47,19 @@ The notebook grows indefinitely as you run analyses. Keeping it in a separate re
 ```
 > /init-project
 
+Creating .claude/settings.json with setup permissions...
+
+**Restart required**
+
+I've created .claude/settings.json with setup permissions. For these to take effect, please:
+
+1. Exit this conversation (Ctrl+C)
+2. Run: claude -c continue
+
+> [user runs: claude -c continue]
+
+Continuing setup with permissions active...
+
 Your project doesn't have a GitHub remote yet. To continue, I'll help you create one.
 
 What GitHub account should I use? myusername
@@ -57,8 +71,7 @@ Setting up project for Claude Code
 I'll now:
 1. Create notebook/ directory structure (as a separate git repo)
 2. Add notebook/ to .gitignore
-3. Create .claude/settings.json with notebook permissions
-4. Create or update CLAUDE.md
+3. Create or update CLAUDE.md
 
 Generate CLAUDE.md
 
