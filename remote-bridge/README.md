@@ -25,9 +25,26 @@ Remote Bridge establishes a **single persistent SSH session** with proper termin
                               permissions.toml (protected)
 ```
 
-## Quick Start
+## Installation
 
-### 1. Build
+### Option 1: Download Pre-built Binary (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
+```
+
+Or specify a version:
+```bash
+VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
+```
+
+Supported platforms:
+- macOS (Apple Silicon and Intel)
+- Linux (x86_64)
+
+### Option 2: Build from Source
+
+Requires [Rust](https://rustup.rs/).
 
 ```bash
 cd remote-bridge
@@ -35,6 +52,8 @@ cargo build --release
 ```
 
 Binary will be at `target/release/remote-bridge`.
+
+## Quick Start
 
 ### 2. Configure Permissions
 
