@@ -52,24 +52,24 @@ which remote-bridge
 
 **If found:** Skip to [Phase 2: Permission Configuration](#phase-2-permission-configuration)
 
-**If not found:** Install from pre-built binary:
+**If not found:** Detect platform and install:
 
-1. Detect platform and copy binary:
+```bash
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+echo "Platform: $OS-$ARCH"
+```
+
+**If supported platform** (darwin-arm64, darwin-x86_64, linux-x86_64):
+
+1. Copy pre-built binary:
    ```bash
-   # Find config repo
    CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
-
-   # Detect platform
-   OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-   ARCH=$(uname -m)
    case "$OS-$ARCH" in
        darwin-arm64)  BINARY="remote-bridge-darwin-arm64" ;;
        darwin-x86_64) BINARY="remote-bridge-darwin-x86_64" ;;
        linux-x86_64)  BINARY="remote-bridge-linux-x86_64" ;;
-       *) echo "Unsupported platform: $OS-$ARCH"; exit 1 ;;
    esac
-
-   # Install to ~/.local/bin
    mkdir -p ~/.local/bin
    cp "$CONFIG_REPO/remote-bridge/bin/$BINARY" ~/.local/bin/remote-bridge
    chmod +x ~/.local/bin/remote-bridge
@@ -89,10 +89,51 @@ which remote-bridge
    source ~/.bashrc
    ```
 
-3. Verify installation:
+**If unsupported platform:** Build from source:
+
+1. Check for Rust/Cargo:
    ```bash
-   remote-bridge --version
+   which cargo
    ```
+
+2. If cargo doesn't exist, ask the user to install Rust:
+   ```
+   Rust is required to build remote-bridge. Please install it:
+
+       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+   Follow the prompts (default installation is fine), then restart your terminal
+   or run: source ~/.cargo/env
+
+   Let me know when Rust is installed.
+   ```
+
+3. Build the bridge:
+   ```bash
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   cd "$CONFIG_REPO/remote-bridge" && cargo build --release
+   ```
+
+4. Add to PATH (detect shell with `echo $SHELL`):
+
+   **For zsh (~/.zshrc):**
+   ```bash
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   echo "export PATH=\"\$PATH:$CONFIG_REPO/remote-bridge/target/release\"" >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+   **For bash (~/.bashrc):**
+   ```bash
+   CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)
+   echo "export PATH=\"\$PATH:$CONFIG_REPO/remote-bridge/target/release\"" >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+**Verify installation:**
+```bash
+remote-bridge --version
+```
 
 ### Phase 2: Permission Configuration
 
