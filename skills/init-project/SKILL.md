@@ -51,6 +51,32 @@ gh repo create <account>/<repo-name> --private --source=. --push
 
 We'll need `gh` later for the notebook remote. If not available/authenticated, handle it now (same as 1.2).
 
+**1.4 Check notification dependencies (macOS only)**
+
+```bash
+uname -s
+```
+
+If macOS (`Darwin`), check for terminal-notifier:
+
+```bash
+which terminal-notifier
+```
+
+If not installed:
+- Check if Homebrew is available: `which brew`
+- If brew available, install: `brew install terminal-notifier`
+- If brew not available, inform user:
+
+> **Optional: Desktop notifications**
+>
+> For desktop notifications when Claude needs input or completes tasks, install terminal-notifier:
+> ```bash
+> brew install terminal-notifier
+> ```
+>
+> (Requires Homebrew: https://brew.sh)
+
 ### Phase 2: Inform User of Plan
 
 Display this message (do NOT ask for confirmation - just inform):

@@ -113,20 +113,88 @@ which remote-bridge
    ```
    Update the `[paths]` section with their actual directories.
 
-### Phase 3: First Connection
+### Phase 3: SSH Key Setup
+
+Ask the user: **"Do you have an SSH key set up for O2?"**
+
+**If yes:** Ask for the path to the private key (default: `~/.ssh/id_ed25519` or `~/.ssh/id_rsa`). Skip to [Phase 4](#phase-4-first-connection).
+
+**If no:** Create a dedicated SSH key for O2:
+
+1. Generate the key:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/o2_ed25519 -N "" -C "o2-cluster-access"
+   ```
+
+2. Display the public key:
+   ```bash
+   cat ~/.ssh/o2_ed25519.pub
+   ```
+
+3. Instruct the user to add the key to O2:
+   ```
+   To add this SSH key to O2:
+
+   1. Go to https://rc.hms.harvard.edu/
+   2. Log in with your HMS credentials
+   3. Navigate to "SSH Keys" in your account settings
+   4. Click "Add SSH Key"
+   5. Paste the public key shown above
+   6. Save
+
+   The key may take a few minutes to propagate. Let me know when you've added it.
+   ```
+
+4. After user confirms, test the key:
+   ```bash
+   ssh -i ~/.ssh/o2_ed25519 -o BatchMode=yes -o ConnectTimeout=10 YOUR_USERNAME@o2.hms.harvard.edu echo "SSH key working"
+   ```
+
+   If this prompts for a password or fails, the key hasn't propagated yet—wait and retry.
+
+### Phase 4: First Connection
 
 Tell the user to run in a separate terminal:
 
 ```bash
-remote-bridge start o2 --user YOUR_USERNAME
+remote-bridge start o2 --user YOUR_USERNAME --identity ~/.ssh/o2_ed25519
 ```
 
+(Adjust the identity path if they're using an existing key from Phase 3.)
+
 The user will see:
-1. Password prompt (if not using SSH keys)
-2. Duo authentication prompt
-3. Confirmation that bridge is ready
+1. Duo authentication prompt (no password needed with SSH key)
+2. Confirmation that bridge is ready
 
 The bridge runs in the foreground. The user should keep that terminal open.
+
+**Bonus: Direct SSH access**
+
+Inform the user they can also use this key for regular SSH login:
+
+```
+You can now SSH to O2 without a password using:
+
+    ssh -i ~/.ssh/o2_ed25519 YOUR_USERNAME@o2.hms.harvard.edu
+
+Would you like me to create a shell alias for this? (e.g., typing `o2` instead of the full command)
+```
+
+**If user wants the alias:**
+
+Detect their shell and add the alias:
+
+```bash
+# For zsh
+echo 'alias o2="ssh -i ~/.ssh/o2_ed25519 YOUR_USERNAME@o2.hms.harvard.edu"' >> ~/.zshrc
+source ~/.zshrc
+
+# For bash
+echo 'alias o2="ssh -i ~/.ssh/o2_ed25519 YOUR_USERNAME@o2.hms.harvard.edu"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Confirm: "Done! You can now type `o2` to connect to the cluster."
 
 Once the user confirms the bridge is running, proceed to [Using the Bridge](#using-the-bridge).
 
@@ -496,14 +564,16 @@ See O2 documentation for Singularity details.
 
 Ask user to start it in a separate terminal:
 ```bash
-remote-bridge start o2 --user USERNAME
+remote-bridge start o2 --user USERNAME --identity ~/.ssh/o2_ed25519
 ```
+
+(Adjust identity path if user has a different SSH key configured.)
 
 ### Connection not active
 
 The SSH session may have timed out. Ask user to:
 1. Stop the bridge: Ctrl+C in the bridge terminal
-2. Restart: `remote-bridge start o2 --user USERNAME`
+2. Restart: `remote-bridge start o2 --user USERNAME --identity ~/.ssh/o2_ed25519`
 
 ### Permission denied errors
 
