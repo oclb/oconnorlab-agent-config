@@ -9,7 +9,9 @@
       "Bash(git -C notebook *)",
       "Bash(ls notebook:*)",
       "Bash(cp * notebook/*)",
-      "Bash(mv * notebook/*)"
+      "Bash(mv * notebook/*)",
+      "Bash(git init *)",
+      "Bash(git remote add *)"
     ]
   }
 }
