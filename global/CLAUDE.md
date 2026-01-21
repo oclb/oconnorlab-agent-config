@@ -425,12 +425,17 @@ To find the config repo: `readlink ~/.claude/CLAUDE.md | xargs dirname | xargs d
 ### How to Log Feedback
 
 1. Find the config repo: `CONFIG_REPO=$(readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname)`
-2. Create `$CONFIG_REPO/feedback/YYYY-MM-DD-brief-description.md`
-3. Content is freeform - whatever the user wants to capture
+2. Get the current user's GitHub username: `git config user.name`
+3. Create `$CONFIG_REPO/feedback/YYYY-MM-DD-brief-description.md` with the user attribution at the top:
+   ```markdown
+   **User:** <github-username>
+
+   <freeform feedback content>
+   ```
 4. Commit:
    ```bash
    git -C "$CONFIG_REPO" add feedback/ && git -C "$CONFIG_REPO" commit -m "feedback: <brief description>"
    git -C "$CONFIG_REPO" remote | grep -q origin && git -C "$CONFIG_REPO" push
    ```
 
-No template, no index - just capture the feedback and commit.
+No index file needed - just capture the feedback with user attribution and commit.
