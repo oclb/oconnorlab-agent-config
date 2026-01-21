@@ -27,22 +27,44 @@ Remote Bridge establishes a **single persistent SSH session** with proper termin
 
 ## Installation
 
-### Option 1: Download Pre-built Binary (Recommended)
+### Option 1: Copy from Repo (Recommended)
+
+Pre-built binaries are included in `bin/`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
-```
+# Detect platform
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+case "$OS-$ARCH" in
+    darwin-arm64)  BINARY="remote-bridge-darwin-arm64" ;;
+    darwin-x86_64) BINARY="remote-bridge-darwin-x86_64" ;;
+    linux-x86_64)  BINARY="remote-bridge-linux-x86_64" ;;
+    *) echo "Unsupported: $OS-$ARCH"; exit 1 ;;
+esac
 
-Or specify a version:
-```bash
-VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
+# Install
+mkdir -p ~/.local/bin
+cp bin/$BINARY ~/.local/bin/remote-bridge
+chmod +x ~/.local/bin/remote-bridge
+
+# Add to PATH if needed
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.zshrc  # or ~/.bashrc
+source ~/.zshrc
 ```
 
 Supported platforms:
 - macOS (Apple Silicon and Intel)
 - Linux (x86_64)
 
-### Option 2: Build from Source
+### Option 2: Install Script (When Repo is Public)
+
+Once the repo is public, you can use the install script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
+```
+
+### Option 3: Build from Source
 
 Requires [Rust](https://rustup.rs/).
 
