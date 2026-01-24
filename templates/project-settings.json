@@ -11,7 +11,22 @@
       "Bash(cp * notebook/*)",
       "Bash(mv * notebook/*)",
       "Bash(git init *)",
-      "Bash(git remote add *)"
+      "Bash(git remote add *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git config --get *)",
+      "Bash(git config user.name)",
+      "Bash(git config user.email)",
+      "Bash(git remote -v*)",
+      "Bash(git remote show *)",
+      "Bash(git ls-files*)",
+      "Bash(git rev-parse*)",
+      "Bash(git describe*)",
+      "Bash(git blame*)",
+      "Bash(git shortlog*)",
+      "Bash(git stash list*)"
     ]
   }
 }
