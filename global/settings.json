@@ -16,7 +16,8 @@
       "Bash(git show *)",
       "Bash(git rev-parse *)",
       "Bash(source *)",
-      "Bash(echo *)"
+      "Bash(echo *)",
+      "Read(~/.claude/skills/**)"
     ]
   },
   "model": "opus",
