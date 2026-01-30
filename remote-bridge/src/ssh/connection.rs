@@ -98,7 +98,7 @@ impl SshConnection {
         // Drop lock during interactive auth
         drop(session_guard);
 
-        // Do interactive authentication (user sees prompts, can type password/Duo)
+        // Handle Duo authentication and wait for shell readiness
         let (reader, writer) = self.interactive_auth(reader, writer).await?;
 
         // Re-acquire lock and store session
@@ -113,7 +113,8 @@ impl SshConnection {
         Ok(())
     }
 
-    /// Handle interactive authentication - proxy I/O until shell is ready
+    /// Handle Duo authentication and wait for shell readiness.
+    /// SSH key auth is required - no password input is supported.
     async fn interactive_auth(
         &self,
         reader: Box<dyn Read + Send>,
@@ -128,16 +129,10 @@ impl SshConnection {
         // Shared state
         let done = Arc::new(AtomicBool::new(false));
         let sentinel_sent = Arc::new(AtomicBool::new(false));
-        let duo_requested = Arc::new(AtomicBool::new(false)); // True after we've sent "1" for Duo push
+        let duo_requested = Arc::new(AtomicBool::new(false));
 
-        // Channel to send keyboard input to writer thread
-        let (key_tx, key_rx) = mpsc::channel::<Vec<u8>>();
         // Channel to signal Duo prompt detected (reader -> writer)
         let (duo_tx, duo_rx) = mpsc::channel::<()>();
-
-        // Use raw mode for stdin to get individual keystrokes
-        crossterm::terminal::enable_raw_mode()
-            .map_err(|e| SshError::CommandFailed(format!("Failed to enable raw mode: {}", e)))?;
 
         let sentinel_clone = sentinel.clone();
         let done_clone = done.clone();
@@ -157,14 +152,11 @@ impl SshConnection {
                 }
 
                 match reader.read(&mut buf) {
-                    Ok(0) => {
-                        // EOF
-                        break;
-                    }
+                    Ok(0) => break,
                     Ok(n) => {
                         let output = &buf[..n];
 
-                        // Print to terminal
+                        // Print to terminal so user sees Duo prompts
                         term_stdout.write_all(output).ok();
                         term_stdout.flush().ok();
 
@@ -196,15 +188,13 @@ impl SshConnection {
                             }
                         }
                     }
-                    Err(_) => {
-                        break;
-                    }
+                    Err(_) => break,
                 }
             }
             reader
         });
 
-        // Thread 2: Write keyboard input, Duo response, and probes to PTY
+        // Thread 2: Write Duo response and shell probes to PTY
         let done_clone2 = done.clone();
         let sentinel_sent_clone2 = sentinel_sent.clone();
         let sentinel_clone2 = sentinel.clone();
@@ -213,21 +203,14 @@ impl SshConnection {
             let mut writer = writer;
             let mut duo_sent_time: Option<std::time::Instant> = None;
             let mut last_probe = std::time::Instant::now();
+            let start = std::time::Instant::now();
 
             loop {
                 if done_clone2.load(Ordering::Relaxed) {
                     break;
                 }
 
-                // Check for keyboard input from channel (non-blocking)
-                match key_rx.recv_timeout(std::time::Duration::from_millis(50)) {
-                    Ok(bytes) => {
-                        writer.write_all(&bytes).ok();
-                        writer.flush().ok();
-                    }
-                    Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
-                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
 
                 // Check for Duo prompt signal - send "1" to request push
                 if duo_rx.try_recv().is_ok() && duo_sent_time.is_none() {
@@ -236,24 +219,26 @@ impl SshConnection {
                     duo_sent_time = Some(std::time::Instant::now());
                 }
 
-                // Only send shell probes after Duo auth started and 5 seconds passed
-                // (gives time for user to approve push)
-                if let Some(duo_time) = duo_sent_time {
-                    if duo_time.elapsed() > std::time::Duration::from_secs(5)
-                        && last_probe.elapsed() > std::time::Duration::from_secs(3)
-                    {
-                        let probe = format!("echo {}$$\n", sentinel_clone2);
-                        writer.write_all(probe.as_bytes()).ok();
-                        writer.flush().ok();
-                        sentinel_sent_clone2.store(true, Ordering::Relaxed);
-                        last_probe = std::time::Instant::now();
-                    }
+                // Determine when to start probing:
+                // - After Duo: wait 5s for user to approve push
+                // - No Duo (on-campus): start probing after 3s
+                let should_probe = match duo_sent_time {
+                    Some(duo_time) => duo_time.elapsed() > std::time::Duration::from_secs(5),
+                    None => start.elapsed() > std::time::Duration::from_secs(3),
+                };
+
+                if should_probe && last_probe.elapsed() > std::time::Duration::from_secs(3) {
+                    let probe = format!("echo {}$$\n", sentinel_clone2);
+                    writer.write_all(probe.as_bytes()).ok();
+                    writer.flush().ok();
+                    sentinel_sent_clone2.store(true, Ordering::Relaxed);
+                    last_probe = std::time::Instant::now();
                 }
             }
             writer
         });
 
-        // Main thread: Read keyboard and send to writer thread
+        // Main thread: wait for shell readiness (no keyboard input needed with SSH key auth)
         let timeout = std::time::Duration::from_secs(120);
         let start = std::time::Instant::now();
 
@@ -264,23 +249,11 @@ impl SshConnection {
 
             if start.elapsed() > timeout {
                 done.store(true, Ordering::Relaxed);
-                crossterm::terminal::disable_raw_mode().ok();
                 return Err(SshError::Timeout(120));
             }
 
-            // Poll for keyboard input
-            if crossterm::event::poll(std::time::Duration::from_millis(100)).unwrap_or(false) {
-                if let Ok(crossterm::event::Event::Key(key)) = crossterm::event::read() {
-                    let bytes = key_to_bytes(key);
-                    if !bytes.is_empty() {
-                        key_tx.send(bytes).ok();
-                    }
-                }
-            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
-
-        // Restore terminal mode
-        crossterm::terminal::disable_raw_mode().ok();
 
         // Wait for threads and get reader/writer back
         let reader = reader_handle
@@ -436,27 +409,3 @@ impl SshConnection {
     }
 }
 
-/// Convert crossterm key event to bytes to send to PTY
-fn key_to_bytes(key: crossterm::event::KeyEvent) -> Vec<u8> {
-    use crossterm::event::{KeyCode, KeyModifiers};
-
-    match key.code {
-        KeyCode::Char(c) => {
-            if key.modifiers.contains(KeyModifiers::CONTROL) {
-                // Ctrl+C = 0x03, Ctrl+D = 0x04, etc.
-                vec![(c as u8) & 0x1f]
-            } else {
-                c.to_string().into_bytes()
-            }
-        }
-        KeyCode::Enter => vec![b'\r'],
-        KeyCode::Backspace => vec![0x7f],
-        KeyCode::Tab => vec![b'\t'],
-        KeyCode::Esc => vec![0x1b],
-        KeyCode::Up => vec![0x1b, b'[', b'A'],
-        KeyCode::Down => vec![0x1b, b'[', b'B'],
-        KeyCode::Right => vec![0x1b, b'[', b'C'],
-        KeyCode::Left => vec![0x1b, b'[', b'D'],
-        _ => vec![],
-    }
-}

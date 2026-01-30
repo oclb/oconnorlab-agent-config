@@ -156,7 +156,7 @@ remote-bridge --version
 
 ### Phase 3: SSH Key Setup
 
-**SSH key auth is required.** The bridge's interactive password authentication has a known bug, so SSH key-based auth is the only reliable method.
+**SSH key auth is required.** The bridge does not support password authentication.
 
 Ask the user: **"Do you have an SSH key set up for O2?"**
 

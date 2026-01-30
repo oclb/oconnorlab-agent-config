@@ -192,5 +192,5 @@ If an analysis requires O2 resources:
 ## Security Notes
 
 - The SSH socket is stored in `/tmp/` and is only accessible by your user
-- Connection uses your existing SSH keys and O2 credentials
+- Connection uses your existing SSH keys (password auth is not supported)
 - No passwords or tokens are stored by this skill
