@@ -133,6 +133,11 @@ O2_PERMISSIONS=(
     "Bash($REPO_DIR/o2-scripts/o2-setup.sh:*)"
     "Read(//$REPO_DIR/feedback/**)"
     "Write(//$REPO_DIR/feedback/**)"
+    "Edit(//$REPO_DIR/feedback/**)"
+    "Bash(git -C $REPO_DIR add feedback/*)"
+    "Bash(git -C $REPO_DIR commit *)"
+    "Bash(git -C $REPO_DIR push)"
+    "Bash(git -C $REPO_DIR mv feedback/*)"
 )
 
 if command -v jq &> /dev/null; then

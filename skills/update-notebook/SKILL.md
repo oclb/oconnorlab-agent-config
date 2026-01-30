@@ -176,7 +176,7 @@ Start with a welcoming introduction:
 ### Step 2: Create Notebook Structure
 
 ```bash
-mkdir -p notebook/entries notebook/feedback
+mkdir -p notebook/entries
 ```
 
 **Initialize INDEX.md:**

@@ -1,6 +1,8 @@
 # Feedback Logging Tests
 
-Tests that verify Claude correctly logs feedback about its behavior to notebook/feedback/.
+Tests that verify Claude correctly logs feedback about its behavior to the config repo's `feedback/` directory.
+
+**Note:** Feedback is logged to `$CONFIG_REPO/feedback/`, NOT `notebook/feedback/`. The config repo is located by resolving `readlink ~/.claude/CLAUDE.md | xargs dirname | xargs dirname`. Test fixtures below use `notebook/feedback/` as a simplified stand-in and need updating to match the actual feedback location.
 
 ---
 

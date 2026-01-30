@@ -85,9 +85,13 @@ git remote -v
 
 If NO remote configured:
 - Check if `gh` CLI is available: `which gh`
-- If `gh` not available, display GitHub CLI setup instructions (see Appendix A)
+- If `gh` not available:
+  - If `brew` is available: install directly with `brew install gh`, then `source ~/.zshrc` (or `~/.bashrc`) to make it available in the current session
+  - If `brew` not available: display GitHub CLI setup instructions (see Appendix A)
 - If `gh` available but not authenticated: `gh auth status`
-  - If not authenticated, run `gh auth login` and guide user through it
+  - If not authenticated, tell the user: "Follow the instructions below to authorize the GitHub CLI:"
+  - Run: `gh auth login --web --git-protocol https && gh auth setup-git`
+  - The user must interact with the browser-based auth flow
 - Once `gh` is ready, ask user:
 
 > Your project doesn't have a GitHub remote yet. To continue, I'll help you create one.
