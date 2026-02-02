@@ -21,7 +21,7 @@ Claude Code requires configuration files to be found at specific locations. This
 
 0. Install Claude Code if you haven't already: on macOS, 
   ```bash
-  brew install claude
+  brew install claude-code
   ```
   Then, you must connect Claude with your paid Anthropic account; enter Claude by running `claude`, then enter the slash command `/login`.
 
