@@ -16,6 +16,18 @@ When a user includes `(afk)` in their message, apply **AFK mode for that turn on
 
 AFK mode does not persist across turns. Each message starts fresh unless it contains `(afk)`.
 
+## Tool Installation and Commands
+
+Prefer to run commands directly rather than asking the user to run them. This includes:
+- Installing tools and packages (e.g., `brew install`, `pip install`, `cargo install`)
+- Running build commands
+- Executing scripts
+
+Only ask the user to run commands when:
+- The command requires authentication the user must provide interactively (e.g., `gh auth login`)
+- The command requires elevated privileges you don't have
+- The command has significant side effects the user should explicitly approve
+
 ## Notebook System
 
 The notebook is a **separate git repository** inside the project directory, gitignored from the main repo. This keeps the main repo clean while preserving full notebook history.
@@ -219,11 +231,25 @@ Task tool call:
 ```
 You are creating a notebook entry for the work done in this conversation.
 
+FIRST, validate the notebook exists (fail fast if not):
+
+1. Locate project root:
+   PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+   If this fails, return: "No notebook: not in a git repository"
+
+2. Check notebook is initialized:
+   If notebook/.git doesn't exist under $PROJECT_ROOT, return: "No notebook: run /init-project first"
+
+3. Change to project root for all subsequent operations:
+   cd "$PROJECT_ROOT"
+
+THEN proceed with entry creation:
+
 Entry target: notebook/entries/YYYY-MM-DD-<slug>.md
 - If this file already exists, APPEND to the Details section (the conversation may have continued work on the same topic)
 - If this is a new file, create it with the standard format
 
-First, get the current user's GitHub username:
+Get the current user's GitHub username:
   git config user.name
 
 Based on the conversation above, create/update the entry with:

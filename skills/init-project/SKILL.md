@@ -215,18 +215,19 @@ gh repo create <account>/<main-repo-name>-notebook --private --source=. --push
 
 Use the same account as the main repo. Derive repo name from main repo name.
 
-**5.6 Add notebook to main .gitignore**
+**5.6 Add notebook and CLAUDE.md to main .gitignore**
 
 Append to `.gitignore` (create if doesn't exist):
 ```
-# Claude Code notebook (separate repo)
+# Claude Code (project-local context)
 notebook/
+CLAUDE.md
 ```
 
 Commit to main repo:
 ```bash
 git add .gitignore
-git commit -m "chore: gitignore notebook (separate repo)"
+git commit -m "chore: gitignore notebook and CLAUDE.md"
 ```
 
 **5.7 Create or update CLAUDE.md**
@@ -290,11 +291,7 @@ If user chooses **Use basic template**, create CLAUDE.md:
 This project uses a separate notebook repository for analysis logs. See `notebook/INDEX.md` for a summary of past work.
 ```
 
-Commit:
-```bash
-git add CLAUDE.md
-git commit -m "docs: initialize/update CLAUDE.md"
-```
+Note: CLAUDE.md is gitignored and not committed to the main repo. It stays local as project context.
 
 **5.8 Tighten project permissions**
 
