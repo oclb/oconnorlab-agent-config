@@ -231,14 +231,28 @@ Task tool call:
 ```
 You are creating a notebook entry for the work done in this conversation.
 
-FIRST, validate the notebook exists (fail fast if not):
+FIRST, locate the notebook (traversing upward if needed):
 
-1. Locate project root:
+1. Start at current git root:
    PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
    If this fails, return: "No notebook: not in a git repository"
 
-2. Check notebook is initialized:
-   If notebook/.git doesn't exist under $PROJECT_ROOT, return: "No notebook: run /init-project first"
+2. Check for notebook, traversing upward if in nested repo:
+   while [ -n "$PROJECT_ROOT" ]; do
+     if [ -d "$PROJECT_ROOT/notebook/.git" ]; then
+       break  # Found it
+     fi
+     # Try parent directory (handles gitignored subdirs with own .git)
+     PARENT=$(dirname "$PROJECT_ROOT")
+     if [ "$PARENT" = "$PROJECT_ROOT" ]; then
+       return: "No notebook: run /init-project first"
+     fi
+     PROJECT_ROOT=$PARENT
+     # Verify parent is also a git repo (stop if not)
+     if [ ! -d "$PROJECT_ROOT/.git" ]; then
+       return: "No notebook: run /init-project first"
+     fi
+   done
 
 3. Change to project root for all subsequent operations:
    cd "$PROJECT_ROOT"
