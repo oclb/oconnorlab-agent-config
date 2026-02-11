@@ -6,13 +6,6 @@ Your settings and skills are managed in a Git repository. The user's `~/.claude/
 
 To find the config repo location, look for the `@` import line in `~/.claude/CLAUDE.md`.
 
-### Customization
-
-Users can personalize their setup without modifying the shared repo:
-
-- **`~/.claude/CLAUDE.md`** (user-owned) — Add personal instructions before or after the `@import` line. These override or extend the shared config.
-- **`~/.claude/settings.local.json`** (user-owned) — Add personal permissions, model preferences, or other settings. Takes precedence over the shared `settings.json`.
-
 ## AFK Mode (Per-Turn)
 
 When a user includes `(afk)` in their message, apply **AFK mode for that turn only**:
