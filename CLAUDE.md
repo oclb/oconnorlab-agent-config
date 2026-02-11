@@ -14,7 +14,16 @@ This repository customizes Claude Code for scientific research workflows. It con
 - Skills are in `skills/<skill-name>/SKILL.md` (the actual prompt) and `README.md` (documentation)
 - Global config is in `global/CLAUDE.md` (behavioral instructions) and `global/settings.json` (hooks, permissions)
 - Setup scripts configure `~/.claude/` to import/symlink these files (see "Setup Architecture" below)
-- **Keep docs updated**: Significant changes should be reflected in this file (`CLAUDE.md`) and possibly `README.md`
+- **Keep docs updated**: When making significant changes, identify and update all affected documentation and skills (see checklist below)
+
+**Documentation update checklist** (for significant changes):
+1. **This file (`CLAUDE.md`)** - Update if the change affects how users interact with or understand the repo
+2. **`README.md`** - Update if the change affects installation, setup, or high-level overview
+3. **`global/CLAUDE.md`** - Update if the change affects Claude's behavioral instructions
+4. **Affected skill's `SKILL.md`** - Update the skill prompt if functionality changes
+5. **Affected skill's `README.md`** - Update skill documentation for user-facing changes
+6. **`/support` skill** - Update if new capabilities or skills are added
+7. **Related skills** - Check if other skills reference the changed functionality
 
 ## Directory Structure
 
@@ -216,7 +225,7 @@ The **References** section records which previous entries informed this work and
 
 ### Persistent To-Do List
 
-- `notebook/TODO.md` - Active tasks
+- `notebook/TODO.md` - Active tasks (includes a `Next ID:` counter at the top to prevent numbering collisions)
 - `notebook/DONE.md` - Completed tasks with `Result:` links to entries
 
 ### Feedback

@@ -6,6 +6,13 @@ Your settings and skills are managed in a Git repository. The user's `~/.claude/
 
 To find the config repo location, look for the `@` import line in `~/.claude/CLAUDE.md`.
 
+### Customization
+
+Users can personalize their setup without modifying the shared repo:
+
+- **`~/.claude/CLAUDE.md`** (user-owned) — Add personal instructions before or after the `@import` line. These override or extend the shared config.
+- **`~/.claude/settings.local.json`** (user-owned) — Add personal permissions, model preferences, or other settings. Takes precedence over the shared `settings.json`.
+
 ## AFK Mode (Per-Turn)
 
 When a user includes `(afk)` in their message, apply **AFK mode for that turn only**:
@@ -58,17 +65,24 @@ If notebook is not set up as a separate repo, suggest `/init-project`.
 
 ## Notebook Entries
 
-All memories go in `notebook/entries/`. Any task that produces knowledge worth recalling should create an entry: analyses, features, bug fixes, research, discussions, tool setup, presentations, paper drafts, etc.
+All memories go in `notebook/entries/`. Entries record **substantial work** that a future session would need to know about.
 
-**The goal is to not lose knowledge.** If you learned something useful, write it down.
+**The bar is high.** Most conversations do NOT need an entry. Only create one when the work is significant enough that losing it would mean redoing real effort.
 
 ### When to Create an Entry
 
 Create an entry when:
-- You learned something that would be useful to recall later
-- The task took more than a few minutes of substantive work
-- You made decisions that future sessions should know about
-- You produced artifacts (scripts, figures, documents)
+- You completed a multi-step analysis or implementation
+- You made architectural or methodological decisions that affect future work
+- You discovered something non-obvious (a bug root cause, an unexpected finding)
+- You set up tools or environments with gotchas worth recording
+
+**Do NOT create entries for:**
+- Quick answers, explanations, or discussions
+- Minor fixes (typos, single-line changes, config tweaks)
+- Work that is fully captured by git commits alone
+- Routine operations (installing packages, running standard commands)
+- Brainstorming or planning that hasn't led to concrete action yet
 
 ### Entry Format
 
@@ -205,16 +219,14 @@ Git tracks entry history, so updating is fine when appropriate.
 
 ## Memory Creation via Sub-Agent
 
-For every response, consider whether you, or the user, have made a tangible contribution to the project; if so, log it. Tangible contributions include:
-- Expressing an idea or explaining a concept or approach
-- Giving a new name to something
-- Articulating a new goal
-- Designing or completing an analysis 
-- Making a decision about high-level approach to a problem
-- Implementing a new feature
-- Setting up new tools or environments
-- Discovering or fixing a problem
-- Completing an item from the TODO list
+**Only create entries for substantial work.** Most turns do NOT warrant a notebook entry. Create one when:
+- You completed a multi-step analysis with results
+- You implemented a feature or made significant code changes across multiple files
+- You discovered a non-obvious root cause or unexpected finding
+- You set up tools/environments and encountered gotchas worth recording
+- You made architectural decisions with tradeoffs that future sessions need
+
+**Do NOT create entries for:** discussions, explanations, minor fixes, routine operations, planning without action, or single-file edits well-captured by git.
 
 **When you determine memory creation is needed**, spawn a background memory agent:
 
@@ -378,6 +390,8 @@ Track tasks across sessions using two files:
 ```markdown
 # To-Do
 
+Next ID: 3
+
 - [ ] #1 **Task name** - Brief description
   - Context: `notebook/entries/related-entry` (if applicable)
   - Added: YYYY-MM-DD
@@ -400,7 +414,7 @@ Track tasks across sessions using two files:
 ### Behaviors
 
 **Adding a todo:**
-1. Assign the next available number (incrementing, never reuse - check both TODO.md and DONE.md)
+1. Read the `Next ID:` counter at the top of TODO.md and use that number. After adding the item, increment the counter.
 2. If the todo arises from a conversation about an analysis or other notebook entry, add a `Context:` line linking to it
 3. Commit:
    ```bash

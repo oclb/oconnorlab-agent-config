@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(remote-bridge *)",
       "Bash(*remote-bridge/target/release/remote-bridge *)",
@@ -18,7 +17,8 @@
       "Bash(source *)",
       "Bash(echo *)",
       "Read(~/.claude/skills/**)"
-    ]
+    ],
+    "defaultMode": "acceptEdits"
   },
   "model": "opus",
   "hooks": {
@@ -70,5 +70,6 @@
   },
   "enabledPlugins": {
     "rust-analyzer-lsp@claude-plugins-official": true
-  }
+  },
+  "fastMode": true
 }

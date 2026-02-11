@@ -154,6 +154,9 @@ Follow these 8 steps systematically.
    [List 0-3 related entries consulted, or "None - new project area"]
    - `<entry-name>`: <what was useful - script template, resource estimates, etc.>
 
+   ## Environment
+   [To be filled in Step 5]
+
    ---
 
    ## v0 (YYYY-MM-DD)
@@ -259,6 +262,29 @@ If the analysis is expected to take **>1 minute**, plan a pilot first:
 **Notebook write:** Update the Plan section under the current version in README.md.
 
 ### Step 5: Perform the Analysis
+
+**Capture the computational environment before running anything:**
+
+Record the following in the entry's `## Environment` section:
+
+```markdown
+## Environment
+- **Main repo commit:** `<short hash>` (<clean / N uncommitted changes>)
+- **Platform:** <OS and architecture>
+- **Language:** <e.g., Python 3.11.5, R 4.3.1>
+- **Key packages:** <list packages central to the analysis with versions>
+- **Seed:** <random seed if applicable>
+```
+
+How to capture:
+- Git state: `git rev-parse --short HEAD` and `git status --porcelain | wc -l`
+- Python: `python3 --version` and `pip show <pkg> | grep Version` for key packages
+- R: `R --version | head -1` and `packageVersion("pkg")` for key packages
+- On O2: also record `module list 2>&1` for loaded modules
+
+Only record packages **central to the analysis** (e.g., scipy, statsmodels, DESeq2), not every installed package. If using a conda environment or venv, record its name.
+
+If the main repo has uncommitted changes, note this — it means the exact code state isn't captured by the commit hash alone.
 
 **Execute systematically.**
 
@@ -370,14 +396,30 @@ Challenges:
 
 4. **Announce entry creation:** State "Created notebook entry: `<analysis-name>`"
 
-5. **Git commit (to notebook repo):**
+5. **Reproducibility check:**
+
+   Check if the main repo has uncommitted changes:
+   ```bash
+   git status --porcelain
+   ```
+
+   If there are uncommitted changes that the analysis depended on (modified source code, scripts, config files):
+   - **Warn the user:** "The main repo has uncommitted changes. The environment commit hash won't fully reproduce this analysis until those changes are committed."
+   - **Note in the entry:** Add a warning line to the `## Environment` section:
+     ```
+     - **⚠ Uncommitted changes:** <list of modified files relevant to the analysis>
+     ```
+
+   Ignore changes to files unrelated to the analysis (e.g., CLAUDE.md, notebook/, docs/).
+
+6. **Git commit (to notebook repo):**
    ```bash
    git -C notebook add entries/ INDEX.md
    git -C notebook commit -m "entry: <analysis-name> v0 - <brief description>"
    git -C notebook remote | grep -q origin && git -C notebook push
    ```
 
-6. **Evaluate for CLAUDE.md update:**
+7. **Evaluate for CLAUDE.md update:**
 
    Ask: Is this finding important enough for CLAUDE.md?
 
@@ -441,7 +483,7 @@ When revising an analysis (pilot → full run, fixing a mistake, updating parame
 5. **Communicate clearly** - Use STEP headers to show progress
 6. **Provide context for results** - Explain what numbers mean
 7. **Write to notebook incrementally** - Don't wait until the end
-8. **Always create a notebook entry** - Analyses always warrant memory creation; this skill handles it in Step 8
+8. **Always create a notebook entry for analyses** - Analyses always warrant memory creation; this skill handles it in Step 8
 
 ## Integration with Other Skills
 
