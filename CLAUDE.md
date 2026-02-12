@@ -178,6 +178,7 @@ project/                              # Main git repo
 └── notebook/                         # Separate git repo (gitignored)
     ├── .git/
     ├── INDEX.md                      # Entry index (Date, Name, Summary)
+    ├── ARCHIVE.md                    # Archived entries (out of active index)
     ├── TODO.md                       # Active tasks
     ├── DONE.md                       # Completed tasks
     └── entries/                      # All memories
@@ -222,6 +223,8 @@ The **References** section records which previous entries informed this work and
 `notebook/INDEX.md` is a minimal table: Date, Name, Summary. Claude reads it at session start to know what memories exist.
 
 **Retrieval:** Use Explore subagent to find relevant entries when user references past work or when starting multi-step planning. Explore starts at INDEX.md, then reads full entries as needed.
+
+**Archiving:** When INDEX.md grows large (~100+ entries), old entries that are no longer actively relevant can be moved from INDEX.md to ARCHIVE.md. Entry files stay in `notebook/entries/` - only the index row moves. Archived entries are still searchable as a fallback. See `global/CLAUDE.md` for full archiving criteria and workflow.
 
 ### Persistent To-Do List
 
