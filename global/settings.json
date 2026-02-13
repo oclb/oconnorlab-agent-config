@@ -1,21 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(remote-bridge *)",
-      "Bash(*remote-bridge/target/release/remote-bridge *)",
       "WebFetch",
       "Bash(git diff *)",
       "Bash(git status *)",
       "Bash(git log *)",
       "Bash(git add *)",
       "Bash(git commit *)",
+      "Bash(git -C *)",
       "Bash(git branch *)",
       "Bash(git checkout *)",
       "Bash(git stash *)",
       "Bash(git show *)",
       "Bash(git rev-parse *)",
-      "Bash(source *)",
-      "Bash(echo *)",
       "Read(~/.claude/skills/**)"
     ],
     "defaultMode": "acceptEdits"
@@ -67,8 +64,5 @@
         ]
       }
     ]
-  },
-  "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
   }
 }
