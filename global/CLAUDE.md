@@ -237,51 +237,44 @@ Task tool call:
 ```
 You are creating a notebook entry for the work done in this conversation.
 
-FIRST, locate the notebook (traversing upward if needed):
+IMPORTANT: You run in the background and CANNOT prompt for permissions. Use Read/Write/Glob
+tools for file operations. Only use Bash for pre-approved git commands (git rev-parse, git config,
+git -C notebook).
 
-1. Start at current git root:
-   PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+FIRST, locate the notebook:
+
+1. Find the git root:
+   Bash: git rev-parse --show-toplevel
    If this fails, return: "No notebook: not in a git repository"
 
-2. Check for notebook, traversing upward if in nested repo:
-   while [ -n "$PROJECT_ROOT" ]; do
-     if [ -d "$PROJECT_ROOT/notebook/.git" ]; then
-       break  # Found it
-     fi
-     # Try parent directory (handles gitignored subdirs with own .git)
-     PARENT=$(dirname "$PROJECT_ROOT")
-     if [ "$PARENT" = "$PROJECT_ROOT" ]; then
-       return: "No notebook: run /init-project first"
-     fi
-     PROJECT_ROOT=$PARENT
-     # Verify parent is also a git repo (stop if not)
-     if [ ! -d "$PROJECT_ROOT/.git" ]; then
-       return: "No notebook: run /init-project first"
-     fi
-   done
+2. Check for notebook directory using Glob:
+   Glob pattern "notebook/.git" starting at the git root.
+   If not found, try the parent directory (for nested repos).
+   If still not found, return: "No notebook: run /init-project first"
 
-3. Change to project root for all subsequent operations:
-   cd "$PROJECT_ROOT"
+3. Get the current user's GitHub username:
+   Bash: git config user.name
 
 THEN proceed with entry creation:
 
 Entry target: notebook/entries/YYYY-MM-DD-<slug>.md
-- If this file already exists, APPEND to the Details section (the conversation may have continued work on the same topic)
-- If this is a new file, create it with the standard format
-
-Get the current user's GitHub username:
-  git config user.name
+- Use Read to check if the file already exists
+- If it exists, use Edit to APPEND to the Details section
+- If it's new, use Write to create it with the standard format
 
 Based on the conversation above, create/update the entry with:
 1. A descriptive title and slug (if new)
-2. Metadata: Date, Author (always "Claude"), User (the GitHub username from above)
+2. Metadata: Date, Author (always "Claude"), User (the GitHub username)
 3. Summary: one paragraph of what was done and why
 4. Details: the substantive work - decisions made, code written, issues resolved, findings
 5. References: link to any related entries that were consulted
 
 After writing the entry:
-1. Update notebook/INDEX.md (add row if new entry, or update summary if existing)
-2. Commit: git -C notebook add entries/ INDEX.md && git -C notebook commit -m "entry: <slug>" && git -C notebook remote | grep -q origin && git -C notebook push
+1. Use Read then Edit to update notebook/INDEX.md (add row if new entry, or update summary if existing)
+2. Commit (run each as a SEPARATE Bash call - do NOT chain with && or |):
+   Bash: git -C notebook add entries/ INDEX.md
+   Bash: git -C notebook commit -m "entry: <slug>"
+   Bash: git -C notebook push   (this will harmlessly fail if no remote, which is fine)
 
 Return the entry path when done: "Created/Updated notebook entry: `<entry-name>`"
 ```

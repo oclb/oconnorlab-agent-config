@@ -13,6 +13,7 @@
       "Bash(git stash *)",
       "Bash(git show *)",
       "Bash(git rev-parse *)",
+      "Bash(git config *)",
       "Read(~/.claude/skills/**)"
     ],
     "defaultMode": "acceptEdits"
@@ -52,17 +53,7 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Task completed'",
-            "timeout": 5
-          }
-        ]
-      }
     ]
-  }
+  },
+  "skipDangerousModePermissionPrompt": true
 }
