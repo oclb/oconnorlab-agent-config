@@ -280,8 +280,9 @@ Return the entry path when done: "Created/Updated notebook entry: `<entry-name>`
 ```
 
 **After spawning the memory agent:**
-- The agent runs in background and returns the entry path when complete
-- Echo the result in your response so future turns see what entry was created
+- Do NOT call TaskOutput to check on the agent's progress
+- Do NOT mention the agent's status in your response — just continue with your substantive work
+- When the agent completes and the system notifies you, do NOT comment on it — produce no output (or the absolute minimum the system requires). Never narrate "the memory agent finished" or recap what it did.
 - If continuing work in the same session, subsequent memory agents will see the existing entry and can append to it
 
 **What counts as significant work:**
