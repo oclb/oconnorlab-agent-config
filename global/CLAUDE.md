@@ -247,8 +247,8 @@ FIRST, locate the notebook:
    Bash: git rev-parse --show-toplevel
    If this fails, return: "No notebook: not in a git repository"
 
-2. Check for notebook directory using Glob:
-   Glob pattern "notebook/.git" starting at the git root.
+2. Check for notebook directory:
+   Bash: test -d <git-root>/notebook/.git && echo exists
    If not found, try the parent directory (for nested repos).
    If still not found, return: "No notebook: run /init-project first"
 
