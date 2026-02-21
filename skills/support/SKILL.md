@@ -99,6 +99,7 @@ This configuration includes specialized skills for scientific research:
 | **revise-scientific-writing** | Review and improve scientific manuscripts, applying writing principles and checking structure. |
 | **teaching-mode** | Educational explanations that walk through concepts step-by-step, showing how to replicate analyses. |
 | **postmortem** | Reflective review after completing work. Surfaces undiscussed choices, friction points, improvement opportunities, and test quality. User-invoked only (`/postmortem`). |
+| **maintain-project** | Comprehensive project maintenance audit. Checks CLAUDE.md freshness, notebook index, TODO list, git state, test suite, and compiles suggestions. (`/maintain-project`). |
 | **skill-creator** | Guide for creating new skills to extend Claude Code's capabilities. |
 
 ### Accessing O2 Cluster

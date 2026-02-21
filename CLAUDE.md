@@ -45,6 +45,7 @@ claude-config/
 │   ├── pdf/                  # PDF manipulation
 │   ├── docx/                 # Word document handling
 │   ├── pptx/                 # PowerPoint handling
+│   ├── maintain-project/     # Comprehensive project maintenance audit
 │   └── skill-creator/        # Guide for creating new skills
 ├── hooks/                     # Shell scripts for Claude Code hooks
 │   └── notify.sh             # Local notification hook (macOS)
@@ -118,6 +119,7 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
 | `/postmortem` | User invokes manually | Reflective review of completed work: undiscussed choices, friction, improvements, test quality |
+| `/maintain-project` | "maintain", "audit", "health check" | Comprehensive audit: CLAUDE.md, notebook, TODOs, git, tests |
 
 ### Meta Skills
 
@@ -230,7 +232,7 @@ The **References** section records which previous entries informed this work and
 
 **Retrieval:** Use Explore subagent to find relevant entries when user references past work or when starting multi-step planning. Explore starts at INDEX.md, then reads full entries as needed.
 
-**Archiving:** When INDEX.md grows large (~100+ entries), old entries that are no longer actively relevant can be moved from INDEX.md to ARCHIVE.md. Entry files stay in `notebook/entries/` - only the index row moves. Archived entries are still searchable as a fallback. See `global/CLAUDE.md` for full archiving criteria and workflow.
+**Archiving:** Old entries can be moved from INDEX.md to ARCHIVE.md to keep the active index focused. Entry files stay in `notebook/entries/`. Use `/maintain-project` for guided archiving with detailed criteria.
 
 ### Persistent To-Do List
 

@@ -344,47 +344,9 @@ This alerts the current user that they may not be familiar with this context, si
 
 ### Archiving
 
-Over time, INDEX.md accumulates entries that are no longer actively relevant. Archiving moves these out of the active index to keep retrieval focused, without deleting the entries themselves (they stay in `notebook/entries/`).
+Old entries can be moved from INDEX.md to `notebook/ARCHIVE.md` (same format) to keep the active index focused. Entry files stay in `notebook/entries/` — only the index row moves. Archived entries are still searchable as a fallback if Explore can't find context in INDEX.md.
 
-**`notebook/ARCHIVE.md`** has the same format as INDEX.md:
-
-```markdown
-# Notebook Archive
-
-| Date | Name | Summary |
-|------|------|---------|
-| 2025-11-03 | stale-socket-fix | One-time fix for SSH socket issue, resolved |
-| 2025-10-15 | initial-pca-attempt | Superseded by batch-effect-analysis |
-```
-
-**When to archive:**
-- User explicitly requests it ("archive old entries", "clean up the index")
-- Suggest archiving when INDEX.md exceeds ~100 entries
-
-**What to archive** (candidates - always confirm with user):
-- Resolved one-time issues (bug fixes, environment setup problems long since fixed)
-- Entries superseded by later work
-- Knowledge fully incorporated into code, CLAUDE.md, or other entries
-- Exploratory work that didn't lead anywhere or became moot
-
-**What NOT to archive:**
-- Active architectural decisions still shaping the project
-- Recent entries (< 2 months old unless clearly moot)
-- Entries referenced by the project's CLAUDE.md
-- Entries frequently referenced by other non-archived entries
-
-**How to archive:**
-1. Read INDEX.md and identify candidates
-2. Present candidates to user with brief rationale for each
-3. For approved entries, move their rows from INDEX.md to ARCHIVE.md
-4. Also remove any stale references from the project's CLAUDE.md
-5. Commit:
-   ```bash
-   git -C notebook add INDEX.md ARCHIVE.md && git -C notebook commit -m "archive: move N entries to archive"
-   git -C notebook remote | grep -q origin && git -C notebook push
-   ```
-
-**Retrieval from archive:** At session start, only INDEX.md is read. If an Explore agent can't find relevant context in INDEX.md, it should also check ARCHIVE.md - archived entries are still searchable, just not loaded by default.
+Use `/maintain-project` for guided archiving with detailed criteria, or archive manually when the user requests it.
 
 ## Project CLAUDE.md Integration
 
