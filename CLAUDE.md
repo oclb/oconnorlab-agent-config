@@ -113,6 +113,12 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | `/docx` | Create/edit Word documents, track changes |
 | `/pptx` | Create/edit PowerPoint presentations |
 
+### Review Skills
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/postmortem` | User invokes manually | Reflective review of completed work: undiscussed choices, friction, improvements, test quality |
+
 ### Meta Skills
 
 | Skill | Purpose |
