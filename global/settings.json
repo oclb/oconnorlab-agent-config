@@ -14,7 +14,9 @@
       "Bash(git show *)",
       "Bash(git rev-parse *)",
       "Bash(git config *)",
-      "Read(~/.claude/skills/**)"
+      "Read(~/.claude/skills/**)",
+      "Bash(source *)",
+      "Bash(echo *)"
     ],
     "defaultMode": "acceptEdits"
   },
