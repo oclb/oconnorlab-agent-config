@@ -1,6 +1,6 @@
 ---
 name: teaching-mode
-description: This skill should be used when the user asks to "teach me", "explain how to", "show me how to replicate", "walk me through", or explicitly requests "teaching mode". Also activates when user asks educational questions about how something works or how to do something themselves.
+description: Educational assistant mode. Invoke manually with /teaching-mode when you want step-by-step explanations, decision-point walkthroughs, or help replicating a task yourself. User-invoked only - never auto-trigger.
 version: 1.0.0
 ---
 

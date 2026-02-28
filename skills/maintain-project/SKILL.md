@@ -1,6 +1,6 @@
 ---
 name: maintain-project
-description: Comprehensive project maintenance audit. Use when the user asks to "maintain", "audit", "clean up", "health check", or review the overall state of their project. Checks CLAUDE.md freshness, notebook index, TODO list, git state, test suite, and compiles actionable suggestions. Invoke with /maintain-project.
+description: Comprehensive project maintenance audit. Invoke manually with /maintain-project to check CLAUDE.md freshness, notebook index, TODO list, git state, test suite, and compile actionable suggestions. User-invoked only - never auto-trigger.
 ---
 
 # Maintain Project

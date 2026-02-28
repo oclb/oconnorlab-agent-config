@@ -1,6 +1,6 @@
 ---
 name: revise-scientific-writing
-description: This skill should be used when the user asks to "revise", "review", "edit", "improve", or "critique" a scientific paper, manuscript, abstract, or other scientific document. Also triggers for requests to apply writing principles or check structure.
+description: Scientific writing revision using O'Connor lab principles. Invoke manually with /revise-scientific-writing when you want a manuscript, abstract, or section revised for clarity, structure, and persuasiveness. User-invoked only - never auto-trigger.
 version: 1.0.0
 ---
 

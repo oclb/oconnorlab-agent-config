@@ -105,8 +105,6 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | `/new-software` | "learn [tool]", "set up [library]" | Tool installation and learning |
 | `/remote-o2` | "run on O2", auto-triggers for heavy compute | Remote O2 access via SSH+tmux |
 | `/use-o2` | (reference skill) | SLURM reference material for remote-o2 |
-| `/teaching-mode` | "teach me", "explain how" | Educational explanations with replication steps |
-| `/revise-scientific-writing` | "revise manuscript", "edit abstract" | Scientific writing improvement |
 | `/support` | "what can you do", questions about Claude Code | Documentation and capability overview |
 
 ### Document Skills
@@ -122,7 +120,9 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
 | `/postmortem` | User invokes manually | Reflective review of completed work: undiscussed choices, friction, improvements, test quality |
-| `/maintain-project` | "maintain", "audit", "health check" | Comprehensive audit: CLAUDE.md, notebook, TODOs, git, tests |
+| `/maintain-project` | User invokes manually | Comprehensive audit: CLAUDE.md, notebook, TODOs, git, tests |
+| `/teaching-mode` | User invokes manually | Educational explanations with replication steps |
+| `/revise-scientific-writing` | User invokes manually | Scientific writing improvement |
 
 ### Meta Skills
 
