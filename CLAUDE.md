@@ -49,8 +49,11 @@ claude-config/
 │   └── skill-creator/        # Guide for creating new skills
 ├── hooks/                     # Shell scripts for Claude Code hooks
 │   └── notify.sh             # Local notification hook (macOS)
-├── templates/                 # Templates for project setup
-│   └── project-settings.json # Project permissions template (notebook access)
+├── templates/                 # Templates and reference material
+│   ├── project-settings.json # Project permissions template (notebook access)
+│   ├── memory-agent-prompt.md # Prompt template for notebook memory sub-agent
+│   ├── entry-examples.md     # Example notebook entries for style reference
+│   └── todo-reference.md     # Detailed TODO/DONE formats and procedures
 ├── o2-scripts/                # Generated scripts for remote O2 access (gitignored)
 └── setup.sh                   # Setup script for local machines
 ```
