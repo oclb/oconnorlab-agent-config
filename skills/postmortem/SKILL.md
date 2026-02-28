@@ -33,6 +33,8 @@ Note anything that was harder than expected, required unexpected workarounds, or
 - Cases where the codebase resisted the change
 - Workarounds that might break under different conditions
 
+Do NOT include Claude Code operational concerns (Edit tool issues, context limits, tool failures). Focus on the project's code and architecture.
+
 ### Improvement Opportunities
 
 Suggest concrete refactors or follow-up work. Be specific (name files, functions, patterns). Distinguish between:
