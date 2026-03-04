@@ -176,6 +176,27 @@ git -C notebook commit -m "entry: <tool-name> setup"
 git -C notebook remote | grep -q origin && git -C notebook push
 ```
 
+### 6. Offer Project Skill
+
+After setup is complete, consider whether a project-specific skill for this tool would be useful. Identify what knowledge you've gathered that would be valuable in future sessions — then offer it to the user with specifics.
+
+**What makes a tool worth a skill:**
+- **Project-specific workflows** — the tool is used in a particular way in this project that differs from its general usage
+- **Non-obvious configuration or invocation patterns** — flags, environment variables, or setup steps that would need to be re-discovered each session
+- **Integration gotchas** — how the tool interacts with other project tools or data in ways that aren't obvious from its documentation
+
+**When a skill is NOT needed:**
+- You already know how to use the tool well from training data
+- The tool is used in a standard way and its docs are sufficient
+- The project revolves around this one tool — the project CLAUDE.md is the right place for that
+- The notebook entry already captures everything relevant
+
+**How to offer:** Tell the user what specific information you would put in the skill and why it would be useful. For example:
+
+> "bcftools in this project always needs the `--regions-overlap 2` flag because your BED files use half-open coordinates. I could create a short skill capturing that default, the reference genome path, and the filtering presets you use. Want me to?"
+
+Skills can be short — even a paragraph or two of context is valuable if it saves re-discovery. There is little cost to creating one. Use `/skill-creator` if the user agrees.
+
 ## Best Practices
 
 1. **Search for current docs** - Tools change; verify latest information

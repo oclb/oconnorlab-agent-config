@@ -250,6 +250,27 @@ git -C notebook commit -m "entry: <dataset-name> dataset"
 git -C notebook remote | grep -q origin && git -C notebook push
 ```
 
+### Step 10: Offer Project Skill
+
+After completing validation, consider whether a project-specific skill for this dataset would be useful. Identify what knowledge you've gathered that would be valuable in future sessions — then offer it to the user with specifics.
+
+**What makes a dataset worth a skill:**
+- **Idiosyncrasies requiring special handling** — e.g., annotation data at amino acid resolution that needs coordinate mapping when used with base-pair-level variant data
+- **Substantial attached domain knowledge** — e.g., GTEx tissue data where specific tissues have different sample sizes, related tissue groups (brain regions), or trait associations that matter for analysis choices
+- **Non-obvious preprocessing or integration steps** — transformations, filtering rules, or join logic that would need to be re-discovered each session
+
+**When a skill is NOT needed:**
+- The project revolves around one dataset or data type — the project CLAUDE.md is the right place for that context
+- The dataset has the same shape as other datasets already being analyzed in the project
+- The dataset is simple and self-describing
+- The notebook entry already captures everything relevant
+
+**How to offer:** Tell the user what specific information you would put in the skill and why it would be useful. For example:
+
+> "This annotation dataset uses amino acid coordinates while your variant data uses genomic coordinates — that mapping step will come up whenever you join them. I could create a short project skill capturing the coordinate system, the mapping approach, and the column naming conventions. Want me to?"
+
+Skills can be short — even a paragraph or two of context is valuable if it saves re-discovery. There is little cost to creating one. Use `/skill-creator` if the user agrees.
+
 ## Best Practices
 
 1. **Document the source** - Track origin for reproducibility
