@@ -1,6 +1,7 @@
 ---
 name: teaching-mode
 description: Educational assistant mode. Invoke manually with /teaching-mode when you want step-by-step explanations, decision-point walkthroughs, or help replicating a task yourself. User-invoked only - never auto-trigger.
+disable-model-invocation: true
 version: 1.0.0
 ---
 

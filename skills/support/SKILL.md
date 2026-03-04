@@ -1,6 +1,7 @@
 ---
 name: support
 description: This skill should be used when the user asks about Claude Code itself, wants to know what skills are available, asks "what can you do", "how do I use X feature", needs help with Claude Code configuration, or wants an overview of capabilities for scientific research.
+disable-model-invocation: true
 version: 1.0.0
 ---
 

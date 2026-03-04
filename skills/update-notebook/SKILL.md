@@ -1,6 +1,7 @@
 ---
 name: update-notebook
 description: This skill should be used when the user asks to "sync the notebook", "update the notebook", "catch up on changes", or when Claude detects an unfamiliar project with existing work that would benefit from notebook initialization. Also triggers for "what's changed" or "what did I miss" in the context of project work done outside Claude Code.
+disable-model-invocation: true
 version: 1.0.0
 ---
 

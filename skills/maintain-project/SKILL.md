@@ -1,6 +1,7 @@
 ---
 name: maintain-project
 description: Comprehensive project maintenance audit. Invoke manually with /maintain-project to check CLAUDE.md freshness, notebook index, TODO list, git state, test suite, and compile actionable suggestions. User-invoked only - never auto-trigger.
+disable-model-invocation: true
 ---
 
 # Maintain Project

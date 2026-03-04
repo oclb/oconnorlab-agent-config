@@ -1,6 +1,7 @@
 ---
 name: postmortem
 description: Reflective review of completed work. Invoke manually with /postmortem after a refactor, analysis, or significant implementation. Reviews the session's work to surface undiscussed choices, friction points, improvement opportunities, and test quality assessment. User-invoked only - never auto-trigger.
+disable-model-invocation: true
 ---
 
 # Postmortem

@@ -1,6 +1,7 @@
 ---
 name: revise-scientific-writing
 description: Scientific writing revision using O'Connor lab principles. Invoke manually with /revise-scientific-writing when you want a manuscript, abstract, or section revised for clarity, structure, and persuasiveness. User-invoked only - never auto-trigger.
+disable-model-invocation: true
 version: 1.0.0
 ---
 
