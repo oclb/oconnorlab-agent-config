@@ -1,6 +1,6 @@
 ---
 name: remote-o2
-description: This skill should be used when the user asks to "submit to O2", "run on O2", "use the cluster", "submit a SLURM job", mentions O2 or compute cluster job submission, or when an analysis requires substantial computational resources (>16GB RAM, >4 hours runtime, or GPUs).
+description: Use when the user asks to perform an analysis using O2 or the cluster.
 user_invocable: true
 version: 2.4.0
 ---

@@ -1,6 +1,7 @@
 ---
 name: perform-analysis
 description: This skill should be used when the user asks to "perform an analysis", "run an experiment", "analyze data", "test a hypothesis", "compute statistics", "run a model", "compare groups", "generate figures", "run a pipeline", or requests any data analysis task that involves using data and methods to answer a scientific or analytical question.
+disable-model-invocation: true
 version: 1.0.0
 ---
 

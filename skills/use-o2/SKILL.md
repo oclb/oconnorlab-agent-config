@@ -1,6 +1,6 @@
 ---
 name: use-o2
-description: SLURM and O2 cluster reference. This skill provides knowledge about partitions, resource estimation, job submission, and monitoring. Used by /remote-o2 when executing cluster commands.
+description: Used by /remote-o2 when submitting jobs.
 version: 2.1.0
 ---
 
