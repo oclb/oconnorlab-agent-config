@@ -119,6 +119,7 @@ Skills are specialized prompts in `skills/<name>/SKILL.md`. They can be:
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
+| `/finalize-manuscript` | "finalize manuscript", "pre-submission check" | 20 parallel checks for journal submission/resubmission (AJHG, Nature Genetics) |
 | `/postmortem` | User invokes manually | Reflective review of completed work: undiscussed choices, friction, improvements, test quality |
 | `/maintain-project` | User invokes manually | Comprehensive audit: CLAUDE.md, notebook, TODOs, git, tests |
 | `/teaching-mode` | User invokes manually | Educational explanations with replication steps |
