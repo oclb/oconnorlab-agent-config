@@ -93,6 +93,8 @@ To an extent, these are aspirational placeholders for abilities I would like the
 
 - **teaching-mode** - I do not yet recommend this skill.
 
+- **/finalize-manuscript** - pre-submission and resubmission checklist that runs 20 parallel checks on a manuscript (citations, display items, factual claims, writing quality, data/code availability, cover letter, response to reviewers).
+
 - **File format support**: There are skills copied from Anthropic so that the AI can manipulate .docx, .pptx, and .pdf files. For example, you could ask it to create a powerpoint with figures from the last week's notebook entries - I have not actually tried this!
 
 - **skill-creator**: An Anthropic-provided skill to be used when creating other skills.
