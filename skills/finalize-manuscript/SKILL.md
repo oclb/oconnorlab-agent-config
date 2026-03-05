@@ -28,13 +28,15 @@ Ask the user:
 
 Create working directory: `$TMPDIR/manuscript-check/`
 
-For each `.docx` file:
+**IMPORTANT**: Extract each docx to a separate media subdirectory to avoid filename collisions (pandoc names images sequentially as image1.png, image2.png, etc.):
 ```bash
-pandoc input.docx -t markdown --extract-media=$TMPDIR/manuscript-check/media -o $TMPDIR/manuscript-check/output.md
+pandoc main.docx -t markdown --extract-media=$TMPDIR/manuscript-check/media-main -o $TMPDIR/manuscript-check/main-text.md
+pandoc supp_note.docx -t markdown --extract-media=$TMPDIR/manuscript-check/media-supp -o $TMPDIR/manuscript-check/supplementary-note.md
+# etc. for each docx
 ```
 
 For `.pdf` files: use the Read tool directly.
-For `.xlsx` files: do not convert up front; load only when a check requires them.
+For `.xlsx` files: do not convert up front; load only when a check requires them. However, extract supplementary table **captions** from the supplementary note during Phase 0 (see Step 3) since many checks need caption-level information without the actual data.
 
 Organize converted files as:
 ```
@@ -43,7 +45,10 @@ $TMPDIR/manuscript-check/
 ├── supplementary-note.md      # if applicable
 ├── response-to-reviewers.md   # if revision
 ├── cover-letter.md            # if applicable
-├── media/                     # extracted images
+├── structural-summary.md      # written in Step 3
+├── media-main/                # images from main text
+├── media-supp/                # images from supplementary note
+├── media-*/                   # images from other docx files
 └── report.md                  # created at end
 ```
 
@@ -55,17 +60,19 @@ libreoffice --headless --convert-to png image.emf
 ### Step 3: Build Structural Summary
 
 Read the converted main text and extract:
-- **Sections**: All headings and subheadings (especially Methods subsections)
+- **Sections**: All headings and subheadings (especially Methods subsections), with line number ranges in the markdown file
 - **Main display items**: All main figures and tables with captions
-- **Supplementary display items**: All supplementary figures and tables
+- **Supplementary display items**: All supplementary figures and tables with captions (extract captions from supplementary note even if the actual data is in xlsx files)
 - **Extended data items**: If applicable
 - **Author list**: Authors, affiliations, corresponding author(s), emails
 - **Reference list**: All cited references; note format (numbered vs. author-year)
 - **Preprints**: Any cited preprints (bioRxiv, medRxiv, arXiv, SSRN, etc.)
 
-View each main figure image with the Read tool. Note what each figure shows (plot type, key labels).
+**Image-to-figure mapping**: View each extracted image with the Read tool and cross-reference with figure captions to build an explicit mapping table (e.g., "media-main/image4.png = Figure 4"). Include this mapping in the structural summary.
 
-Produce a `structural-summary` text block to include in every subagent prompt.
+**Line ranges**: Record the line number ranges for key sections (e.g., "Results: lines 45-280, Methods: lines 281-520"). Subagents will use these to read the file in targeted chunks rather than attempting to load the entire file at once.
+
+Write the structural summary to `{workdir}/structural-summary.md`. Subagent prompts should instruct agents to read this file rather than including the summary verbatim in each prompt. Keep the summary concise — aim for under 200 lines. Include: section line ranges, display item list with captions, image-to-figure mapping, author metadata, reference count and format, and preprint list.
 
 ### Step 4: Assess Citation Formatting
 
@@ -81,9 +88,10 @@ Examine the converted reference list. If it appears garbled (pandoc artifacts, u
 
 After Phase 0, spawn one `general-purpose` agent per check, all in parallel with `run_in_background: true`. Each agent's prompt includes:
 1. The working directory path
-2. The structural summary
+2. Instruction to read `{workdir}/structural-summary.md` for document structure, section line ranges, and image-to-figure mapping
 3. The check instructions (from the descriptions below)
 4. The report format: tag each finding as `**ISSUE**`, `**WARNING**`, or `**SUGGESTION**`
+5. Note that the main text file may be large (1000+ lines) — agents should use the line ranges from the structural summary to read targeted sections rather than attempting to read the entire file at once
 
 ### Model Assignments
 
@@ -97,7 +105,7 @@ After Phase 0, spawn one `general-purpose` agent per check, all in parallel with
 | Revision-specific | sonnet | 11, 12 |
 | Interactive (deferred) | opus | 16 |
 
-Skip revision checks (11, 12) for initial submissions. Skip cover letter checks (15, 16) if no cover letter.
+Skip revision checks (11, 12) for initial submissions. Skip Check 15 if no cover letter. Check 16 (suggested reviewers) should still run for initial submissions even without a cover letter.
 
 ---
 
@@ -111,7 +119,12 @@ Include the relevant description verbatim in each subagent's prompt.
 
 Read the main text. For every factual statement about existing literature or software, verify it:
 
-- **Literature claims** (e.g., "Smith et al. showed X"): Search PubMed for the cited paper. Read the abstract; if insufficient, download the PDF to `{workdir}/tmp/` and inspect it. PubMed: `https://pubmed.ncbi.nlm.nih.gov/?term=QUERY`. Try PubMed Central for full text of paywalled papers.
+- **Literature claims** (e.g., "Smith et al. showed X"): Find and read the cited paper. Try multiple access strategies in order:
+  1. If a DOI is available: `https://doi.org/DOI` (often gives full text or abstract)
+  2. PubMed Central full text: `https://www.ncbi.nlm.nih.gov/pmc/articles/PMCID/` (free full text for many papers)
+  3. PubMed search: `https://pubmed.ncbi.nlm.nih.gov/?term=QUERY` (abstracts)
+  4. Download PDF to `{workdir}/tmp/` and inspect locally
+  Note: WebFetch can be unreliable on PubMed pages. If one access method fails, try the next.
 - **Software claims** (e.g., "Tool X implements algorithm Y"): Find the tool's repository or documentation and verify.
 - **Numerical claims** (e.g., "X% of Y in [citation]"): Verify specific numbers against the source.
 
@@ -155,7 +168,7 @@ Tag: **ISSUE** (missing first citation), **SUGGESTION** (recommended recitation)
 Read the main text. Extract every reference to main figures, main tables, supplementary figures, supplementary tables, and extended data figures.
 
 Check:
-1. **All cited**: Every display item from the structural summary is cited at least once in the main text or methods
+1. **All cited**: Every display item from the structural summary must be referenced by number in the running text (not counting its own caption). Supplementary items listed only in the supplementary note captions but never referenced from the main text are considered uncited.
 2. **Cited in order**: First citations appear in ascending numerical order, checked separately per category (main figures, supplementary figures, etc.)
 
 Tag: **ISSUE** (uncited items), **WARNING** (out-of-order).
@@ -316,7 +329,7 @@ Tag: **ISSUE** (missing required elements), **WARNING** (no cover letter).
 
 Run this after all other checks complete.
 
-Read the cover letter. If this is an initial submission and the cover letter doesn't include suggested reviewers, ask the user: "The cover letter does not include suggested reviewers. Would you like me to suggest some based on the manuscript's citations?"
+If this is an initial submission: read the cover letter (if one exists) and check for suggested reviewers. If the cover letter doesn't include suggested reviewers, or if no cover letter exists, ask the user: "The cover letter does not include suggested reviewers. Would you like me to suggest some based on the manuscript's citations?"
 
 If yes:
 1. Identify key citations (most relevant to the paper's contribution)
@@ -412,6 +425,8 @@ After all check agents complete, compile `{workdir}/report.md`:
 ## Checks Passed
 [List of checks with no findings]
 ```
+
+**Deduplication**: When compiling the report, if the same finding is reported by multiple checks (e.g., a misspelling caught by both Check 7 and Check 18, or a term inconsistency caught by both Check 19 and Check 20), include it only once under the most relevant check and note the cross-reference.
 
 Present the report to the user.
 
