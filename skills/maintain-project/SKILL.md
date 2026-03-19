@@ -84,7 +84,13 @@ git stash list    # forgotten stashes
 git branch        # stale branches
 ```
 
+Also check for open pull requests:
+```bash
+gh pr list --state open
+```
+
 Look for:
+- Open PRs that have been merged, closed, or forgotten
 - Untracked files that should be gitignored or committed
 - Modified files that look like abandoned work
 - Stale branches (merged or very old)

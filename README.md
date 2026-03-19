@@ -5,7 +5,7 @@ A current trend in artificial intelligence is the application of AI coding agent
 The project has three major features:
 1. **O2 Cluster bridge.** It includes an application that enables Claude to interact with O2, submit jobs, and read results. Its interactions are sandboxed to avoid accidental data deletion.
 2. **Project notebook.** It configures Claude to keep a project notebook that tracks the current state of the project and logs any work that you do with it. This notebook is intended both to provide context to Claude and to mitigate non-reproducibility, which is a potential pitfall when you rely on agents without long-term memory.
-3. **Specialized prompts.** Claude recently added support for "skills", which are specialized prompts that it retrieves automatically when they are relevant to a task. This project includes scientific skills that aim to improve the AI's performance at various tasks, like inspecting a new dataset or performing an analysis.
+3. **Specialized prompts.** Claude supports "skills", which are specialized prompts that it retrieves automatically when they are relevant to a task. This project includes scientific skills that aim to improve the AI's performance at various tasks, like inspecting a new dataset or performing an analysis.
 
 ## Background
 
@@ -67,37 +67,22 @@ The `bridge/` directory contains a Rust application which allows Claude (or a hu
 
 This bridge maintains a connetion over `ssh` with an O2 login node. It exposes an API with certain read-only commands (like `cat`), allowing Claude to read any file that you can read. It also exposes two commands that allow Claude to modify files: `git pull`, so that it can pull updates to your project repo, and `sbatch`, so that it can run jobs. Jobs run by Claude are dispatched into a sandboxed Singularity container. Containerization could make it minorly annoying to manage dependencies, but it brings major peace of mind: the agent cannot edit or delete files outside of the directories that you specify when you set up the sandbox.
 
-### Performing analyses
-The `/perform-analysis` skill is intended to improve the agent's ability to perform scientific analyses semi-autonomously. It instructs the agent to find notebook entries about related analyses; to understand motivation and expected results; to make a plan with the user; to perform troubleshooting and iteration; to produce digestible results; and to log its work in a notebook entry.
+### Custom skills
 
-In my experience, AI agents do not have these skills without special prompting. I am unsure the extent to which special prompting will help. I would really value feedback on this. 
-
-### Getting help
-Using the `/support` skill gives Claude Code access to its own up-to-date documentation, as well as the contents of this repository.
-
-### Additional skills
 To an extent, these are aspirational placeholders for abilities I would like the AI to have. Please try them and provide feedback. 
-- **/new-data** - initial investigation of a new dataset
-  - Downloads and acquires datasets from various sources
-  - Determines data format and describes contents
-  - Reports basic statistics, like the number of genes
-  - Hopefully identifies data quality issues
-
-- **new-software** - onboarding existing tools and libraries
-  - Searches documentation and best practices
-  - Installs and configures tools
-  - Runs sanity checks
-  - Provides usage examples
-  
-- **revise-scientific-writing** - I do not yet recommend this skill.
-
-- **teaching-mode** - I do not yet recommend this skill.
-
+- **/implement** - takes a plan (typically drafted in a prior planning session) and implements it in an isolated git worktree. Reviews the plan against actual code, critiques and improves it, then opens a PR for review.
+- **/perform-analysis** - intended to improve the agent's ability to perform scientific analyses semi-autonomously. It instructs the agent to find notebook entries about related analyses; to understand motivation and expected results; to make a plan with the user; to perform troubleshooting and iteration; to produce digestible results; and to log its work in a notebook entry.
+- **/remind-resume** - summarizes where you left off in a project, surfacing recent notebook entries, uncommitted changes, and open TODOs so you can pick up where you stopped.
+- **/maintain-project** - audits the project's to-do list, notebook index, documentation, and git state. Identifies stale entries, outdated CLAUDE.md claims, forgotten stashes, and coverage gaps, then compiles a report with numbered action items.
+- **/postmortem** - reflective review for when something didn't go smoothly. Examines undiscussed choices, friction points, and what could be improved for next time.
 - **/finalize-manuscript** - pre-submission and resubmission checklist that runs 20 parallel checks on a manuscript (citations, display items, factual claims, writing quality, data/code availability, cover letter, response to reviewers).
-
-- **File format support**: There are skills copied from Anthropic so that the AI can manipulate .docx, .pptx, and .pdf files. For example, you could ask it to create a powerpoint with figures from the last week's notebook entries - I have not actually tried this!
-
-- **skill-creator**: An Anthropic-provided skill to be used when creating other skills.
+- **/support** - gives Claude Code access to its own up-to-date documentation, as well as the contents of this repository.
+- **/new-data** - initial investigation of a new dataset.
+- **/new-software** - onboarding existing tools and libraries.
+- **/revise-scientific-writing** - I do not yet recommend this skill.
+- **/teaching-mode** - I do not yet recommend this skill.
+- **File format support**: There are skills copied from Anthropic so that the AI can manipulate .docx, .pptx, and .pdf files. When I tried these I found that .docx and .pptx worked smoothly although I didn't love the .pptx it produced; when I tried .pdf to fill a form it was pretty poor.
+- **/skill-creator**: An Anthropic-provided skill to be used when creating other skills.
 
 
 ### AFK Mode
