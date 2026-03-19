@@ -138,10 +138,10 @@ After all other tasks complete, synthesize findings into a report for the user.
 - [list of things fixed directly]
 
 ### Needs Your Input
-- [archiving candidates from Task 2]
-- [CLAUDE.md restructuring proposals from Task 3]
-- [git cleanup from Task 6]
-- [stale TODOs from Task 7]
+Number every item so the user can respond by reference (e.g., "archive 1-5, keep 6"):
+1. [item from Task 2, 3, 6, or 7]
+2. [next item]
+...
 
 ### Test Status
 - [failures from Task 8]
