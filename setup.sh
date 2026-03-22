@@ -127,6 +127,26 @@ if [ -L "$CLAUDE_DIR/skills" ]; then
 fi
 mkdir -p "$CLAUDE_DIR/skills"
 
+# Remove stale bundled skill symlinks from previous runs while preserving
+# user-added skills or directories in ~/.claude/skills.
+for skill_link in "$CLAUDE_DIR/skills"/*; do
+    if [ ! -L "$skill_link" ]; then
+        continue
+    fi
+
+    skill_target="$(readlink "$skill_link")"
+    skill_target="${skill_target%/}"
+
+    case "$skill_target" in
+        "$REPO_DIR"/skills/*)
+            if [ ! -d "$skill_target" ]; then
+                echo "  Removing stale bundled skill symlink: $(basename "$skill_link")"
+                rm "$skill_link"
+            fi
+            ;;
+    esac
+done
+
 # Symlink each skill from the repo
 for skill_dir in "$REPO_DIR/skills"/*/; do
     skill_name="$(basename "$skill_dir")"
