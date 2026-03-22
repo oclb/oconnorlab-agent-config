@@ -6,7 +6,7 @@
 # What it does:
 #   1. Creates ~/.claude directory
 #   2. Adds @import to user's CLAUDE.md (preserves user content)
-#   3. Symlinks settings.json, skills, hooks (preserves existing settings)
+#   3. Symlinks settings.json, individual skills, hooks (preserves existing settings)
 #   4. Adds O2 permissions to settings.local.json
 #   5. Sets up local notification dependencies
 
@@ -115,11 +115,25 @@ fi
 # Now symlink settings.json to repo
 setup_symlink "$REPO_DIR/global/settings.json" "$SETTINGS" "settings.json"
 
-# Step 4: Set up skills and hooks symlinks
+# Step 4: Set up skills and hooks
 echo ""
 echo "Step 4: Setting up skills and hooks..."
 
-setup_symlink "$REPO_DIR/skills" "$CLAUDE_DIR/skills" "skills"
+# Skills: symlink each skill individually so users can add personal skills to ~/.claude/skills/
+# If skills/ is currently a directory symlink, migrate to per-skill symlinks
+if [ -L "$CLAUDE_DIR/skills" ]; then
+    echo "  Migrating from directory symlink to per-skill symlinks"
+    rm "$CLAUDE_DIR/skills"
+fi
+mkdir -p "$CLAUDE_DIR/skills"
+
+# Symlink each skill from the repo
+for skill_dir in "$REPO_DIR/skills"/*/; do
+    skill_name="$(basename "$skill_dir")"
+    setup_symlink "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" "skill: $skill_name"
+done
+
+# Hooks: still symlink the whole directory (no user-specific hooks needed)
 setup_symlink "$REPO_DIR/hooks" "$CLAUDE_DIR/hooks" "hooks"
 
 # Step 5: Add O2 permissions to settings.local.json
@@ -207,7 +221,7 @@ echo "Configuration:"
 echo "  CLAUDE.md:           User-owned with @import to repo"
 echo "  settings.json:       Symlink to repo (auto-updates)"
 echo "  settings.local.json: User-owned (your personal settings + O2 permissions)"
-echo "  skills/:             Symlink to repo"
+echo "  skills/:             Per-skill symlinks (add personal skills here too)"
 echo "  hooks/:              Symlink to repo"
 echo ""
 echo "Customization:"

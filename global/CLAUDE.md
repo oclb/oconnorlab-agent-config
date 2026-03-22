@@ -87,6 +87,10 @@ git -C "$CONFIG_REPO" remote | grep -q origin && git -C "$CONFIG_REPO" push
 
 Prefer to run commands directly (install, build, execute) rather than asking the user to run them. Only ask when the command requires interactive authentication, elevated privileges, or has significant side effects.
 
+## Literature Search
+
+When listing sources, always include clickable hyperlinks (DOI links, PubMed URLs, or publisher URLs).
+
 ## AFK Mode
 
 When a user includes `(afk)` in their message, apply AFK mode for that turn only: be more independent, proceed if 80%+ confident, document assumptions, and only pause for irreversible actions or decisions where the wrong choice would require significant rework. AFK mode does not persist across turns.
