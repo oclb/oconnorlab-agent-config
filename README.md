@@ -79,6 +79,7 @@ To an extent, these are aspirational placeholders for abilities I would like the
 - **/support** - gives Claude Code access to its own up-to-date documentation, as well as the contents of this repository.
 - **/new-data** - initial investigation of a new dataset.
 - **/new-software** - onboarding existing tools and libraries.
+- **/run-graphld-o2** - run graphLD on o2 (thanks to Noah for creating this skill).
 - **/revise-scientific-writing** - I do not yet recommend this skill.
 - **/teaching-mode** - I do not yet recommend this skill.
 - **File format support**: There are skills copied from Anthropic so that the AI can manipulate .docx, .pptx, and .pdf files. When I tried these I found that .docx and .pptx worked smoothly although I didn't love the .pptx it produced; when I tried .pdf to fill a form it was pretty poor.
@@ -107,9 +108,9 @@ Running `setup.sh` configures Claude Code with a mix of user-owned and repo-owne
 | `~/.claude/skills/` | Symlink → repo | Shared skills |
 | `~/.claude/hooks/` | Symlink → repo | Notification hooks |
 
-### User-Specific Instructions
+### User-Specific Configuration
 
-Your `~/.claude/CLAUDE.md` is user-owned (not a symlink). It contains an `@import` line that pulls in the shared configuration from this repo. You can add personal instructions before or after the import line:
+This repository is not supposed to interfere with your user-level configuration. First, your `~/.claude/CLAUDE.md` is user-owned (not a symlink). It contains an `@import` line that pulls in the shared configuration from this repo. You can add personal instructions before or after the import line:
 
 ```markdown
 # My Personal Instructions
@@ -120,9 +121,9 @@ Your `~/.claude/CLAUDE.md` is user-owned (not a symlink). It contains an `@impor
 @/path/to/claude-config/global/CLAUDE.md
 ```
 
-### User-Specific Settings
+Second, your `~/.claude/settings.local.json` is user-owned and takes precedence over the symlinked `settings.json`. Use it for personal preferences and machine-specific settings (like the O2 permissions added by `setup.sh`).
 
-Your `~/.claude/settings.local.json` is user-owned and takes precedence over the symlinked `settings.json`. Use it for personal preferences and machine-specific settings (like the O2 permissions added by `setup.sh`).
+Third, you can add user-specific skills to `~/.claude/skills/` alongside the symlinked skills from this repository (previously, the skills repo was a symlink; now, skills are symlinked individually).
 
 ### Project-Specific Configuration
 
