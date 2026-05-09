@@ -1,6 +1,10 @@
 # macOS
 .DS_Store
 
+# Python generated files
+__pycache__/
+*.py[cod]
+
 # User-specific settings (created by setup.sh, contains user paths)
 # Note: CLAUDE.md customization is now done in user's own ~/.claude/CLAUDE.md
 # which imports this repo via @import syntax
@@ -26,3 +30,6 @@ remote-bridge/target/
 
 # Test results (generated per run)
 tests/results/
+
+# Test virtual environment
+tests/.venv/
