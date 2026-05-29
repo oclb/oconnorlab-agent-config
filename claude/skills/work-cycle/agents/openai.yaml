@@ -1,0 +1,7 @@
+interface:
+  display_name: "Work Cycle"
+  short_description: "Planning-centric workflow for substantial work."
+  default_prompt: "Use /work-cycle for this substantial task: <task>."
+
+policy:
+  allow_implicit_invocation: false
