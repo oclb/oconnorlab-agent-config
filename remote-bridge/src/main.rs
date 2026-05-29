@@ -18,7 +18,7 @@ mod testing;
 
 #[derive(Parser)]
 #[command(name = "remote-bridge")]
-#[command(about = "Secure bridge for Claude Code to access remote hosts via SSH")]
+#[command(about = "Secure bridge for AI agents to access remote hosts via SSH")]
 #[command(version)]
 struct Cli {
     #[command(subcommand)]
@@ -110,7 +110,9 @@ fn expand_tilde(path: &Path) -> PathBuf {
 fn socket_path(name: &str) -> PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".claude")
+        .join(".config")
+        .join("remote-bridge")
+        .join("sockets")
         .join(format!("remote-bridge-{}.sock", name))
 }
 
@@ -133,6 +135,9 @@ async fn main() -> Result<()> {
 
             let config_path = expand_tilde(&config);
             let rpc_socket = socket_path(&name);
+            if let Some(parent) = rpc_socket.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
 
             // Check if already running
             if rpc_socket.exists() {

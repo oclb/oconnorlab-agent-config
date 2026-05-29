@@ -408,4 +408,3 @@ impl SshConnection {
         &self.host
     }
 }
-

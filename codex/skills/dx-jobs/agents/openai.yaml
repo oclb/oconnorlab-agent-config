@@ -1,0 +1,7 @@
+interface:
+  display_name: "DNAnexus Jobs"
+  short_description: "Monitor and repair DNAnexus job batches."
+  default_prompt: "Use $dx-jobs to check this DNAnexus job batch: <job-name-or-pattern>."
+
+policy:
+  allow_implicit_invocation: true

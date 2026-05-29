@@ -1,0 +1,7 @@
+interface:
+  display_name: "Defer"
+  short_description: "Capture deferred work as notebook-backed TODOs."
+  default_prompt: "Use $defer to save this work for later: <deferred-task>."
+
+policy:
+  allow_implicit_invocation: false

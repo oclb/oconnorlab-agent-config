@@ -1,0 +1,7 @@
+interface:
+  display_name: "GraphLD on O2"
+  short_description: "Install and run GraphLD graphREML on O2."
+  default_prompt: "Use $run-graphld-o2 to set up GraphLD graphREML on O2: <project-context>."
+
+policy:
+  allow_implicit_invocation: true

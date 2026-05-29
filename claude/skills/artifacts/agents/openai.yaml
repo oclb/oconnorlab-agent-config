@@ -1,0 +1,7 @@
+interface:
+  display_name: "Artifacts"
+  short_description: "Route DOCX, PDF, PPTX, diagram, and figure work."
+  default_prompt: "Use /artifacts to create, edit, inspect, or polish this artifact: <artifact-task>."
+
+policy:
+  allow_implicit_invocation: true

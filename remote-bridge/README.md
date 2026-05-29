@@ -1,10 +1,10 @@
 # Remote Bridge
 
-A secure Rust application for Claude Code to access remote hosts via SSH with minimal authentication overhead.
+A secure Rust application for AI agents to access remote hosts via SSH with minimal authentication overhead.
 
 ## Problem
 
-When accessing O2 (or similar clusters) from Claude Code, each SSH command triggers a Duo push. This makes interactive work painful.
+When accessing O2 (or similar clusters) from AI agents, each SSH command triggers a Duo push. This makes interactive work painful.
 
 ## Solution
 
@@ -18,7 +18,7 @@ Remote Bridge establishes a **single persistent SSH session** with proper termin
 
 ```
 ┌─────────────┐     JSON-RPC      ┌───────────────┐     PTY/SSH     ┌─────────┐
-│ Claude Code │ ◄───────────────► │ remote-bridge │ ◄─────────────► │  O2     │
+│ AI agents │ ◄───────────────► │ remote-bridge │ ◄─────────────► │  O2     │
 └─────────────┘   Unix Socket     └───────────────┘  Persistent     └─────────┘
                                         │             Session
                                         ▼
@@ -61,7 +61,7 @@ Supported platforms:
 Once the repo is public, you can use the install script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oclb/claude/main/remote-bridge/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oclb/lab-agent-config/main/remote-bridge/install.sh | bash
 ```
 
 ### Option 3: Build from Source
@@ -100,17 +100,17 @@ This will:
 
 ### 4. Send Commands
 
-From another terminal (or Claude Code):
+From another terminal (or AI agents):
 
 ```bash
 # Connection status
-echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' | nc -U ~/.claude/remote-bridge-o2.sock
+echo '{"jsonrpc":"2.0","method":"connection_status","id":1}' | nc -U ~/.config/remote-bridge/sockets/remote-bridge-o2.sock
 
 # List directory
-echo '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":[]},"id":2}' | nc -U ~/.claude/remote-bridge-o2.sock
+echo '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":[]},"id":2}' | nc -U ~/.config/remote-bridge/sockets/remote-bridge-o2.sock
 
 # Read file
-echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../file.txt"},"id":3}' | nc -U ~/.claude/remote-bridge-o2.sock
+echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../file.txt"},"id":3}' | nc -U ~/.config/remote-bridge/sockets/remote-bridge-o2.sock
 ```
 
 ### 5. Stop Bridge
@@ -456,15 +456,15 @@ The bridge enforces path-based permissions via `~/.config/remote-bridge/permissi
 
 ```toml
 [paths]
-# Directories Claude can read from
+# Directories the agent can read from
 read = [
     "/n/data1/hms/dbmi/oconnor/lab/luke/",
     "/n/scratch/users/l/ljo8/",
 ]
 
-# Directories Claude can write to (must be under read paths)
+# Directories the agent can write to (must be under read paths)
 write = [
-    "/n/data1/hms/dbmi/oconnor/lab/luke/claude-projects/",
+    "/n/data1/hms/dbmi/oconnor/lab/luke/agent-projects/",
 ]
 
 [resources]
@@ -492,7 +492,7 @@ remote-bridge update-checksum
 
 ## Security Model
 
-1. **No shell access**: Claude cannot run arbitrary commands - only predefined operations
+1. **No shell access**: the agent cannot run arbitrary commands - only predefined operations
 2. **Path enforcement**: All file operations validated against allowed paths
 3. **Type-safe commands**: Flags are enums, not arbitrary strings
 4. **Config protection**: Checksum prevents unauthorized permission changes
@@ -530,7 +530,7 @@ echo '__START_uuid__'; command 2>&1; echo '__END_uuid__'$?
 ```bash
 remote-bridge stop o2
 # or
-rm ~/.claude/remote-bridge-o2.sock
+rm ~/.config/remote-bridge/sockets/remote-bridge-o2.sock
 ```
 
 ### No Duo during connect

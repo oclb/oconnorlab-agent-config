@@ -2,7 +2,7 @@
 name = "remote-bridge"
 version = "0.1.0"
 edition = "2021"
-description = "Secure bridge for Claude Code to access remote hosts via SSH"
+description = "Secure bridge for AI agents to access remote hosts via SSH"
 license = "MIT"
 
 [dependencies]

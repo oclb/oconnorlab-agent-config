@@ -1,0 +1,187 @@
+# Set Me Up Onboarding Script
+
+Follow this script when onboarding the user. 
+
+## Overall Guidance
+
+- User-facing text can be modified if circumstances or user input deviates from the happy path; otherwise, it should be quoted exactly.
+- Answer any user questions by consulting README.md and other documents, particularly the skill files themselves; then, resume the script. 
+- Interpret answers like "yea" or "y" as "yes", "nty" for "no", etc. Don't say "I am interpreting 'yea' as 'yes'" or similar.
+- Avoid adding noise to the conversation or thinking out loud. Don't preface like "I am going to read this script" or add filler between steps like "$systematize is selected. Next is..."
+
+## 1. Welcome Before Installing
+
+Say:
+
+```text
+This repository configures Codex for scientific software development and other scientific research tasks. It has three major features:
+1. Support for the O2 Cluster bridge so Codex can interact with O2 and submit jobs within a sandbox.
+2. A project notebook, so Codex can keep durable project memory, record substantive work, and reduce irreproducibility.
+3. Specialized skills that Codex can retrieve for software and scientific work.
+
+For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
+
+Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
+
+How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine. 
+
+First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](global/AGENTS.md) file; it will be combined with your existing `~/.codex/AGENTS.md` instruction file if you have one. I will also install the $notebook-entry skill globally.
+```
+
+## 2. Base Setup
+
+If user agrees, run:
+
+```bash
+bin/config-agent-tool install --global
+```
+
+Next, say:
+
+```text
+Next I will show you the skills this repo provides. These skills can be installed globally now, or installed locally within specific projects when you set up those projects individually.
+
+Important: several of the workflow skills in this repo are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly by mentioning them, for example `$init-project` or `$software`.
+```
+
+Then run:
+
+```bash
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --global
+```
+
+## 3. Skill Walkthrough
+
+Ask each choice separately. Do not link any skill until all choices are collected.
+
+### Project Bootstrap
+
+Say:
+
+```text
+1. $init-project
+
+This is the normal next step after global setup. It initializes an individual project for Codex by creating project instructions, initializing the notebook, and optionally adding project-scope skills including for O2 bridge setup.
+
+This is a manual-invocation skill. Installing it does not make Codex run it automatically; you must trigger it explicitly with `$init-project`.
+
+Recommendation: install globally, because users need it in other repositories to start project setup.
+
+Install $init-project globally?
+```
+
+### Software Workflow
+
+Say:
+
+```text
+2. $software
+
+This is the planning-centric software workflow. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic. It includes three subskills which you can trigger by mentioning their keywords:
+- `$worktree`, prescribing a specific git workflow: implement changes on a worktree, make a PR, run external review
+- `$afk`, prescribing less user dialogue and more autonomy
+- `$methods-first`, prescribing the use of a Methods document as a software specification
+
+This is a manual-invocation skill. Installing it does not make Codex use it automatically; you must trigger it explicitly with `$software`.
+
+Recommendation: install globally if you want this repo's software-development workflow across projects. Skip it if you already have a different coding workflow you prefer.
+
+Install $software globally?
+```
+
+### Workflow Customization
+
+Say:
+
+```text
+3. $systematize
+
+This is the workflow-customization skill. It helps Codex modify its own instructions or diagnose problems with this configuration. It includes four subskills which you can trigger by mentioning their keywords:
+- `$skill-creator`, to create or update a Codex skill
+- `$agents-md`, to customize AGENTS.md at user or project scope
+- `$postmortem`, for when the agent did not behave as desired
+- `$support`, for technical support related to this repository
+
+Recommendation: install globally if you want Codex to help maintain and improve this configuration over time.
+
+Install $systematize globally?
+```
+
+### Scientific Artifacts
+
+Say:
+
+```text
+4. $artifacts
+
+This is a subskill router, with six subskills which you can trigger by keyword:
+- `$docx`, for Word documents
+- `$pptx`, for PowerPoint presentations
+- `$pdf`, for PDF files
+- `$tikz-flowchart`, for LaTeX/TikZ flowcharts
+- `$nature-figure-style`, for polished figures
+- `$finalize-manuscript`, for a long list of pre-submission manuscript checks
+
+Recommendation: install globally if you use Codex for papers, figures, slides, or other public-facing scientific artifacts.
+
+Install $artifacts globally?
+```
+
+### Notebook Auxiliaries
+
+If the user indicated that they want to use the notebook system, say:
+
+```text
+5. Notebook auxiliary skills: $documentation, $defer, $remind-resume
+
+These skills work together. $documentation updates developer-facing and agent-facing docs. $defer captures later work as notebook-backed TODOs. $remind-resume summarizes recent project state when you return after a break.
+
+All three are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly with `$documentation`, `$defer`, or `$remind-resume`.
+
+Recommendation: install these globally, since you indicated that you wish to use the lab notebook system.
+
+Install the notebook system auxiliary skills globally?
+```
+
+If the user wants only some notebook skills, accept that and record exactly which ones. Do not include $notebook-entry in this list; you should always install this if the user indicates that they want the notebook system.
+
+### Project-Scope Skills
+
+Say:
+
+```text
+These remaining skills are intended for project-local installation, not global installation:
+1. $use-o2: operate the O2 bridge after first-time setup.
+2. $dx-jobs: check, monitor, diagnose, and resubmit DNAnexus jobs.
+3. $run-graphld-o2: install and run GraphLD graphREML on O2.
+
+You can install these later inside a project with $init-project or with config-agent-tool link-skills --add <skill>. I will not install them globally unless you explicitly ask me to override the recommendation.
+```
+
+## 4. Confirm And Link
+
+Run:
+
+```bash
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool link-skills --global --add <chosen-skill-names>
+```
+
+Skip the command if no skills were chosen.
+
+## 5. Verify And Close
+
+Verify:
+
+```bash
+ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool
+ls -l ~/.codex/skills/<chosen-skill>
+command -v remote-bridge || true
+```
+
+If `remote-bridge` is missing, look for a nearby `claude-config` checkout. Tell the user O2 bridge setup requires that sibling repo if neither is available.
+
+Finish with (assuming $init-project was installed):
+
+```text
+Setup is complete. If you wish to modify your choices or uninstall symlinks, run `codex` inside of this directory. To set up a specific project, navigate to that project, run `codex`, and run `$init-project`.
+```

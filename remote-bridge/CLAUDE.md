@@ -1,11 +1,11 @@
 # Remote Bridge
 
-Secure bridge for Claude Code to access remote hosts (O2 cluster) via SSH. Provides a JSON-RPC interface over Unix sockets with permission-based access control.
+Secure bridge for AI agents to access remote hosts (O2 cluster) via SSH. Provides a JSON-RPC interface over Unix sockets with permission-based access control.
 
 ## Architecture
 
 ```
-Claude Code  <-->  Unix Socket  <-->  remote-bridge  <-->  SSH  <-->  O2 Cluster
+AI agents  <-->  Unix Socket  <-->  remote-bridge  <-->  SSH  <-->  O2 Cluster
                    (JSON-RPC)         (Rust binary)        (PTY)
 ```
 
@@ -22,8 +22,8 @@ Claude Code  <-->  Unix Socket  <-->  remote-bridge  <-->  SSH  <-->  O2 Cluster
 ### Permission Model
 
 All operations are validated against `permissions.toml`:
-- **Read paths**: Directories Claude can read from
-- **Write paths**: Directories Claude can write to
+- **Read paths**: Directories the agent can read from
+- **Write paths**: Directories the agent can write to
 - **Resource limits**: Max CPUs, memory, time, GPUs, array size
 - **Singularity config**: Container sandboxing for job submission
 

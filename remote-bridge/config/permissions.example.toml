@@ -1,14 +1,14 @@
 # O2 Bridge Permission Configuration
 #
 # This file controls what the O2 bridge can access on your behalf.
-# Copy this file to ~/.config/o2-bridge/permissions.toml and customize.
+# Copy this file to ~/.config/remote-bridge/permissions.toml and customize.
 #
-# IMPORTANT: After editing, run `o2-bridge update-checksum` to update
+# IMPORTANT: After editing, run `remote-bridge update-checksum` to update
 # the integrity checksum. The bridge will refuse to start if the config
 # has been modified without updating the checksum.
 
 [paths]
-# Directories Claude can read from (via ls, cat, grep)
+# Directories the agent can read from (via ls, cat, grep)
 # Use absolute paths. ~ is not supported here.
 read = [
     "/n/data1/hms/dbmi/oconnor/lab/luke/",
@@ -16,15 +16,15 @@ read = [
     "/n/app/",
 ]
 
-# Directories Claude can write to (must be subsets of read paths)
+# Directories the agent can write to (must be subsets of read paths)
 # Used for job output, temporary files, etc.
 write = [
-    "/n/data1/hms/dbmi/oconnor/lab/luke/claude-projects/",
-    "/n/scratch/users/l/ljo8/claude-tmp/",
+    "/n/data1/hms/dbmi/oconnor/lab/luke/agent-projects/",
+    "/n/scratch/users/l/ljo8/agent-tmp/",
 ]
 
 [resources]
-# Maximum resources Claude can request for SLURM jobs
+# Maximum resources the agent can request for SLURM jobs
 max_cpus = 32
 max_memory_gb = 128
 max_time_hours = 120    # 5 days
@@ -71,7 +71,7 @@ allowed = [
 default_image = "/n/app/containers/users/ljo8/python-science.sif"
 
 # Directory where generated sbatch scripts are written (must be in paths.write)
-scripts_dir = "/n/scratch/users/l/ljo8/claude-tmp/scripts/"
+scripts_dir = "/n/scratch/users/l/ljo8/agent-tmp/scripts/"
 
 # Directory for job stdout/stderr logs (optional)
 # Defaults to {scripts_dir parent}/.agent/logs/ if not set

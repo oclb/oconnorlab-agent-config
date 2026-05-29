@@ -20,9 +20,9 @@ pub struct PermissionConfig {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PathPermissions {
-    /// Directories Claude can read from
+    /// Directories the agent can read from
     pub read: Vec<PathBuf>,
-    /// Directories Claude can write to
+    /// Directories the agent can write to
     pub write: Vec<PathBuf>,
 }
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Notebook Entry"
+  short_description: "Create durable project notebook entries"
+  default_prompt: "Use $notebook-entry to create or update the project notebook entry for this work."

@@ -1,0 +1,67 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch",
+      "Bash(git diff *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git -C *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(git show *)",
+      "Bash(git rev-parse *)",
+      "Bash(git config *)",
+      "Bash(which *)",
+      "Bash(gh auth status *)",
+      "Bash(gh auth switch *)",
+      "Bash(gh repo list *)",
+      "Read(~/.claude/skills/**)",
+      "Bash(source *)",
+      "Bash(echo *)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/update-config.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/memory-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Awaiting your input'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "remoteControlAtStartup": false,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
+}

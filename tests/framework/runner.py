@@ -5,7 +5,7 @@ Main test runner for Claude Code configuration testing.
 Usage:
     python runner.py                          # Run all tests
     python runner.py --pattern "cases/skills/*.yaml"  # Run skill tests only
-    python runner.py --filter "perform-analysis"       # Run matching tests
+    python runner.py --filter "memory"                 # Run matching tests
     python runner.py --verbose                         # Detailed output
 """
 

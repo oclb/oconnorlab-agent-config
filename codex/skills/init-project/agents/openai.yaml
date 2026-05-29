@@ -1,0 +1,7 @@
+interface:
+  display_name: "Init Project"
+  short_description: "Initialize a project workspace for Codex."
+  default_prompt: "Use $init-project to set up this project for Codex: <project-context>."
+
+policy:
+  allow_implicit_invocation: false

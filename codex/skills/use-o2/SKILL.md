@@ -1,0 +1,504 @@
+---
+name: use-o2
+description: Use after O2 has been set up to operate the remote bridge, submit and monitor SLURM jobs, choose resources, and troubleshoot O2 runs.
+recommended_scope: project
+version: 2.1.0
+---
+
+# O2 Cluster Reference
+
+## Role
+
+SLURM and remote-bridge reference for operating O2 after setup.
+
+This skill provides reference material about the O2 cluster, SLURM, and `remote-bridge` commands.
+
+**Note:** Use `init-project`'s internal `setup-o2` subskill for first-time bridge installation, permissions, SSH keys, and first connection. Use this skill after setup for actual work on O2.
+
+## O2 Cluster
+
+**O2** is Harvard Medical School's high-performance computing cluster using **SLURM** (Simple Linux Utility for Resource Management) for job scheduling.
+
+**Key features:**
+- Shared resource among hundreds of users
+- Job scheduler ensures fair resource distribution
+- Multiple partitions for different job types
+- Both interactive and batch job submission
+
+## When to Use O2
+
+**Use O2 when:**
+- Memory needs exceed local machine (>16GB)
+- Long-running jobs (>4 hours)
+- Parallel processing across many cores
+- GPU computation required
+- Need to run many similar jobs (job arrays)
+- Data is already on O2 cluster
+
+**Use local machine when:**
+- Quick tests (<5 minutes, <8GB RAM)
+- Interactive development with rapid iteration
+- Data transfer time exceeds computation time
+
+## Partitions
+
+O2 has several partitions with different purposes and limits:
+
+| Partition | Use Case | Time Limit | Max Cores | Notes |
+|-----------|----------|------------|-----------|-------|
+| `priority` | Single urgent job | 5 days | 20 | **Use for single jobs** - dispatched first, max 2 concurrent |
+| `short` | Jobs <12 hours | 12 hours | 20 | Default for most jobs |
+| `medium` | Jobs 12h - 5 days | 5 days | 20 | Longer running jobs |
+| `long` | Jobs >5 days | 30 days | 20 | Requires RC access |
+| `interactive` | Interactive work | 12 hours | 20 | 1-2 concurrent, for debugging/testing |
+| `highmem` | Memory >200GB | Varies | Varies | Memory-intensive jobs |
+| `gpu` | GPU jobs (limited) | 100h/GPU | 2 GPUs | Subject to GPU-hour limits |
+| `gpu_quad` | GPU jobs (flexible) | 120 hours | Varies | **No GPU-hour limits** - preferred for GPU work |
+| `gpu_requeue` | Preemptable GPU | Varies | Varies | Lower priority, can be preempted |
+| `mpi` | Multi-node MPI | Varies | >20 | Distributed parallel jobs |
+
+### GPU Partitions Detail
+
+| Partition | GPU Limits | Time Limits | Best For |
+|-----------|-----------|-------------|----------|
+| `gpu` | 2 GPUs for 100h OR 20 GPUs for 10h (GPU-hours capped) | Varies by allocation | Short GPU jobs |
+| `gpu_quad` | No GPU-hour limit; 120h max with 1 GPU | Up to 120h | **Long training runs, preferred** |
+| `gpu_requeue` | No GPU-hour limit | Varies | Interruptible workloads |
+
+**gpu_quad hardware:** 140 GPUs including RTX 8000 (48GB), A40 (48GB), L40S (48GB), V100 (32GB), A100 (80GB).
+
+**Decision guide:**
+```
+Single important job? → priority (max 2 concurrent)
+Runtime <12 hours? → short
+Runtime 12h-5 days? → medium
+Runtime >5 days? → long (need access)
+Memory >200GB? → highmem
+Need GPU (long runs)? → gpu_quad (no hour limits!)
+Need GPU (short jobs)? → gpu or gpu_quad
+Need >20 cores (MPI)? → mpi
+Interactive debugging? → interactive
+```
+
+## Resource Estimation
+
+### Time (`-t` or `--time`)
+- Format: `D-HH:MM` (days-hours:minutes) or `HH:MM:SS`
+- Examples: `0-03:00` (3 hours), `2-00:00` (2 days), `0-00:30` (30 minutes)
+- **Strategy**: Request maximum time for the partition
+  - If job will likely take <12h → use `short`, request `0-12:00`
+  - If job will likely take 12h-5d → use `medium`, request `5-00:00`
+- Job killed if exceeds time limit
+- GPU jobs: estimate more carefully (GPU queue competition is higher)
+
+### Memory (`--mem` or `--mem-per-cpu`)
+- Total memory: `--mem=8G` (8 gigabytes)
+- Per CPU: `--mem-per-cpu=4G` (4GB per core)
+- Units: K, M, G, T
+- Default if not specified: 4GB total
+- **Rule of thumb**: 2-3x the size of data loaded into memory
+
+### CPUs/Cores (`-c` or `--cpus-per-task`)
+- Number of cores: `-c 4` (4 cores)
+- Default: 1 core
+- **Only request what you'll use** - check if code supports parallelism
+
+### GPUs (`--gres`)
+- Request GPU: `--gres=gpu:1`
+- Specific GPU type: `--gres=gpu:tesla:1`
+- Only on GPU partitions
+
+## SLURM Script Templates
+
+### Basic Job
+```bash
+#!/bin/bash
+#SBATCH -p short                # Partition
+#SBATCH -t 0-03:00              # Time (D-HH:MM)
+#SBATCH -c 4                    # Number of cores
+#SBATCH --mem=16G               # Total memory
+#SBATCH -o %j.out               # Output file (%j = job ID)
+#SBATCH -e %j.err               # Error file
+#SBATCH -J my_job_name          # Job name
+
+# Load required modules
+module load gcc/9.2.0
+module load python/3.9.14
+
+# Move to working directory
+cd /n/data1/hms/dbmi/username/project
+
+# Run the analysis
+python analysis.py --input data.csv --output results.txt
+```
+
+### Job Array (parallel jobs)
+```bash
+#!/bin/bash
+#SBATCH -p short
+#SBATCH -t 0-02:00
+#SBATCH -c 1
+#SBATCH --mem=4G
+#SBATCH -o logs/%A_%a.out       # %A = array job ID, %a = task ID
+#SBATCH -e logs/%A_%a.err
+#SBATCH --array=1-100           # 100 parallel jobs
+#SBATCH -J analysis_array
+
+# Get input file for this array task
+INPUT_FILE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" file_list.txt)
+
+# Run analysis on this file
+python process_one_file.py --input ${INPUT_FILE}
+```
+
+### GPU Job
+```bash
+#!/bin/bash
+#SBATCH -p gpu_quad           # Preferred - no GPU-hour limits
+#SBATCH -t 2-00:00            # Up to 5 days with 1 GPU
+#SBATCH -c 4
+#SBATCH --mem=32G
+#SBATCH --gres=gpu:1
+#SBATCH -o %j.out
+#SBATCH -e %j.err
+
+module load cuda/12.1
+python train_model.py
+```
+
+### Pipeline with Dependencies
+```bash
+# Submit first job
+JOB1=$(sbatch --parsable -p short -t 0-02:00 --mem=16G --wrap="python preprocess.py")
+
+# Submit second job that depends on first
+JOB2=$(sbatch --parsable --dependency=afterok:${JOB1} \
+              -p short -t 0-04:00 --mem=32G --wrap="python analyze.py")
+
+# Submit third job that depends on second
+JOB3=$(sbatch --parsable --dependency=afterok:${JOB2} \
+              -p short -t 0-01:00 --mem=8G --wrap="python summarize.py")
+
+echo "Submitted pipeline: $JOB1 -> $JOB2 -> $JOB3"
+```
+
+## Job Submission
+
+**Script file:**
+```bash
+sbatch my_job.sh
+```
+
+**Inline submission:**
+```bash
+sbatch -p short -t 0-1:00 --mem=8G --wrap="python analysis.py"
+```
+
+**Interactive session:**
+```bash
+srun -p interactive -t 0-04:00 -c 4 --mem=16G --pty /bin/bash
+```
+
+## Remote Bridge Operations
+
+After `setup-o2` has configured and started the bridge, use:
+
+```bash
+remote-bridge rpc o2 <method> [params_json]
+```
+
+### Connection
+
+```bash
+remote-bridge rpc o2 connection_status
+```
+
+If the bridge is not running, start it in a separate terminal:
+
+```bash
+remote-bridge start o2 --user USERNAME
+```
+
+### File Inspection
+
+```bash
+remote-bridge rpc o2 ls '{"path":"/n/data1/...","flags":["Long","Human"]}'
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","head":100}'
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","tail":50}'
+remote-bridge rpc o2 cat '{"path":"/path/to/file.txt","offset":100,"limit":100}'
+remote-bridge rpc o2 head '{"path":"/path/to/file.txt","lines":20}'
+remote-bridge rpc o2 wc '{"path":"/path/to/file.txt","lines_only":true}'
+remote-bridge rpc o2 grep '{"pattern":"def main","paths":["/path/to/search/"],"flags":["Recursive","LineNumbers"]}'
+remote-bridge rpc o2 find '{"path":"/n/data1/.../project","name":"*.py","limit":50}'
+```
+
+### Download Small Files
+
+```bash
+remote-bridge rpc o2 download '{"path":"/n/data1/.../results.txt"}'
+```
+
+The bridge is for small files. For large files, use the O2 transfer node with `scp` rather than downloading through a login node.
+
+### Git Pull On O2
+
+```bash
+remote-bridge rpc o2 git_pull '{"path":"/n/data1/.../project"}'
+```
+
+Optional params include `remote` and `branch`.
+
+### Sandboxed Job Submission
+
+Use `sandboxed_sbatch` when the bridge should submit a containerized job with validated read/write paths:
+
+```bash
+remote-bridge rpc o2 sandboxed_sbatch '{
+  "job_name": "analysis-v1",
+  "command": "python /n/scratch/.../analyze.py --input /n/data1/.../data/",
+  "input_paths": ["/n/data1/.../data/"],
+  "output_paths": ["/n/scratch/.../results/"],
+  "cpus": 4,
+  "memory": {"amount": 32, "unit": "gb"},
+  "time": {"hours": 4},
+  "partition": "short"
+}'
+```
+
+Common parameters:
+
+- `job_name`: name for the job.
+- `command`: command to run inside the container.
+- `input_paths`: directories mounted read-only.
+- `output_paths`: directories mounted read-write.
+- `working_dir`: working directory inside the container.
+- `cpus`, `memory`, `time`, `partition`, `gpu`, `array`: resource requests.
+- `image`: optional `.sif` image path if not using the configured default.
+- `environment`, `extra_directives`, `return_script`: optional execution controls.
+
+### Bridge Job Monitoring
+
+```bash
+remote-bridge rpc o2 squeue '{"user":"USERNAME"}'
+remote-bridge rpc o2 squeue '{"job_ids":["12345678"]}'
+remote-bridge rpc o2 sacct '{"job_ids":["12345678"],"start_time":"now-1day"}'
+remote-bridge rpc o2 job_wait '{"job_id":"12345678"}'
+remote-bridge rpc o2 scancel '{"job_ids":["12345678"]}'
+```
+
+Use `job_wait` for long-running commands when Codex should be notified after the remote job completes.
+
+## Job Monitoring
+
+### Check Status
+```bash
+# Your jobs
+squeue -u $USER -o "%.18i %.9P %.30j %.8T %.10M %.6D %R"
+
+# Check output
+tail -20 <jobid>.out
+
+# Recent completions
+sacct -u $USER --starttime=now-1hour --format=JobID,JobName,State,ExitCode,Elapsed
+```
+
+### Job States
+- `PD`: Pending (waiting for resources)
+- `R`: Running
+- `CG`: Completing
+- `CD`: Completed
+- `F`: Failed
+- `CA`: Cancelled
+
+### Job Efficiency (after completion)
+```bash
+seff 12345678
+```
+
+Shows CPU and memory efficiency. Target:
+- CPU efficiency >80%: Using cores effectively
+- Memory efficiency 60-90%: Good estimate
+
+### Job Management
+```bash
+scancel 12345678         # Cancel specific job
+scancel -u $USER         # Cancel all your jobs
+scontrol hold 12345678   # Hold job
+scontrol release 12345678 # Release held job
+tail -f 12345678.out     # Follow output
+```
+
+## Common Issues
+
+### Job Pending
+- Cluster busy → wait or try different partition
+- Request too large → reduce memory/cores
+- Time too long for partition → use medium/long
+
+### Job Fails Immediately
+- Module not loaded → add `module load`
+- File not found → use absolute paths
+- Permission denied → check file permissions
+- Out of memory → increase `--mem`
+
+### Job Killed
+**Time limit:**
+```
+CANCELLED AT ... DUE TO TIME LIMIT
+```
+→ Increase time or optimize code
+
+**Memory:**
+```
+Detected 1 oom-kill event(s)
+```
+→ Increase `--mem` or process in chunks
+
+### Low CPU Efficiency
+- Code not parallelized → use parallel libraries or reduce cores
+- I/O bottleneck → copy data to /tmp first
+
+## Best Practices
+
+1. **Start conservative**: First job with generous resources
+2. **Check efficiency**: Use `seff` after completion
+3. **Document**: Record actual resource usage for future reference
+4. **Use job arrays**: For multiple similar jobs
+5. **Script everything**: Don't rely on command history
+6. **Use descriptive names**: `-J gwas_chr1` not `-J job1`
+
+## Quick Reference
+
+### Essential Commands
+| Command | Purpose |
+|---------|---------|
+| `sbatch script.sh` | Submit batch job |
+| `srun -p interactive --pty /bin/bash` | Interactive session |
+| `squeue -u $USER` | Check your jobs |
+| `scancel 12345678` | Cancel job |
+| `seff 12345678` | Job efficiency |
+
+### Essential SBATCH Directives
+| Directive | Purpose | Example |
+|-----------|---------|---------|
+| `-p` | Partition | `-p short` |
+| `-t` | Time limit | `-t 0-04:00` |
+| `-c` | CPU cores | `-c 8` |
+| `--mem` | Total memory | `--mem=32G` |
+| `-o` | Output file | `-o %j.out` |
+| `-e` | Error file | `-e %j.err` |
+| `-J` | Job name | `-J analysis` |
+| `--array` | Job array | `--array=1-100` |
+| `--gres` | GPU | `--gres=gpu:1` |
+
+## Git-Based Workflow for Remote Submission
+
+When working remotely via the bridge, use this workflow to create and submit SLURM jobs:
+
+### Setup (One-Time)
+
+1. User clones the project repo on O2:
+   ```bash
+   ssh o2
+   cd /n/data1/hms/dbmi/.../lab/username/
+   git clone <repo-url> project-name
+   ```
+
+2. Record the O2 path in the project's context file (`AGENTS.md`):
+   ```markdown
+   ## O2 Paths
+   - O2 repo: /n/data1/hms/dbmi/.../lab/username/project-name
+   ```
+
+### Workflow
+
+1. **Create sbatch script locally** in the project directory
+2. **Commit and push** to git
+3. **Pull on O2** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"git_pull","params":{"path":"/n/data1/.../project-name"},"id":1}
+   ```
+4. **Submit job** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"sbatch","params":{"script_path":"/n/data1/.../project-name/jobs/my_job.sh"},"id":2}
+   ```
+5. **Monitor** via bridge:
+   ```json
+   {"jsonrpc":"2.0","method":"squeue","params":{"user":"username"},"id":3}
+   ```
+
+### Bridge Commands for SLURM
+
+| Method | Purpose | Example params |
+|--------|---------|----------------|
+| `git_pull` | Pull latest changes | `{"path":"/n/data1/.../repo"}` |
+| `sbatch` | Submit job | `{"script_path":"/path/to/job.sh"}` |
+| `squeue` | Check queue | `{"user":"ljo8"}` or `{"job_ids":["123"]}` |
+| `sacct` | Job accounting | `{"job_ids":["123"],"start_time":"now-1day"}` |
+
+## Singularity Containers
+
+When using `sandboxed_sbatch`, jobs run inside Singularity containers for isolation. Available containers:
+
+### Data Science Container (Recommended)
+
+**Image:** `/n/app/containers/shared/lindsley/nf-core/scdownstream/dev.bak/community.wave.seqera.io-library-scanpy-1.10.4--c2d474f46255931c.img`
+
+Python with scientific stack pre-installed:
+- **Core**: `numpy` 1.26, `scipy` 1.13, `pandas` 2.2
+- **ML**: `scikit-learn` 1.5, `statsmodels` 0.14, `umap-learn` 0.5
+- **Viz**: `matplotlib` 3.8, `seaborn` 0.13
+- **Performance**: `numba` 0.59, `h5py` 3.11
+- **Single-cell**: `scanpy` 1.10, `anndata` 0.10
+
+**Missing**: polars, anthropic, openai (pip install ~90s total)
+
+### API Container
+
+**Image:** `/n/app/containers/shared/RC/rhel9_o2_2025.sif`
+
+Python 3.9.21 for API/HTTP work:
+- **AI/ML APIs**: `anthropic`, `openai`
+- **Data**: `pydantic`, `PyYAML`, `python-dateutil`
+- **HTTP**: `requests`, `httpx`, `httpcore`
+- **CLI**: `click`, `rich`, `tqdm`, `prompt_toolkit`
+
+**Missing**: numpy, scipy, pandas (pip install ~90s total)
+
+### Installing Missing Packages
+
+For packages not pre-installed, use `pip install --target=<writable-path>` and set `PYTHONPATH`:
+
+```bash
+pip install --target=/n/scratch/users/$USER/pip-pkgs numpy scipy pandas polars
+export PYTHONPATH=/n/scratch/users/$USER/pip-pkgs:$PYTHONPATH
+```
+
+Benchmark: Installing numpy+scipy+pandas+polars takes ~90 seconds.
+
+### R Container
+
+**Image:** `/n/app/containers/shared/lindsley/nf-core/rnasplice/dev/depot.galaxyproject.org-singularity-bioconductor-isoformswitchanalyzer-2.2.0--r43ha9d7317_0.img`
+
+R 4.3.2 with Bioconductor packages. Use for R-based analyses.
+
+### Using Docker Images
+
+Docker images (`docker://...`) require conversion to SIF format on first use, which can take 10+ minutes for large images (e.g., tidyverse). The converted image is cached in `SINGULARITY_CACHEDIR`.
+
+**Note:** O2's apptainer security may block converted images. If you see "apptainer image is not in an allowed configured path", use a pre-built .sif container instead.
+
+### Container Selection
+
+```
+Data science (numpy/scipy/pandas/sklearn)?  → scanpy container (recommended)
+API work (anthropic/openai/requests)?       → rhel9_o2_2025.sif
+R/Bioconductor?                             → bioconductor-*.img containers
+Custom needs?                               → pip install (~90s) or build .sif
+```
+
+## Resources
+
+- [O2 Wiki](https://harvardmed.atlassian.net/wiki/spaces/O2/overview)
+- [SLURM Command Reference](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1594261585/O2+Command+CheatSheet)
+- [Partition Selection Guide](https://harvardmed.atlassian.net/wiki/spaces/O2/pages/1586793641)
