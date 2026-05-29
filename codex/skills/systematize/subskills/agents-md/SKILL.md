@@ -28,15 +28,15 @@ Do not use `AGENTS.md` as technical documentation; either the documentation beco
 Global Codex instructions come from two source files:
 
 - `~/.codex/user/AGENTS.md`: user-editable personal instructions.
-- `<config-repo>/global/AGENTS.md`: shared instructions from this config repo.
+- `<config-repo>/codex/global/AGENTS.md`: shared instructions from this config repo.
 
 These are rendered into `~/.codex/AGENTS.override.md`, which is the active generated file and should not be edited directly:
 
 ```bash
-${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool render-override
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool render-override --agent codex
 ```
 
-During first-run setup, `${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool install --global` invokes the renderer with `--first-run`, which refuses to overwrite an existing unmanaged `AGENTS.override.md`.
+During first-run setup, `${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool install --agent codex` invokes the renderer with `--first-run`, which refuses to overwrite an existing unmanaged `AGENTS.override.md`.
 
 Changes to the user's `~/.codex/user/AGENTS.md` are picked up by Codex only after rerunning the generation command and starting a new session.
 

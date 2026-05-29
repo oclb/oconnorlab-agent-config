@@ -5,7 +5,7 @@ description: Use when the user asks about their Codex configuration, or encounte
 
 # Support
 
-This skill is provided by the codex-config repo, which adds a global AGENTS.override.md file to the user profile, provides `config-agent-tool`, symlinks selected skills, and includes guidance for agents to access the O2 compute cluster.
+This skill is provided by the lab-agent-config repo, which adds a global AGENTS.override.md file to the user profile, provides `config-agent-tool`, symlinks selected skills, and includes guidance for agents to access the O2 compute cluster.
 
 Diagnose whether the issue or question is related to this repo or to Codex itself. For Codex support specifically, use the Codex-provided `openai-docs` skill.
 
@@ -16,13 +16,13 @@ CONFIG_AGENT_TOOL="${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool"
 CONFIG_REPO="$("$CONFIG_AGENT_TOOL" repo-dir)"
 ```
 
-If the user is encountering an issue, start by checking if their installation is current; if not, run `$CONFIG_AGENT_TOOL update` and determine if this fixes the issue.
+If the user is encountering an issue, start by checking if their Codex installation is current; if not, run `$CONFIG_AGENT_TOOL update --agent codex` and determine if this fixes the issue.
 
 Then, the following are logical starting points for your investigation:
 
 - `$CONFIG_REPO/README.md`
 - `$CONFIG_REPO/AGENTS.md`
-- `$CONFIG_REPO/.agents/skills/set-me-up/SKILL.md`
+- `$CONFIG_REPO/codex/.agents/skills/set-me-up/SKILL.md`
 - `$CONFIG_REPO/bin/config-agent-tool`
 
 ## User feedback
