@@ -335,6 +335,7 @@ def ensure_claude_import() -> None:
     cdir.mkdir(parents=True, exist_ok=True)
     claude_md = cdir / "CLAUDE.md"
     import_line = f"@{agent_config('claude').global_prompt}"
+    stale_import_lines = {f"@{repo_dir() / 'global' / 'CLAUDE.md'}"}
     if claude_md.is_symlink():
         print(f"Backing up symlinked CLAUDE.md to {claude_md}.backup")
         backup = claude_md.with_name("CLAUDE.md.backup")
@@ -345,7 +346,37 @@ def ensure_claude_import() -> None:
         claude_md.rename(backup)
     if claude_md.exists():
         text = claude_md.read_text(encoding="utf-8", errors="replace")
-        if import_line in text:
+        lines = text.splitlines()
+        repaired_lines = []
+        changed = False
+        import_seen = False
+        stale_replaced = False
+        for line in lines:
+            stripped = line.strip()
+            if stripped in stale_import_lines:
+                changed = True
+                if not import_seen:
+                    repaired_lines.append(import_line)
+                    import_seen = True
+                    stale_replaced = True
+                continue
+            if stripped == import_line:
+                if import_seen:
+                    changed = True
+                    continue
+                repaired_lines.append(import_line)
+                import_seen = True
+                changed = changed or line != import_line
+                continue
+            repaired_lines.append(line)
+        if import_seen:
+            if changed:
+                claude_md.write_text("\n".join(repaired_lines) + "\n", encoding="utf-8")
+                if stale_replaced:
+                    print(f"Repaired stale Claude import in {claude_md}")
+                else:
+                    print(f"Normalized Claude import in {claude_md}")
+                return
             print("Claude import already present.")
             return
         with claude_md.open("a", encoding="utf-8") as handle:
@@ -362,14 +393,26 @@ def ensure_claude_import() -> None:
         print(f"Created {claude_md}")
 
 
-def install_claude() -> int:
+def repair_claude_managed_surface() -> None:
     cdir = claude_dir()
     for path in [cdir, cdir / "skills"]:
         path.mkdir(parents=True, exist_ok=True)
     ensure_claude_import()
-    ensure_symlink(agent_config("claude").root / "global" / "settings.json", cdir / "settings.json", "Claude settings")
+    ensure_symlink(
+        agent_config("claude").root / "global" / "settings.json",
+        cdir / "settings.json",
+        "Claude settings",
+    )
     ensure_symlink(agent_config("claude").root / "hooks", cdir / "hooks", "Claude hooks")
-    ensure_symlink(repo_dir() / "bin" / "config-agent-tool", cdir / "bin" / "config-agent-tool", "config-agent-tool")
+    ensure_symlink(
+        repo_dir() / "bin" / "config-agent-tool",
+        cdir / "bin" / "config-agent-tool",
+        "config-agent-tool",
+    )
+
+
+def install_claude() -> int:
+    repair_claude_managed_surface()
     print("Install complete. No skills were installed automatically.")
     return 0
 
@@ -398,6 +441,8 @@ def command_update(args: argparse.Namespace) -> int:
     subprocess.run(["git", "-C", str(repo_dir()), "pull", "--ff-only"], check=True)
     if config.name == "codex":
         command_render_override(argparse.Namespace(agent="codex", first_run=False))
+    if config.name == "claude":
+        repair_claude_managed_surface()
     global_count = refresh_links(config, target_skills_dir(config, True))
     print(f"Refreshed {global_count} global {config.name} skill link(s).")
     project_target = target_skills_dir(config, False)

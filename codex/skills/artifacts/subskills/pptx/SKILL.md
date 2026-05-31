@@ -10,6 +10,12 @@ license: Proprietary. LICENSE.txt has complete terms
 
 A user may ask you to create, edit, or analyze the contents of a .pptx file. A .pptx file is essentially a ZIP archive containing XML files and other resources that you can read or edit. You have different tools and workflows available for different tasks.
 
+## Global design rules
+
+- Use at least 18pt font for content text; references and citations may be 14pt.
+- Prefer simple, clean styling with no finicky decorative details.
+- Do not add giant rectangles whose only purpose is background color; use the slide background or small purposeful accents instead.
+
 ## Reading and analyzing content
 
 ### Text extraction
@@ -59,9 +65,12 @@ When creating a new PowerPoint presentation from scratch, use the **html2pptx** 
 **Requirements**:
 - ✅ State your content-informed design approach BEFORE writing code
 - ✅ Use web-safe fonts only: Arial, Helvetica, Times New Roman, Georgia, Courier New, Verdana, Tahoma, Trebuchet MS, Impact
+- ✅ Use at least 18pt font for content text; references and citations may be 14pt
 - ✅ Create clear visual hierarchy through size, weight, and color
 - ✅ Ensure readability: strong contrast, appropriately sized text, clean alignment
 - ✅ Be consistent: repeat patterns, spacing, and visual language across slides
+- ✅ Prefer simple, clean styling with no finicky decorative details
+- ✅ Do not add giant rectangles whose only purpose is background color; use the slide background or small purposeful accents instead
 
 #### Color Palette Selection
 
@@ -93,53 +102,12 @@ When creating a new PowerPoint presentation from scratch, use the **html2pptx** 
 17. **Coastal Rose**: Old rose (#AD7670), beaver (#B49886), eggshell (#F3ECDC), ash gray (#BFD5BE)
 18. **Orange & Turquoise**: Light orange (#FC993E), grayish turquoise (#667C6F), white (#FCFCFC)
 
-#### Visual Details Options
+#### Visual Style Defaults
 
-**Geometric Patterns**:
-- Diagonal section dividers instead of horizontal
-- Asymmetric column widths (30/70, 40/60, 25/75)
-- Rotated text headers at 90° or 270°
-- Circular/hexagonal frames for images
-- Triangular accent shapes in corners
-- Overlapping shapes for depth
-
-**Border & Frame Treatments**:
-- Thick single-color borders (10-20pt) on one side only
-- Double-line borders with contrasting colors
-- Corner brackets instead of full frames
-- L-shaped borders (top+left or bottom+right)
-- Underline accents beneath headers (3-5pt thick)
-
-**Typography Treatments**:
-- Extreme size contrast (72pt headlines vs 11pt body)
-- All-caps headers with wide letter spacing
-- Numbered sections in oversized display type
-- Monospace (Courier New) for data/stats/technical content
-- Condensed fonts (Arial Narrow) for dense information
-- Outlined text for emphasis
-
-**Chart & Data Styling**:
-- Monochrome charts with single accent color for key data
-- Horizontal bar charts instead of vertical
-- Dot plots instead of bar charts
-- Minimal gridlines or none at all
-- Data labels directly on elements (no legends)
-- Oversized numbers for key metrics
-
-**Layout Innovations**:
-- Full-bleed images with text overlays
-- Sidebar column (20-30% width) for navigation/context
-- Modular grid systems (3×3, 4×4 blocks)
-- Z-pattern or F-pattern content flow
-- Floating text boxes over colored shapes
-- Magazine-style multi-column layouts
-
-**Background Treatments**:
-- Solid color blocks occupying 40-60% of slide
-- Gradient fills (vertical or diagonal only)
-- Split backgrounds (two colors, diagonal or vertical)
-- Edge-to-edge color bands
-- Negative space as a design element
+Prefer restrained, presentation-native design:
+- Use simple grids, clean alignment, generous spacing, and one or two purposeful accent treatments
+- Keep charts direct: minimal gridlines, direct labels when helpful, and a single accent color for emphasis
+- Use the slide background for overall color; avoid large decorative rectangles, busy frames, rotated labels, heavy borders, overlapping shapes, and ornamental effects
 
 ### Layout Tips
 **When creating slides with charts or tables:**

@@ -25,7 +25,7 @@ Each component is take-it-or-leave-it. We will walk through a setup process toge
 
 How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine. 
 
-First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](global/AGENTS.md) file; it will be combined with your existing `~/.codex/AGENTS.md` instruction file if you have one. I will also install the $notebook-entry skill globally.
+First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. I will also install the $notebook-entry skill globally.
 ```
 
 ## 2. Base Setup
@@ -33,7 +33,7 @@ First question: do you wish to use the lab notebook system? This is recommended 
 If user agrees, run:
 
 ```bash
-bin/config-agent-tool install --global
+bin/config-agent-tool install --agent codex
 ```
 
 Next, say:
@@ -41,13 +41,13 @@ Next, say:
 ```text
 Next I will show you the skills this repo provides. These skills can be installed globally now, or installed locally within specific projects when you set up those projects individually.
 
-Important: several of the workflow skills in this repo are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly by mentioning them, for example `$init-project` or `$software`.
+Important: several of the workflow skills in this repo are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly by mentioning them, for example `$init-project` or `$work-cycle`.
 ```
 
 Then run:
 
 ```bash
-${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --global
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --agent codex --global
 ```
 
 ## 3. Skill Walkthrough
@@ -75,18 +75,18 @@ Install $init-project globally?
 Say:
 
 ```text
-2. $software
+2. $work-cycle
 
-This is the planning-centric software workflow. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic. It includes three subskills which you can trigger by mentioning their keywords:
+This is the planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic. It includes mode references which you can trigger by mentioning their keywords:
 - `$worktree`, prescribing a specific git workflow: implement changes on a worktree, make a PR, run external review
 - `$afk`, prescribing less user dialogue and more autonomy
 - `$methods-first`, prescribing the use of a Methods document as a software specification
 
-This is a manual-invocation skill. Installing it does not make Codex use it automatically; you must trigger it explicitly with `$software`.
+This is a manual-invocation skill. Installing it does not make Codex use it automatically; you must trigger it explicitly with `$work-cycle`.
 
 Recommendation: install globally if you want this repo's software-development workflow across projects. Skip it if you already have a different coding workflow you prefer.
 
-Install $software globally?
+Install $work-cycle globally?
 ```
 
 ### Workflow Customization
@@ -155,7 +155,7 @@ These remaining skills are intended for project-local installation, not global i
 2. $dx-jobs: check, monitor, diagnose, and resubmit DNAnexus jobs.
 3. $run-graphld-o2: install and run GraphLD graphREML on O2.
 
-You can install these later inside a project with $init-project or with config-agent-tool link-skills --add <skill>. I will not install them globally unless you explicitly ask me to override the recommendation.
+You can install these later inside a project with $init-project or with config-agent-tool link-skills --agent codex --add <skill>. I will not install them globally unless you explicitly ask me to override the recommendation.
 ```
 
 ## 4. Confirm And Link
@@ -163,7 +163,7 @@ You can install these later inside a project with $init-project or with config-a
 Run:
 
 ```bash
-${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool link-skills --global --add <chosen-skill-names>
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool link-skills --agent codex --global --add <chosen-skill-names>
 ```
 
 Skip the command if no skills were chosen.

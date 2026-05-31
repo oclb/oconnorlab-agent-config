@@ -5,6 +5,9 @@
 __pycache__/
 *.py[cod]
 
+# Node dependencies
+node_modules/
+
 # User-specific settings (created by setup.sh, contains user paths)
 # Note: CLAUDE.md customization is now done in user's own ~/.claude/CLAUDE.md
 # which imports this repo via @import syntax

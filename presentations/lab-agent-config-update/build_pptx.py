@@ -19,6 +19,7 @@ SLIDE_W = 13.333333
 SLIDE_H = 7.5
 SLIDE_W_EMU = int(SLIDE_W * EMU)
 SLIDE_H_EMU = int(SLIDE_H * EMU)
+MIN_FONT_SIZE = 18
 
 COLORS = {
     "paper": "F7F3EA",
@@ -60,6 +61,7 @@ def text_run(
     italic: bool = False,
     font: str = "Arial",
 ) -> str:
+    size = max(size, MIN_FONT_SIZE)
     attrs = [f'sz="{pt(size)}"', 'lang="en-US"']
     if bold:
         attrs.append('b="1"')
@@ -111,10 +113,11 @@ def shape_id(n: int) -> int:
 
 
 class Slide:
-    def __init__(self, title: str | None = None, section: str | None = None):
+    def __init__(self, title: str | None = None, section: str | None = None, hidden: bool = False):
         self.shapes: list[Shape] = []
         self.next_id = 1
         self.bg = COLORS["paper"]
+        self.hidden = hidden
         if section:
             self.section_label(section)
         if title:
@@ -180,6 +183,10 @@ class Slide:
         margin: float = 0.08,
     ) -> None:
         sid = shape_id(self.next_id)
+        effective_size = max(size, MIN_FONT_SIZE)
+        line_factor = (line_spacing or 100000) / 100000
+        min_h = len(paragraphs) * effective_size * 0.0175 * line_factor + 2 * margin
+        h = max(h, min_h)
         p_xml = "".join(para(p, size, color, bold, italic, align, font, line_spacing) for p in paragraphs)
         self.add(
             f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="Text {sid}"/>'
@@ -192,6 +199,7 @@ class Slide:
 
     def rich_text(self, x: float, y: float, w: float, h: float, paragraphs: list[list[tuple[str, dict]]], size: float = 20) -> None:
         sid = shape_id(self.next_id)
+        h = max(h, len(paragraphs) * max(size, MIN_FONT_SIZE) * 0.0175 + 0.16)
         p_xml = "".join(rich_para(p, size=size) for p in paragraphs)
         self.add(
             f'<p:sp><p:nvSpPr><p:cNvPr id="{sid}" name="Text {sid}"/>'
@@ -208,32 +216,38 @@ class Slide:
         self.line(0.62, 1.06, 12.55, 1.06, "line", 1)
 
     def section_label(self, label: str) -> None:
-        self.text(10.55, 0.28, 2.1, 0.3, [label.upper()], 8.5, "teal_dark", True, align="r")
+        self.rect(12.35, 0.34, 0.22, 0.22, "teal_dark", None, True)
 
-    def tag(self, x: float, y: float, text: str, color: str = "teal") -> None:
-        self.rect(x, y, 1.56, 0.34, color, None, True)
-        self.text(x + 0.05, y + 0.055, 1.46, 0.18, [text.upper()], 7.8, "white", True, align="c", margin=0)
+    def tag(self, x: float, y: float, text: str, color: str = "teal", width: float | None = None) -> float:
+        width = width or max(2.1, min(3.05, 0.16 * len(text) + 0.48))
+        self.rect(x, y, width, 0.52, color, None, True)
+        self.text(x + 0.06, y + 0.11, width - 0.12, 0.26, [text.upper()], 18, "white", True, align="c", margin=0)
+        return width
 
     def card(self, x: float, y: float, w: float, h: float, label: str, body: list[str], accent: str = "teal", manual: str | None = None) -> None:
         self.rect(x, y, w, h, "white", "line", True)
         self.rect(x, y, 0.12, h, accent)
-        label_size = 15 if h < 1.35 else 16.5
-        body_size = 12 if h < 1.35 else 13.5
+        label_size = 18
+        body_size = 18
         self.text(x + 0.25, y + 0.18, w - 0.45, 0.36, [label], label_size, "ink", True)
-        if manual:
-            self.tag(x + w - 1.75, y + 0.16, manual, "amber" if manual == "manual-only" else "blue")
-        self.text(x + 0.25, y + 0.66, w - 0.45, max(0.5, h - 0.78), body, body_size, "muted", line_spacing=105000)
+        if manual == "manual-only" and w >= 4.8:
+            tag_w = max(2.25, min(2.7, 0.16 * len(manual) + 0.48))
+            self.tag(x + w - tag_w - 0.25, y + 0.16, manual, "amber", tag_w)
+        elif manual == "manual-only":
+            body = ["Manual-only trigger."] + body
+        self.text(x + 0.25, y + 0.76, w - 0.45, max(0.5, h - 0.88), body, body_size, "muted", line_spacing=105000)
 
     def diagram_node(self, x: float, y: float, w: float, label: str, color: str) -> None:
-        self.rect(x, y, w, 0.78, color, None, True)
-        self.text(x + 0.08, y + 0.23, w - 0.16, 0.2, [label], 13, "white", True, align="c", margin=0)
+        self.rect(x, y, w, 0.92, color, None, True)
+        self.text(x + 0.08, y + 0.27, w - 0.16, 0.28, [label], 18, "white", True, align="c", margin=0)
 
     def xml(self) -> str:
+        show_attr = ' show="0"' if self.hidden else ""
         return (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
             'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
-            'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+            f'xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"{show_attr}>'
             '<p:cSld><p:bg><p:bgPr>'
             f'<a:solidFill><a:srgbClr val="{self.bg}"/></a:solidFill>'
             '<a:effectLst/></p:bgPr></p:bg><p:spTree>'
@@ -258,6 +272,43 @@ def title_slide() -> Slide:
     return s
 
 
+def polling_slide() -> Slide:
+    s = Slide("Quick Poll: Using / Liking", "community")
+    s.text(0.88, 1.28, 8.2, 0.42, ["n = 4; counted as people reporting they used or liked each workflow."], 18, "muted")
+
+    x, y = 0.9, 2.0
+    w_workflow, w_count, w_bar, row_h = 3.8, 1.55, 5.75, 0.86
+    table_w = w_workflow + w_count + w_bar
+    s.rect(x, y, table_w, 0.62, "teal_dark", None, False)
+    s.text(x + 0.18, y + 0.15, w_workflow - 0.25, 0.26, ["Workflow"], 18, "white", True, margin=0)
+    s.text(x + w_workflow + 0.15, y + 0.15, w_count - 0.25, 0.26, ["Count"], 18, "white", True, align="c", margin=0)
+    s.text(x + w_workflow + w_count + 0.2, y + 0.15, w_bar - 0.3, 0.26, ["Share"], 18, "white", True, margin=0)
+
+    rows = [
+        ("Notebook", "3/4", 0.75, "teal", ""),
+        ("O2 bridge", "2/4", 0.50, "blue", ""),
+        ("Repo-specific skills", "1/4", 0.25, "amber", "Kangcheng: finalize-manuscript"),
+    ]
+    for idx, (name, count, share, color, note) in enumerate(rows):
+        yy = y + 0.62 + idx * row_h
+        fill = "white" if idx % 2 == 0 else "pale"
+        s.rect(x, yy, table_w, row_h, fill, "line", False)
+        s.text(x + 0.18, yy + 0.2, w_workflow - 0.28, 0.28, [name], 18, "ink", True, margin=0)
+        s.text(x + w_workflow + 0.15, yy + 0.2, w_count - 0.25, 0.28, [count], 18, "ink", True, align="c", margin=0)
+        bar_x = x + w_workflow + w_count + 0.35
+        bar_y = yy + 0.27
+        bar_w = w_bar - 1.35
+        s.rect(bar_x, bar_y, bar_w, 0.24, "line", None, True)
+        s.rect(bar_x, bar_y, bar_w * share, 0.24, color, None, True)
+        s.text(bar_x + bar_w + 0.18, yy + 0.2, 0.75, 0.28, [f"{int(share * 100)}%"], 18, "ink", True, align="r", margin=0)
+        if note:
+            s.text(x + 0.18, yy + 0.52, w_workflow + w_count + w_bar - 0.4, 0.22, [note], 18, "muted", italic=True, margin=0)
+
+    s.card(0.95, 5.35, 5.2, 1.35, "Interpretation", ["Notebook is the clearest early hit."], "teal")
+    s.card(6.85, 5.35, 5.2, 1.35, "Next question", ["Which repo-specific skills should be easier to discover?"], "amber")
+    return s
+
+
 def section_slide(title: str, kicker: str, items: list[str], color: str = "teal") -> Slide:
     s = Slide()
     s.rect(0, 0, SLIDE_W, SLIDE_H, color)
@@ -272,9 +323,9 @@ def section_slide(title: str, kicker: str, items: list[str], color: str = "teal"
 
 
 def make_slides() -> list[Slide]:
-    slides: list[Slide] = [title_slide()]
+    slides: list[Slide] = [title_slide(), polling_slide()]
 
-    s = Slide("Start With Advice", "advice")
+    s = Slide("Start With Advice", "advice", hidden=True)
     s.text(0.78, 1.46, 10.6, 0.75, ["The most important content is not the tool list. It is the habit loop."], 27, "ink", True)
     s.diagram_node(1.0, 3.0, 2.1, "try things", "teal")
     s.line(3.18, 3.38, 4.2, 3.38, "line", 3)
@@ -284,13 +335,13 @@ def make_slides() -> list[Slide]:
     s.text(1.0, 4.35, 9.7, 0.75, ["The repo is where useful habits become reusable agent behavior."], 19, "muted")
     slides.append(s)
 
-    s = Slide("Advice: Figure Out What Works", "advice")
+    s = Slide("Advice: Figure Out What Works", "advice", hidden=True)
     s.card(0.78, 1.45, 3.65, 3.7, "Experiment deliberately", ["Try different tasks, prompts, apps, and interfaces.", "Treat this as active learning, not tool adoption."], "teal")
     s.card(4.82, 1.45, 3.65, 3.7, "Keep what helps", ["Ask for questions before planning.", "Use long rough prompts.", "Create project-specific workflows."], "blue")
     s.card(8.86, 1.45, 3.65, 3.7, "Do not overgeneralize", ["Our work is not cookie-cutter.", "Models and interfaces keep changing."], "amber")
     slides.append(s)
 
-    s = Slide("Advice: Then Systematize It", "advice")
+    s = Slide("Advice: Then Systematize It", "advice", hidden=True)
     s.text(0.85, 1.45, 5.2, 0.62, ["A system can be tiny."], 28, "ink", True)
     s.text(0.95, 2.25, 5.0, 2.7, ["A habit", "A project instruction", "A skill", "A postmortem change", "A checklist the agent follows"], 19, "muted", line_spacing=105000)
     s.rect(6.35, 1.55, 5.55, 3.95, "white", "line", True)
@@ -298,7 +349,7 @@ def make_slides() -> list[Slide]:
     s.text(6.72, 2.55, 4.8, 2.3, ["Make a record of substantive work.", "Ask questions in Plan Mode.", "Review substantial software changes.", "Number lists so humans can reply cleanly."], 17, "muted", line_spacing=105000)
     slides.append(s)
 
-    s = Slide("Advice: Question Your Code", "advice")
+    s = Slide("Advice: Question Your Code", "advice", hidden=True)
     s.rect(0.92, 1.42, 11.35, 1.25, "ink", None, True)
     s.text(1.25, 1.83, 10.7, 0.34, ['"You can outsource thinking, but not understanding."'], 23, "white", True, italic=True, align="c")
     s.text(0.95, 3.28, 5.2, 0.42, ["Ask the agent, or ask yourself:"], 20, "ink", True)
@@ -306,7 +357,7 @@ def make_slides() -> list[Slide]:
     s.card(7.0, 3.25, 4.55, 2.1, "Scientific caution", ["AI is useful for analyses, but it lacks scientific judgement and integrity.", "You still need to understand every scientifically relevant detail."], "coral")
     slides.append(s)
 
-    s = Slide("Advice: Align Three Things", "advice")
+    s = Slide("Advice: Align Three Things", "advice", hidden=True)
     cx, cy, r = 6.65, 3.55, 1.7
     points = [(cx, cy - r), (cx - 1.75, cy + 1.25), (cx + 1.75, cy + 1.25)]
     labels = [("intent", "teal"), ("understanding", "blue"), ("implementation", "amber")]
@@ -319,14 +370,14 @@ def make_slides() -> list[Slide]:
     s.text(1.0, 5.95, 11.1, 0.42, ["This is the deck's main standard for agent-assisted work."], 19, "ink", True, align="c")
     slides.append(s)
 
-    s = Slide("Advice: Structure Your Understanding", "advice")
+    s = Slide("Advice: Structure Your Understanding", "advice", hidden=True)
     s.card(0.78, 1.45, 3.75, 3.7, "Core modules", ["Understand the inner logic.", "These are the places scientific choices live."], "teal")
     s.card(4.78, 1.45, 3.75, 3.7, "Other modules", ["Understand the interface.", "Treat internals as a black box unless needed."], "blue")
     s.card(8.78, 1.45, 3.75, 3.7, "Whole codebase", ["Understand relationships.", "Know which changes should touch which modules."], "amber")
     s.text(1.0, 6.08, 11.3, 0.38, ["Heuristic: understand scientific logic at the level you would report in Methods or Supplement."], 17, "ink", True, align="c")
     slides.append(s)
 
-    s = Slide("Advice: Watch For Being Too Zoomed Out", "advice")
+    s = Slide("Advice: Watch For Being Too Zoomed Out", "advice", hidden=True)
     s.card(0.85, 1.45, 5.4, 2.2, "Warning signs", ["You cannot predict which modules a change will touch.", "The same area keeps producing bugs.", "A simple task took long for unclear reasons."], "coral")
     s.card(7.0, 1.45, 4.55, 2.2, "Example", ["The agent silently performs liftover while merging datasets.", "That might be fine, but you need to know."], "amber")
     s.text(1.05, 4.55, 10.8, 0.78, ["The point of the config is not to slow the agent down. It is to keep the human close enough to understand what happened."], 23, "ink", True, align="c")
@@ -441,11 +492,12 @@ def make_slides() -> list[Slide]:
     for i, (name, mode) in enumerate(global_skills):
         col = i % 2
         row = i // 2
-        xx = x + col * 5.85
-        yy = y + row * 0.8
-        s.rect(xx, yy, 5.2, 0.56, "white", "line", True)
-        s.text(xx + 0.2, yy + 0.13, 2.2, 0.18, [name], 13.5, "ink", True, margin=0)
-        s.tag(xx + 3.33, yy + 0.11, mode, "amber" if mode == "manual-only" else "blue")
+        xx = x + col * 6.0
+        yy = y + row * 0.92
+        s.rect(xx, yy, 5.65, 0.68, "white", "line", True)
+        s.text(xx + 0.2, yy + 0.18, 2.45, 0.24, [name], 18, "ink", True, margin=0)
+        tag_w = 2.25 if mode == "manual-only" else 2.8
+        s.tag(xx + 2.7, yy + 0.08, mode, "amber" if mode == "manual-only" else "blue", tag_w)
     slides.append(s)
 
     s = Slide("Local / Project Skills", "installation")
@@ -625,24 +677,25 @@ def core_xml() -> str:
     )
 
 
-def app_xml(n_slides: int) -> str:
+def app_xml(n_slides: int, hidden_slides: int = 0) -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
         'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
         '<Application>Codex</Application><PresentationFormat>On-screen Show (16:9)</PresentationFormat>'
-        f'<Slides>{n_slides}</Slides><Notes>0</Notes><HiddenSlides>0</HiddenSlides>'
+        f'<Slides>{n_slides}</Slides><Notes>0</Notes><HiddenSlides>{hidden_slides}</HiddenSlides>'
         '</Properties>'
     )
 
 
 def build() -> None:
     slides = make_slides()
+    hidden_slides = sum(1 for slide in slides if slide.hidden)
     with zipfile.ZipFile(OUT, "w", compression=zipfile.ZIP_DEFLATED) as z:
         z.writestr("[Content_Types].xml", content_types(len(slides)))
         z.writestr("_rels/.rels", root_rels())
         z.writestr("docProps/core.xml", core_xml())
-        z.writestr("docProps/app.xml", app_xml(len(slides)))
+        z.writestr("docProps/app.xml", app_xml(len(slides), hidden_slides))
         z.writestr("ppt/presentation.xml", presentation_xml(len(slides)))
         z.writestr("ppt/_rels/presentation.xml.rels", presentation_rels(len(slides)))
         z.writestr("ppt/slideMasters/slideMaster1.xml", master_xml())

@@ -123,6 +123,27 @@ class ConfigAgentToolTests(unittest.TestCase):
         )
         self.assertIn("No skills were installed automatically", stdout)
 
+    def test_claude_install_replaces_stale_flat_import_without_duplicate(self) -> None:
+        self.claude_home.mkdir(parents=True)
+        stale_import = f"@{REPO_ROOT / 'global' / 'CLAUDE.md'}"
+        current_import = f"@{REPO_ROOT / 'claude' / 'global' / 'CLAUDE.md'}"
+        (self.claude_home / "CLAUDE.md").write_text(
+            "# User Claude Configuration\n\n"
+            "# Import shared lab agent configuration\n"
+            f"{stale_import}\n"
+            f"{current_import}\n",
+            encoding="utf-8",
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "claude")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        claude_md = (self.claude_home / "CLAUDE.md").read_text(encoding="utf-8")
+        self.assertNotIn(stale_import, claude_md)
+        self.assertEqual(claude_md.count(current_import), 1)
+        self.assertIn("Repaired stale Claude import", stdout)
+
     def test_link_skills_uses_agent_specific_tree(self) -> None:
         code, stdout, stderr = self.invoke(
             "link-skills", "--agent", "claude", "--global", "--add", "work-cycle"
@@ -173,6 +194,75 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertEqual(stderr, "")
         self.assertEqual(calls, [["git", "-C", str(REPO_ROOT), "pull", "--ff-only"]])
         self.assertFalse((self.codex_home / "AGENTS.override.md").exists())
+
+    def test_claude_update_repairs_legacy_flat_layout_paths(self) -> None:
+        self.claude_home.mkdir(parents=True)
+        (self.claude_home / "CLAUDE.md").write_text(
+            "# User Claude Configuration\n\n"
+            "# Import shared lab agent configuration\n"
+            f"@{REPO_ROOT / 'global' / 'CLAUDE.md'}\n",
+            encoding="utf-8",
+        )
+        (self.claude_home / "settings.json").symlink_to(
+            REPO_ROOT / "global" / "settings.json"
+        )
+        (self.claude_home / "hooks").symlink_to(REPO_ROOT / "hooks")
+
+        calls = []
+
+        def succeed_pull(command, *args, **kwargs):
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        with mock.patch.object(self.tool.subprocess, "run", side_effect=succeed_pull):
+            code, stdout, stderr = self.invoke("update", "--agent", "claude")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(calls[0], ["git", "-C", str(REPO_ROOT), "pull", "--ff-only"])
+        stale_import = f"@{REPO_ROOT / 'global' / 'CLAUDE.md'}"
+        current_import = f"@{REPO_ROOT / 'claude' / 'global' / 'CLAUDE.md'}"
+        claude_md = (self.claude_home / "CLAUDE.md").read_text(encoding="utf-8")
+        self.assertNotIn(stale_import, claude_md)
+        self.assertEqual(claude_md.count(current_import), 1)
+        self.assert_symlink_target(
+            self.claude_home / "settings.json",
+            REPO_ROOT / "claude" / "global" / "settings.json",
+        )
+        self.assert_symlink_target(self.claude_home / "hooks", REPO_ROOT / "claude" / "hooks")
+        self.assert_symlink_target(
+            self.claude_home / "bin" / "config-agent-tool",
+            REPO_ROOT / "bin" / "config-agent-tool",
+        )
+        self.assertIn("Repaired stale Claude import", stdout)
+        self.assertIn("Replacing symlink: Claude settings", stdout)
+        self.assertIn("Replacing symlink: Claude hooks", stdout)
+
+    def test_codex_set_me_up_onboarding_uses_merged_layout_commands(self) -> None:
+        onboarding_files = [
+            REPO_ROOT / "codex" / ".agents" / "skills" / "set-me-up" / "SKILL.md",
+            REPO_ROOT
+            / "codex"
+            / ".agents"
+            / "skills"
+            / "set-me-up"
+            / "references"
+            / "onboarding-script.md",
+        ]
+        text = "\n".join(path.read_text(encoding="utf-8") for path in onboarding_files)
+
+        self.assertIn("codex/skills", text)
+        self.assertIn("codex/global/AGENTS.md", text)
+        self.assertIn("install --agent codex", text)
+        self.assertIn("list-skills --agent codex --global", text)
+        self.assertIn("link-skills --agent codex --global", text)
+        self.assertIn("$work-cycle", text)
+        self.assertNotIn("test -d skills", text)
+        self.assertNotIn("global/AGENTS.md", text.replace("codex/global/AGENTS.md", ""))
+        self.assertNotIn("install --global", text)
+        self.assertNotIn("list-skills --global", text)
+        self.assertNotIn("link-skills --global", text)
+        self.assertNotIn("$software", text)
 
 
 if __name__ == "__main__":

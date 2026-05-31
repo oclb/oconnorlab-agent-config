@@ -13,9 +13,9 @@ Create skills that give another Codex instance the context, workflow, rules, and
 
 1. Align with user intent: what user requests should trigger the skill, what scope is intended, and what failure modes the skill should prevent. If scope is unclear, ask whether the skill is project-specific, user-specific, or shared.
 2. Scrape the project notebook or AGENTS.md file for user's previous guidance, gotchas that have been encountered before, or context that is clearly relevant.
-3. Initialize new skills with `scripts/init_skill.py <skill-name> --path <output-directory>` unless editing an existing skill.
+3. Initialize new skills with `scripts/init_skill.py <skill-name> --path <output-directory>` unless editing an existing skill. Add `--resources scripts,references,assets` only for resource types the skill really needs, and use `--examples` only when placeholders will speed iteration.
 4. Draft or edit the skill.
-5. Validate/package distributable skills with `scripts/package_skill.py <path/to/skill-folder>`.
+5. Validate skills with `scripts/quick_validate.py <path/to/skill-folder>`. When distributing beyond local or repo use, package the skill as a Codex plugin; use `scripts/package_skill.py` only when the user explicitly needs a legacy `.skill` archive.
 6. Provide the user with a clickable link to `SKILL.md`, and prompt them to read it, try it out, and iterate following their instructions.
 
 ## Scope
@@ -33,12 +33,15 @@ Every skill has a required `SKILL.md` with YAML frontmatter and optional bundled
 ```text
 skill-name/
 |-- SKILL.md
+|-- agents/
+|   `-- openai.yaml
 |-- scripts/
 |-- references/
 `-- assets/
 ```
 
 - `SKILL.md`: frontmatter plus the core instructions. Put `name` and a trigger-focused `description` in frontmatter; put "when to use" guidance in `description`, not the body.
+- `agents/openai.yaml`: OpenAI/Codex UI metadata. Generate or refresh it with `scripts/generate_openai_yaml.py` or `scripts/init_skill.py --interface key=value`; read `references/openai_yaml.md` when setting non-obvious fields.
 - `scripts/`: executable helpers for deterministic or repeatedly generated operations.
 - `references/`: detailed documentation to load only when needed.
 - `assets/`: templates, images, boilerplate, fonts, or other files used in outputs.
@@ -68,6 +71,7 @@ Before finishing:
 - The trigger description is specific enough to distinguish this skill from neighboring skills.
 - `SKILL.md` is under 1,000 words.
 - Scripts, references, and assets are included only when they will be reused.
+- `agents/openai.yaml` exists for standalone skills and still matches `SKILL.md`.
 - Any added script has been run or otherwise validated.
 - The skill avoids time-sensitive facts unless it instructs Codex how to refresh them.
 - The skill has maximal signal-to-noise and no filler subsections.
