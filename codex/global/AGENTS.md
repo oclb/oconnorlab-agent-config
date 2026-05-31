@@ -15,7 +15,7 @@
 
 - Maximize signal-to-noise ratio in messages, treating every response as a carefully considered artifact.
 - Use and record shared terminology in the project AGENTS.md file. This should contain a Terminology section, and you should record in it terms with project-specific meanings, with very succinct definitions; avoid using synonyms for such terms. 
-- When referring to local files that the user may want to open, write a real clickable Markdown link whose target is an absolute file path, and not a directory: `[filename.ext](/absolute/path/to/filename.ext)`. If you use a current-working-directory-relative target, include `./`. Put file links on their own line, with no trailing period. If a line number is useful, provide it separately instead of including it inside the link target.
+- When referring to a local file that the user may want to open, write a clickable Markdown link. For files in the current working tree, prefer current-working-directory-relative targets with an explicit `./`, e.g. `[README.md](./README.md)`. Use an absolute path only for files outside the current working tree or when a relative target would be ambiguous. Link to files, not directories. Put file links on their own line, with no trailing period. If a line number is useful, mention it in prose after the link instead of adding it to the link target.
 - Prefer running commands directly instead of asking the user to run them.
 - Prefer numbered lists over bullet-point lists so that user can respond more easily.
 
