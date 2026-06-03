@@ -248,12 +248,25 @@ def command_list_skills(args: argparse.Namespace) -> int:
 
 def command_link_skills(args: argparse.Namespace) -> int:
     config = agent_config(args.agent)
+    if args.add_all and args.add:
+        raise SystemExit("--add-all cannot be combined with --add")
+    if args.remove_all and args.remove:
+        raise SystemExit("--remove-all cannot be combined with --remove")
+    if (args.add_all or args.add) and (args.remove_all or args.remove):
+        raise SystemExit("Add and remove operations cannot be combined")
     add = args.add or []
     remove = args.remove or []
     target_dir = target_skills_dir(config, args.global_scope)
+    known = skill_map(config)
+    if args.add_all:
+        add = list(known)
+    if args.remove_all:
+        remove = sorted(installed_names(config, target_dir))
     validate_skill_names(config, add)
     validate_remove_names(config, remove, target_dir)
-    known = skill_map(config)
+    if args.remove_all and not remove:
+        print(f"Removed 0 managed {config.name} skill link(s) in {target_dir}.")
+        return 0
     if not add and not remove:
         count = refresh_links(config, target_dir)
         print(f"Refreshed {count} managed {config.name} skill link(s) in {target_dir}.")
@@ -478,7 +491,9 @@ def build_parser() -> argparse.ArgumentParser:
     add_agent_arg(link_skills)
     link_skills.add_argument("--global", dest="global_scope", action="store_true")
     link_skills.add_argument("--add", nargs="+")
+    link_skills.add_argument("--add-all", action="store_true")
     link_skills.add_argument("--remove", nargs="+")
+    link_skills.add_argument("--remove-all", action="store_true")
     link_skills.set_defaults(func=command_link_skills)
 
     render = subcommands.add_parser("render-override")

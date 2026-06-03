@@ -124,11 +124,15 @@ You can also list, add, or remove workflows later:
 ```bash
 config-agent-tool list-skills --agent claude --global
 config-agent-tool link-skills --agent claude --global --add artifacts
+config-agent-tool link-skills --agent claude --global --add-all
 config-agent-tool link-skills --agent claude --global --remove artifacts
+config-agent-tool link-skills --agent claude --global --remove-all
 
 config-agent-tool list-skills --agent codex --global
 config-agent-tool link-skills --agent codex --global --add artifacts
+config-agent-tool link-skills --agent codex --global --add-all
 config-agent-tool link-skills --agent codex --global --remove artifacts
+config-agent-tool link-skills --agent codex --global --remove-all
 ```
 
 Claude Code stores its global configuration under `~/.claude`. Codex stores its global configuration under `~/.codex`. The setup tool manages the generated files and links non-destructively.
