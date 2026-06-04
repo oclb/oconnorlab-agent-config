@@ -280,9 +280,8 @@ class ConfigAgentToolTests(unittest.TestCase):
 
     def test_codex_set_me_up_onboarding_uses_merged_layout_commands(self) -> None:
         onboarding_files = [
-            REPO_ROOT / "codex" / ".agents" / "skills" / "set-me-up" / "SKILL.md",
+            REPO_ROOT / ".agents" / "skills" / "set-me-up" / "SKILL.md",
             REPO_ROOT
-            / "codex"
             / ".agents"
             / "skills"
             / "set-me-up"
@@ -293,6 +292,8 @@ class ConfigAgentToolTests(unittest.TestCase):
 
         self.assertIn("codex/skills", text)
         self.assertIn("codex/global/AGENTS.md", text)
+        self.assertIn("Auto-trigger", text)
+        self.assertIn("set up, initialize, install, onboard, configure", text)
         self.assertIn("install --agent codex", text)
         self.assertIn("list-skills --agent codex --global", text)
         self.assertIn("link-skills --agent codex --global", text)

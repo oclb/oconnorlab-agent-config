@@ -8,7 +8,7 @@ After installing this config from the config repo, initialize normal projects wi
 init project
 ```
 
-The `set-me-up` workflow is repo-local to `codex-config` and is not symlinked into downstream projects.
+The `set-me-up` workflow is repo-local to `lab-agent-config` at the repository root and is not symlinked into downstream projects.
 
 ## What It Does
 

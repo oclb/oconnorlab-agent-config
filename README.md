@@ -23,6 +23,12 @@ cd lab-agent-config
 ### 2. Ask your agent to perform setup
 Run your agent of choice inside of the repo directory, ask it to perform setup, and answer its questions.
 
+For Codex, the repo-local setup skill should be discoverable before installation. You can say:
+
+```text
+set me up
+```
+
 ### 3. Initialize A Project
 
 Open your own project and start your agent there.

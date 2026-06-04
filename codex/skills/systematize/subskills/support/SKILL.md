@@ -22,7 +22,7 @@ Then, the following are logical starting points for your investigation:
 
 - `$CONFIG_REPO/README.md`
 - `$CONFIG_REPO/codex/global/AGENTS.md`
-- `$CONFIG_REPO/codex/.agents/skills/set-me-up/SKILL.md`
+- `$CONFIG_REPO/.agents/skills/set-me-up/SKILL.md`
 - `$CONFIG_REPO/bin/config-agent-tool`
 
 ## User feedback

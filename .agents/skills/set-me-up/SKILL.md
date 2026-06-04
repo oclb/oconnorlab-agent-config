@@ -1,6 +1,6 @@
 ---
 name: set-me-up
-description: Repo-local onboarding for this codex-config repository. Use only inside this repository when the user says "set me up", "onboard me", "help me get started", or asks to install this configuration locally.
+description: Repo-local onboarding for this lab-agent-config repository. Auto-trigger inside this repository when the user asks to set up, initialize, install, onboard, configure, or get started with this repository or its Codex configuration.
 ---
 
 # Set Me Up
@@ -11,6 +11,8 @@ Use the exact onboarding script in `references/onboarding-script.md`. The script
 
 Core rules:
 
+- Auto-trigger this skill when the user asks to set up, initialize, install, onboard, configure, or get started with this repository or its Codex configuration. The user does not need to invoke `$set-me-up`.
+- Use this skill only when the active working directory is this repository or a subdirectory of it. Do not use this skill for downstream project setup; use `init-project` for downstream projects.
 - Onboard before installing. Explain what the repo contains before creating global files or symlinks.
 - Ask before every installation step. Do not run `install --agent codex` until the user explicitly agrees to base setup. Do not link any optional skill until the user explicitly chooses it.
 - Treat recommendations as explanations, not consent.

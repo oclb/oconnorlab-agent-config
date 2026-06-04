@@ -1,11 +1,11 @@
 # Set Me Up Onboarding Script
 
-Follow this script when onboarding the user. 
+Follow this script when onboarding the user.
 
 ## Overall Guidance
 
 - User-facing text can be modified if circumstances or user input deviates from the happy path; otherwise, it should be quoted exactly.
-- Answer any user questions by consulting README.md and other documents, particularly the skill files themselves; then, resume the script. 
+- Answer any user questions by consulting README.md and other documents, particularly the skill files themselves; then, resume the script.
 - Interpret answers like "yea" or "y" as "yes", "nty" for "no", etc. Don't say "I am interpreting 'yea' as 'yes'" or similar.
 - Avoid adding noise to the conversation or thinking out loud. Don't preface like "I am going to read this script" or add filler between steps like "$systematize is selected. Next is..."
 
@@ -23,7 +23,7 @@ For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
 
 Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
 
-How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine. 
+How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine.
 
 First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. I will also install the $notebook-entry skill globally.
 ```
