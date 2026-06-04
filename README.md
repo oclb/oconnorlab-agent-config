@@ -1,6 +1,6 @@
-# Lab Agent Config For Scientific Research
+# O'Connor lab coding agent config
 
-This repository configures Claude Code and Codex for scientific software development and other scientific research tasks. The goal is to integrate AI agents more deeply into our scientific work while mitigating foreseeable pitfalls of doing so. See [ADVICE.md](ADVICE.md) for Luke's big-picture advice about AI collaboration.
+This repository configures Claude Code or Codex CLI for scientific software development and other scientific research tasks. The goal is to integrate AI agents more deeply into our scientific work while mitigating foreseeable pitfalls of doing so. See [ADVICE.md](ADVICE.md) for Luke's big-picture advice about AI collaboration.
 
 The project has three major features:
 1. **O2 Cluster bridge.** It includes guidance for using an external bridge application that enables an agent to interact with O2, submit jobs, and read results. Its interactions are sandboxed to avoid accidental data deletion.
@@ -10,64 +10,30 @@ The project has three major features:
 
 ## Quick Start
 
-### 0. Install Claude Code Or Codex
-
-Use whichever agent you prefer. This repository supports both Claude Code and Codex; you can install configuration for one or both.
+### 0. Install Claude Code Or Codex CLI
+You can install configuration for either or both. It shouldn't matter what interface you use (i.e., terminal interface or an app).
 
 ### 1. Clone This Repository
 
 ```bash
-git clone https://github.com/oclb/claude.git lab-agent-config
+git clone https://github.com/oclb/oconnorlab-agent-config.git lab-agent-config
 cd lab-agent-config
 ```
 
-### 2. Install Agent Configuration
+### 2. Ask your agent to perform setup
+Run your agent of choice inside of the repo directory, ask it to perform setup, and answer its questions.
 
-For Claude Code:
-
-```bash
-bin/config-agent-tool install --agent claude
-```
-
-For Codex:
-
-```bash
-bin/config-agent-tool install --agent codex
-```
-
-### 3. Choose Global Workflows
-
-These commands make the main project workflows available globally. You can choose fewer if you want a lighter setup.
-
-For Claude Code:
-
-```bash
-bin/config-agent-tool link-skills --agent claude --global --add init-project work-cycle documentation defer notebook-entry artifacts
-```
-
-For Codex:
-
-```bash
-bin/config-agent-tool link-skills --agent codex --global --add init-project work-cycle documentation defer notebook-entry artifacts
-```
-
-Codex also has a guided setup workflow. Start Codex in this repository and say:
-
-```text
-$set-me-up
-```
-
-### 4. Initialize A Project
+### 3. Initialize A Project
 
 Open your own project and start your agent there.
 
-For Claude Code, say:
+For Claude Code:
 
 ```text
 /init-project
 ```
 
-For Codex, say:
+For Codex:
 
 ```text
 $init-project
@@ -80,62 +46,37 @@ The agent should inspect the project, create or update project-local instruction
 
 ### Project Notebook
 
-A major limitation of existing AI models is their lack of long-term memory. One problem this creates is that you often need to guess what context the AI will need for a task and include it manually. Even when the AI can gather context itself - e.g., by reading your project's source code - you may not trust that it will do so reliably. Another problem is irreproducibility: when the AI performs analyses, even with your close guidance, it can be easy to forget exactly what was done and why. If the AI also forgets those details, then they are simply lost.
+A major limitation of AI models is their lack of long-term memory. This creates friction when communicating with the AI, and it can push you toward long-running conversations, which is known to be bad practice. Another problem is irreproducibility: when the AI performs analyses, even with your close guidance, it can be easy to forget exactly what was done and why. If the AI also forgets those details, then they are lost.
 
-To address these problems, the agent is instructed to maintain a notebook which acts as a stable repository for long-term memory. All substantive work done with the agent is recorded in this notebook. The notebook is indexed, and the agent is instructed to search for relevant entries when it determines that it needs context. The notebook lives in a GitHub repository that should be separate from your project repository and is managed entirely by the agent. Entries of this notebook include text files which describe what was done or learned, code which can be used to reproduce results, and results files.
+To address these problems, the agent is instructed to maintain a notebook which acts as a stable repository for long-term memory. All substantive work done with the agent is recorded in this notebook. The notebook is indexed, and the agent is instructed to search for relevant entries when it determines that it needs context. The notebook lives in a GitHub repository separate from your project repository. It includes entries which describe what was done or learned, scripts to reproduce results, results files, a to-do list, and an index.
 
-Many other systems for AI memory exist, including built-in user-level memory systems. This one is designed for simplicity and completeness. If at any point in the future you wish to transition notebook-based memories into some other system, an agent should be able to do this for you.
+Many other systems for AI memory exist, including built-in user-level memory systems. This one is designed for simplicity and completeness. It lacks advanced features like semantic search. If at any point in the future you wish to transition notebook-based memories into some other system, an agent should be able to do this for you.
 
-The notebook also includes a to-do list, whose usage is optional. I often use it to defer to-do items that come up organically but that I don't want to do just yet.
+The notebook's to-do list is optional. I often use it as a convenient way to track to-do items that come up organically but that I don't want to do just yet (see below for the `defer` skill).
 
-### Remote O2 Access
+### O2 bridge
 
-Remote O2 access uses the external `remote-bridge` CLI to let an agent interact with O2 through an SSH-backed session. After installing this repository, use `/init-project` or `$init-project` for first-time bridge setup, then use `/use-o2` or `$use-o2` for job submission, monitoring, SLURM guidance, and bridge operations.
+The `remote-bridge` CLI allows an agent interact with the O2 cluster through an SSH-backed session within a sandbox. The bridge maintains a connection over `ssh` with an O2 login node. It allows you to control the directories on O2 to which your agent has read access and write access. This even applies to jobs that your agent submits: all submitted jobs dispatch to Singularity containers with write access only within specified directories. 
 
-The bridge maintains a connection over `ssh` with an O2 login node. It exposes controlled file-inspection, git, and job-submission operations against paths allowed by the local bridge configuration. Containerized job submission can add some dependency-management friction, but it limits writes to the directories configured for the sandbox.
+Please do not give your agent write access to directories containing data owned by other lab members. In the event of accidental data deletion, O2 does maintain regular snapshots of the group directory, but these are deleted after a short period of time, so you should notify Luke immediately.
 
-### Workflows
+### Workflow skills
 
-Claude Code and Codex can use specialized prompts for recurring workflows. Installing one makes it available to the agent; manual workflows still need to be invoked explicitly with `/name` in Claude Code or `$name` in Codex.
+Specialized prompts are provided for recurring workflows:
 
-The most useful global workflows are:
-
-1. `init-project`: initialize a project workspace with project instructions, notebook scaffolding, optional remotes, and optional O2 setup.
-2. `work-cycle`: use a planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work.
+1. `work-cycle`: prescribes an interactive, planning-centric workflow. This is recommended for all substantive research tasks, including software development and running analyses. It instructs the agent to ask questions and work with the user to create a plan. It has three special "modes", which are non-exclusive: worktree mode, which instructs the agent to implement its changes in a Git worktree; afk mode, which instructs it to ask any questions immediately and then implement autonomously; and methods-first mode, which instructs it to use a Methods section or other document as a plan or specification.
+2. `artifacts`: gives a few guidelines for writing, provides subskills for various file formats (DOCX, PDF, PPTX, TikZ/LaTeX diagrams), provides a subskill for manuscript-quality figures, and provides a subskill for manuscript submission checks.
 3. `documentation`: create and update documentation so the human and agent maintain a shared understanding of a codebase.
-4. `defer`: capture deferred work as notebook-backed TODOs.
-5. `notebook-entry`: create durable project notebook entries.
-6. `artifacts`: work on DOCX, PDF, PPTX, TikZ diagrams, manuscript figures, and manuscript submission checks.
+4. `systematize`: customize the behavior of the agent. Use this for running a postmortem when agent does not behave as desired, for updating the agent's system prompt, and for creating custom skills. 
 
-Project-specific workflows include `use-o2`, `dx-jobs`, and `run-graphld-o2`.
+### Other skills
 
-
-## Maintenance
-
-Use `config-agent-tool` to update installed files after pulling repository changes:
-
-```bash
-config-agent-tool update --agent claude
-config-agent-tool update --agent codex
-```
-
-You can also list, add, or remove workflows later:
-
-```bash
-config-agent-tool list-skills --agent claude --global
-config-agent-tool link-skills --agent claude --global --add artifacts
-config-agent-tool link-skills --agent claude --global --add-all
-config-agent-tool link-skills --agent claude --global --remove artifacts
-config-agent-tool link-skills --agent claude --global --remove-all
-
-config-agent-tool list-skills --agent codex --global
-config-agent-tool link-skills --agent codex --global --add artifacts
-config-agent-tool link-skills --agent codex --global --add-all
-config-agent-tool link-skills --agent codex --global --remove artifacts
-config-agent-tool link-skills --agent codex --global --remove-all
-```
-
-Claude Code stores its global configuration under `~/.claude`. Codex stores its global configuration under `~/.codex`. The setup tool manages the generated files and links non-destructively.
+1. `init-project`: initialize your agent config within a project.
+2. `defer`: capture deferred work as notebook-backed TODOs.
+3. `notebook-entry`: create durable project notebook entries.
+4. `use-o2`: documents usage of the O2 bridge
+5. `dx-jobs`: for DNA Nexus
+6. `run-graphld-o2`: for using [graphLD](https://github.com/oclb/graphld) on O2
 
 
 ## Contributing
