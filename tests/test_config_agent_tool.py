@@ -157,6 +157,46 @@ class ConfigAgentToolTests(unittest.TestCase):
         )
         self.assertIn("Creating symlink:", stdout)
 
+    def test_link_skills_add_all_links_every_known_skill(self) -> None:
+        code, stdout, stderr = self.invoke(
+            "link-skills", "--agent", "codex", "--global", "--add-all"
+        )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        expected_skills = {
+            skill.name: skill for skill in self.tool.skills(self.tool.agent_config("codex"))
+        }
+        expected_names = set(expected_skills)
+        actual_names = {path.name for path in (self.codex_home / "skills").iterdir()}
+        self.assertEqual(actual_names, expected_names)
+        for name, skill in expected_skills.items():
+            self.assert_symlink_target(
+                self.codex_home / "skills" / name,
+                skill.path,
+            )
+        self.assertIn("Creating symlink:", stdout)
+
+    def test_link_skills_remove_all_removes_only_managed_links(self) -> None:
+        target = self.codex_home / "skills"
+        target.mkdir(parents=True)
+        (target / "work-cycle").symlink_to(REPO_ROOT / "codex" / "skills" / "work-cycle")
+        (target / "stale").symlink_to(REPO_ROOT / "codex" / "skills" / "stale")
+        unmanaged = target / "unmanaged"
+        unmanaged.mkdir()
+
+        code, stdout, stderr = self.invoke(
+            "link-skills", "--agent", "codex", "--global", "--remove-all"
+        )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertFalse((target / "work-cycle").exists())
+        self.assertFalse((target / "stale").is_symlink())
+        self.assertTrue(unmanaged.exists())
+        self.assertIn("Removing symlink: codex skill 'stale'", stdout)
+        self.assertIn("Removing symlink: codex skill 'work-cycle'", stdout)
+
     def test_project_list_skills_hides_globally_installed_skills(self) -> None:
         (self.codex_home / "skills").mkdir(parents=True)
         (self.codex_home / "skills" / "work-cycle").symlink_to(
