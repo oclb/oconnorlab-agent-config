@@ -588,6 +588,33 @@ class ConfigAgentToolTests(unittest.TestCase):
                 os.kill(child_pid, 9)
         self.assertEqual(second_heartbeat, first_heartbeat)
 
+    def test_claude_set_me_up_onboarding_uses_merged_layout_commands(self) -> None:
+        onboarding_files = [
+            REPO_ROOT / ".claude" / "skills" / "set-me-up" / "SKILL.md",
+            REPO_ROOT
+            / ".claude"
+            / "skills"
+            / "set-me-up"
+            / "references"
+            / "onboarding-script.md",
+        ]
+        text = "\n".join(path.read_text(encoding="utf-8") for path in onboarding_files)
+
+        self.assertIn("claude/skills", text)
+        self.assertIn("claude/global/CLAUDE.md", text)
+        self.assertIn("Auto-trigger", text)
+        self.assertIn("set up, initialize, install, onboard, configure", text)
+        self.assertIn("install --agent claude", text)
+        self.assertIn("list-skills --agent claude --global", text)
+        self.assertIn("link-skills --agent claude --global", text)
+        self.assertIn("/work-cycle", text)
+        self.assertNotIn("test -d skills", text)
+        self.assertNotIn("global/CLAUDE.md", text.replace("claude/global/CLAUDE.md", ""))
+        self.assertNotIn("install --global", text)
+        self.assertNotIn("list-skills --global", text)
+        self.assertNotIn("link-skills --global", text)
+        self.assertNotIn("$work-cycle", text)
+
 
 if __name__ == "__main__":
     unittest.main()
