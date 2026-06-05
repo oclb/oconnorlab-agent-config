@@ -2,7 +2,7 @@
 # Install remote-bridge binary from GitHub releases
 set -e
 
-REPO="oclb/lab-agent-config"
+REPO="${REMOTE_BRIDGE_REPO:-oclb/oconnorlab-agent-config}"
 BINARY="remote-bridge"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 

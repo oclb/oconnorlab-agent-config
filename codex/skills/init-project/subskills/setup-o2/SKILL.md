@@ -46,34 +46,20 @@ If the binary is missing, continue to installation. If the binary exists but the
 
 ## Step 2: Install Bridge
 
-`remote-bridge` code and binaries are not bundled with this configuration. Before installing, identify the source of truth for the bridge in the local environment.
-
-If a checked-out bridge repo with prebuilt binaries is available, install the matching binary:
+`remote-bridge` code and binaries are not bundled with this configuration. Install the public release binary first.
 
 ```bash
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-echo "Platform: $OS-$ARCH"
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh | bash
 ```
+
+If a specific release is needed:
 
 ```bash
-case "$OS-$ARCH" in
-    darwin-arm64)  BINARY="remote-bridge-darwin-arm64" ;;
-    darwin-x86_64) BINARY="remote-bridge-darwin-x86_64" ;;
-    linux-x86_64)  BINARY="remote-bridge-linux-x86_64" ;;
-    *) BINARY="" ;;
-esac
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh \
+  | VERSION=v0.2.0 bash
 ```
 
-If `$BINARY` is set and the binary source directory is known:
-
-```bash
-mkdir -p ~/.local/bin
-cp "<bridge-source>/bin/$BINARY" ~/.local/bin/remote-bridge
-chmod +x ~/.local/bin/remote-bridge
-```
-
-If no prebuilt binary is available, build from source only after confirming the source repo:
+If no release binary is available for the platform, build from source only after confirming the source repo:
 
 ```bash
 which cargo
@@ -87,11 +73,12 @@ Ensure `~/.local/bin` is on `PATH` for the user's shell if needed.
 
 ## Step 3: Configure Permissions
 
-Create the config directory and start from the bridge's example permissions file when available:
+Create the config directory and start from the bridge's example permissions file:
 
 ```bash
 mkdir -p ~/.config/remote-bridge
-cp "<bridge-source>/config/permissions.example.toml" ~/.config/remote-bridge/permissions.toml
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/config/permissions.example.toml \
+  -o ~/.config/remote-bridge/permissions.toml
 ```
 
 Ask the user for their O2 paths:
