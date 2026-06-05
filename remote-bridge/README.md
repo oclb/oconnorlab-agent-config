@@ -35,11 +35,11 @@ Install the latest pre-built binary:
 curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh | bash
 ```
 
-To install a specific release or use a different install directory:
+To install a specific release or use a different install directory, replace `vX.Y.Z` with the desired release tag:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh \
-  | VERSION=v0.2.0 INSTALL_DIR="$HOME/.local/bin" bash
+  | VERSION=vX.Y.Z INSTALL_DIR="$HOME/.local/bin" bash
 ```
 
 Supported platforms:

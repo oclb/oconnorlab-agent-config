@@ -52,11 +52,11 @@ If the binary is missing, continue to installation. If the binary exists but the
 curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh | bash
 ```
 
-If a specific release is needed:
+If a specific release is needed, replace `vX.Y.Z` with the desired release tag:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh \
-  | VERSION=v0.2.0 bash
+  | VERSION=vX.Y.Z bash
 ```
 
 If no release binary is available for the platform, build from source only after confirming the source repo:
