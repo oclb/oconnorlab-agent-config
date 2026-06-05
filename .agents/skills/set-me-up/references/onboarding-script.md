@@ -178,7 +178,11 @@ ls -l ~/.codex/skills/<chosen-skill>
 command -v remote-bridge || true
 ```
 
-If `remote-bridge` is missing, look for a nearby `claude-config` checkout. Tell the user O2 bridge setup requires that sibling repo if neither is available.
+If `remote-bridge` is missing and the user wants O2 access now, install it from GitHub Releases:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh | bash
+```
 
 Finish with (assuming $init-project was installed):
 
