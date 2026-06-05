@@ -23,9 +23,9 @@ For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
 
 Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
 
-How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine.
+How this works under the hood: when you open Codex, the app locates AGENTS.md files, hooks, and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink this repo's shared AGENTS.md output, a startup auto-update hook, and any skills you choose to `~/.codex` so that they become globally available on your machine. It does not edit or own your personal `~/.codex/config.toml`.
 
-First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. I will also install the $notebook-entry skill globally.
+First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. Base setup will also install a `SessionStart` startup hook at `~/.codex/hooks.json` with its script in `~/.codex/hooks/update-config.sh`, so future Codex starts can silently refresh this repo's managed Codex surfaces. I will also install the $notebook-entry skill globally.
 ```
 
 ## 2. Base Setup
@@ -35,6 +35,10 @@ If user agrees, run:
 ```bash
 bin/config-agent-tool install --agent codex
 ```
+
+This installs the generated AGENTS override, the startup auto-update hook, and the `config-agent-tool` symlink. It does not install optional skills, and it does not edit `~/.codex/config.toml`.
+
+If setup reports an unmanaged `~/.codex/hooks.json`, it has installed the other managed surfaces but refused to replace your hook file. With your permission, manually merge the reported `SessionStart` startup hook into that file, then rerun `bin/config-agent-tool install --agent codex`. If setup reports an unmanaged `~/.codex/hooks/` directory, merge or move those existing scripts before rerunning install.
 
 Next, say:
 
@@ -174,7 +178,7 @@ Skip the command if no skills were chosen.
 Verify:
 
 ```bash
-ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool
+ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool ~/.codex/hooks.json ~/.codex/hooks/update-config.sh
 ls -l ~/.codex/skills/<chosen-skill>
 command -v remote-bridge || true
 ```
@@ -184,5 +188,5 @@ If `remote-bridge` is missing, look for a nearby `claude-config` checkout. Tell 
 Finish with (assuming $init-project was installed):
 
 ```text
-Setup is complete. If you wish to modify your choices or uninstall symlinks, run `codex` inside of this directory. To set up a specific project, navigate to that project, run `codex`, and run `$init-project`.
+Setup is complete. Restart Codex so it can load the startup auto-update hook. If Codex says the hook needs review, use `/hooks` to inspect and trust it. If you wish to modify your choices or uninstall symlinks, run `codex` inside of this directory. To set up a specific project, navigate to that project, run `codex`, and run `$init-project`.
 ```

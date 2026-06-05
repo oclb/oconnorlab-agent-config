@@ -4,10 +4,12 @@ import contextlib
 import importlib.machinery
 import importlib.util
 import io
+import json
 import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -99,11 +101,120 @@ class ConfigAgentToolTests(unittest.TestCase):
             self.codex_home / "bin" / "config-agent-tool",
             REPO_ROOT / "bin" / "config-agent-tool",
         )
+        self.assert_symlink_target(
+            self.codex_home / "hooks.json",
+            REPO_ROOT / "codex" / "global" / "hooks.json",
+        )
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
         override = (self.codex_home / "AGENTS.override.md").read_text(encoding="utf-8")
         content_agents = (REPO_ROOT / "codex" / "global" / "AGENTS.md").read_text(encoding="utf-8")
+        hooks_json = json.loads((self.codex_home / "hooks.json").read_text(encoding="utf-8"))
+        command = hooks_json["hooks"]["SessionStart"][0]["hooks"][0]["command"]
         self.assertIn(self.tool.GENERATED_MARKER, override)
         self.assertIn("# Shared Codex Instructions\n\n" + content_agents, override)
+        self.assertIn("CODEX_HOME", command)
         self.assertIn("No skills were installed automatically", stdout)
+
+    def test_codex_install_refuses_unmanaged_hooks_json(self) -> None:
+        self.codex_home.mkdir(parents=True)
+        unmanaged = self.codex_home / "hooks.json"
+        unmanaged.write_text('{"hooks": {}}\n', encoding="utf-8")
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertIsInstance(code, str)
+        self.assertIn("Refusing to overwrite existing unmanaged hooks.json", code)
+        self.assertIn("manually merge", code)
+        self.assertIn("rerun install --agent codex", code)
+        self.assertEqual(stderr, "")
+        self.assertEqual(unmanaged.read_text(encoding="utf-8"), '{"hooks": {}}\n')
+        self.assertTrue((self.codex_home / "AGENTS.override.md").exists())
+        self.assert_symlink_target(
+            self.codex_home / "bin" / "config-agent-tool",
+            REPO_ROOT / "bin" / "config-agent-tool",
+        )
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
+        self.assertIn("Rendered", stdout)
+
+    def test_codex_update_warns_and_keeps_unmanaged_hooks_directory(self) -> None:
+        self.codex_home.mkdir(parents=True)
+        (self.codex_home / "user").mkdir()
+        (self.codex_home / "bin").mkdir()
+        user_hooks = self.codex_home / "hooks"
+        user_hooks.mkdir()
+        (user_hooks / "custom.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+        (self.codex_home / "user" / "AGENTS.md").write_text(
+            "Personal instructions.\n", encoding="utf-8"
+        )
+        (self.codex_home / "bin" / "config-agent-tool").symlink_to(
+            REPO_ROOT / "bin" / "config-agent-tool"
+        )
+
+        with mock.patch.object(self.tool, "git_pull_ff_only") as pull:
+            code, stdout, stderr = self.invoke("update", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Warning: leaving unmanaged Codex hooks directory in place", stderr)
+        pull.assert_called_once_with()
+        self.assertFalse(user_hooks.is_symlink())
+        self.assertTrue((user_hooks / "custom.sh").exists())
+        self.assert_symlink_target(
+            self.codex_home / "hooks.json",
+            REPO_ROOT / "codex" / "global" / "hooks.json",
+        )
+        self.assertTrue((self.codex_home / "AGENTS.override.md").exists())
+        self.assertIn("Rendered", stdout)
+
+    def test_codex_install_accepts_unmanaged_hooks_json_after_manual_merge(self) -> None:
+        self.codex_home.mkdir(parents=True)
+        unmanaged = self.codex_home / "hooks.json"
+        unmanaged.write_text(
+            json.dumps(
+                {
+                    "hooks": {
+                        "SessionStart": [
+                            {
+                                "matcher": "startup",
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": self.tool.CODEX_UPDATE_HOOK_COMMAND,
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertFalse(unmanaged.is_symlink())
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
+        self.assertIn("Leaving unmanaged Codex hooks.json with startup update hook", stdout)
+
+    def test_codex_install_refuses_unmanaged_hooks_directory(self) -> None:
+        user_hooks = self.codex_home / "hooks"
+        user_hooks.mkdir(parents=True)
+        (user_hooks / "custom.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertIsInstance(code, str)
+        self.assertIn("Refusing to overwrite existing unmanaged hooks directory", code)
+        self.assertEqual(stderr, "")
+        self.assertFalse(user_hooks.is_symlink())
+        self.assertTrue((user_hooks / "custom.sh").exists())
+        self.assert_symlink_target(
+            self.codex_home / "hooks.json",
+            REPO_ROOT / "codex" / "global" / "hooks.json",
+        )
+        self.assertIn("Rendered", stdout)
 
     def test_claude_install_adds_import_and_links_settings_hooks_and_tool(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "claude")
@@ -218,22 +329,71 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("work-cycle", listed_skill_names)
 
     def test_update_stops_when_git_pull_fails(self) -> None:
-        calls = []
+        pull_error = subprocess.CalledProcessError(
+            returncode=1, cmd=["git", "-C", str(REPO_ROOT), "pull", "--ff-only"]
+        )
 
-        def fail_pull(command, *args, **kwargs):
-            calls.append(command)
-            if command[:4] == ["git", "-C", str(REPO_ROOT), "pull"]:
-                raise subprocess.CalledProcessError(returncode=1, cmd=command)
-            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
-
-        with mock.patch.object(self.tool.subprocess, "run", side_effect=fail_pull):
+        with mock.patch.object(self.tool, "git_pull_ff_only", side_effect=pull_error) as pull:
             code, stdout, stderr = self.invoke("update", "--agent", "codex")
 
         self.assertIsInstance(code, subprocess.CalledProcessError)
         self.assertEqual(stdout, "")
         self.assertEqual(stderr, "")
-        self.assertEqual(calls, [["git", "-C", str(REPO_ROOT), "pull", "--ff-only"]])
+        pull.assert_called_once_with()
         self.assertFalse((self.codex_home / "AGENTS.override.md").exists())
+
+    def test_codex_update_repairs_managed_surface_links_after_pull(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        (self.codex_home / "hooks.json").unlink()
+        (self.codex_home / "hooks.json").symlink_to(REPO_ROOT / "global" / "hooks.json")
+        (self.codex_home / "hooks").unlink()
+        (self.codex_home / "hooks").symlink_to(REPO_ROOT / "hooks")
+        (self.codex_home / "bin" / "config-agent-tool").unlink()
+
+        with mock.patch.object(self.tool, "git_pull_ff_only") as pull:
+            code, stdout, stderr = self.invoke("update", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        pull.assert_called_once_with()
+        self.assert_symlink_target(
+            self.codex_home / "hooks.json",
+            REPO_ROOT / "codex" / "global" / "hooks.json",
+        )
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
+        self.assert_symlink_target(
+            self.codex_home / "bin" / "config-agent-tool",
+            REPO_ROOT / "bin" / "config-agent-tool",
+        )
+        self.assertIn("Replacing symlink: Codex hooks.json", stdout)
+        self.assertIn("Replacing symlink: Codex hooks", stdout)
+        self.assertIn("Creating symlink:", stdout)
+
+    def test_codex_update_warns_and_keeps_unmanaged_hooks_json(self) -> None:
+        self.codex_home.mkdir(parents=True)
+        (self.codex_home / "user").mkdir()
+        (self.codex_home / "bin").mkdir()
+        unmanaged = self.codex_home / "hooks.json"
+        unmanaged.write_text('{"hooks": {"Stop": []}}\n', encoding="utf-8")
+        (self.codex_home / "user" / "AGENTS.md").write_text(
+            "Personal instructions.\n", encoding="utf-8"
+        )
+        (self.codex_home / "bin" / "config-agent-tool").symlink_to(
+            REPO_ROOT / "bin" / "config-agent-tool"
+        )
+
+        with mock.patch.object(self.tool, "git_pull_ff_only") as pull:
+            code, stdout, stderr = self.invoke("update", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Warning: leaving unmanaged Codex hooks.json in place", stderr)
+        pull.assert_called_once_with()
+        self.assertEqual(unmanaged.read_text(encoding="utf-8"), '{"hooks": {"Stop": []}}\n')
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
+        self.assertTrue((self.codex_home / "AGENTS.override.md").exists())
+        self.assertIn("Rendered", stdout)
 
     def test_claude_update_repairs_legacy_flat_layout_paths(self) -> None:
         self.claude_home.mkdir(parents=True)
@@ -248,18 +408,12 @@ class ConfigAgentToolTests(unittest.TestCase):
         )
         (self.claude_home / "hooks").symlink_to(REPO_ROOT / "hooks")
 
-        calls = []
-
-        def succeed_pull(command, *args, **kwargs):
-            calls.append(command)
-            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
-
-        with mock.patch.object(self.tool.subprocess, "run", side_effect=succeed_pull):
+        with mock.patch.object(self.tool, "git_pull_ff_only") as pull:
             code, stdout, stderr = self.invoke("update", "--agent", "claude")
 
         self.assertEqual(code, 0)
         self.assertEqual(stderr, "")
-        self.assertEqual(calls[0], ["git", "-C", str(REPO_ROOT), "pull", "--ff-only"])
+        pull.assert_called_once_with()
         stale_import = f"@{REPO_ROOT / 'global' / 'CLAUDE.md'}"
         current_import = f"@{REPO_ROOT / 'claude' / 'global' / 'CLAUDE.md'}"
         claude_md = (self.claude_home / "CLAUDE.md").read_text(encoding="utf-8")
@@ -295,6 +449,11 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("Auto-trigger", text)
         self.assertIn("set up, initialize, install, onboard, configure", text)
         self.assertIn("install --agent codex", text)
+        self.assertIn("~/.codex/hooks.json", text)
+        self.assertIn("~/.codex/hooks/update-config.sh", text)
+        self.assertIn("SessionStart", text)
+        self.assertIn("/hooks", text)
+        self.assertIn("does not edit `~/.codex/config.toml`", text)
         self.assertIn("list-skills --agent codex --global", text)
         self.assertIn("link-skills --agent codex --global", text)
         self.assertIn("$work-cycle", text)
@@ -304,6 +463,130 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("list-skills --global", text)
         self.assertNotIn("link-skills --global", text)
         self.assertNotIn("$software", text)
+
+    def test_codex_update_hook_invokes_update_silently_and_returns_quickly(self) -> None:
+        fake_home = self.root / "fake-codex-home"
+        fake_bin = fake_home / "bin"
+        fake_bin.mkdir(parents=True)
+        fake_tool = fake_bin / "config-agent-tool"
+        fake_tool.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$*\" > \"$CODEX_HOME/invocation.log\"\n"
+            "echo visible stdout\n"
+            "echo visible stderr >&2\n"
+            "exit 7\n",
+            encoding="utf-8",
+        )
+        fake_tool.chmod(0o755)
+        env = {
+            **os.environ,
+            "CODEX_HOME": str(fake_home),
+            "HOME": str(self.root / "home"),
+        }
+
+        start = time.monotonic()
+        result = subprocess.run(
+            ["sh", str(REPO_ROOT / "codex" / "hooks" / "update-config.sh")],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            timeout=3,
+        )
+        elapsed = time.monotonic() - start
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
+        self.assertLess(elapsed, 2)
+        self.assertEqual(
+            (fake_home / "invocation.log").read_text(encoding="utf-8").strip(),
+            "update --agent codex",
+        )
+
+    def test_codex_hooks_json_command_runs_installed_hook(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        fake_tool = self.codex_home / "bin" / "config-agent-tool"
+        fake_tool.unlink()
+        fake_tool.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$*\" > \"$CODEX_HOME/installed-command.log\"\n",
+            encoding="utf-8",
+        )
+        fake_tool.chmod(0o755)
+        hooks_json = json.loads((self.codex_home / "hooks.json").read_text(encoding="utf-8"))
+        command = hooks_json["hooks"]["SessionStart"][0]["hooks"][0]["command"]
+        env = {**os.environ, "CODEX_HOME": str(self.codex_home)}
+
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            timeout=3,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(
+            (self.codex_home / "installed-command.log").read_text(encoding="utf-8").strip(),
+            "update --agent codex",
+        )
+
+    def test_codex_update_hook_kills_hung_update_child(self) -> None:
+        fake_home = self.root / "hung-codex-home"
+        fake_bin = fake_home / "bin"
+        fake_bin.mkdir(parents=True)
+        fake_tool = fake_bin / "config-agent-tool"
+        fake_tool.write_text(
+            "#!/bin/sh\n"
+            "(i=0; while :; do i=$((i + 1)); "
+            "printf '%s\\n' \"$i\" > \"$CODEX_HOME/heartbeat\"; sleep 1; done) &\n"
+            "child=$!\n"
+            "printf '%s\\n' \"$child\" > \"$CODEX_HOME/child.pid\"\n"
+            "trap 'kill \"$child\" 2>/dev/null; exit 143' TERM INT\n"
+            "wait \"$child\"\n",
+            encoding="utf-8",
+        )
+        fake_tool.chmod(0o755)
+        env = {
+            **os.environ,
+            "CODEX_HOME": str(fake_home),
+            "HOME": str(self.root / "home"),
+        }
+
+        start = time.monotonic()
+        result = subprocess.run(
+            ["sh", str(REPO_ROOT / "codex" / "hooks" / "update-config.sh")],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+            timeout=10,
+        )
+        elapsed = time.monotonic() - start
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "")
+        self.assertLess(elapsed, 8)
+        child_pid = int((fake_home / "child.pid").read_text(encoding="utf-8"))
+        heartbeat = fake_home / "heartbeat"
+        first_heartbeat = heartbeat.read_text(encoding="utf-8")
+        time.sleep(2)
+        second_heartbeat = heartbeat.read_text(encoding="utf-8")
+        if second_heartbeat != first_heartbeat:
+            with contextlib.suppress(OSError):
+                os.kill(child_pid, 9)
+        self.assertEqual(second_heartbeat, first_heartbeat)
 
 
 if __name__ == "__main__":
