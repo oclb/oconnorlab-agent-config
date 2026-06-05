@@ -12,7 +12,7 @@ Choose the appropriate internal subskill for the artifact type, then read only t
 - `subskills/pdf/` for PDF files and forms.
 - `subskills/pptx/` for PowerPoint presentations.
 - `subskills/tikz-flowchart/` for TikZ/LaTeX flowcharts, schematics, and diagrams.
-- `subskills/nature-figure-style/` for manuscript figure styling, critique, and journal-ready visual presentation.
+- `subskills/polished-manuscript-figure/` for manuscript figure styling, critique, and journal-ready visual presentation.
 - `subskills/finalize-manuscript/` for pre-submission and resubmission manuscript checklists; use when the user says "finalize manuscript", "check manuscript", "pre-submission check", "manuscript checklist", "ready to submit", or asks to prepare a manuscript for journal submission.
 
 Artifacts should have a high signal-to-noise ratio: prioritize the message, evidence, and user's concrete purpose over decoration or exhaustive process notes.

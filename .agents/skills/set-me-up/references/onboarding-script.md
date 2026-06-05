@@ -23,9 +23,9 @@ For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
 
 Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
 
-How this works under the hood: when you open Codex, the app locates AGENTS.md files and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink skills and an AGENTS.md file to `~/.codex` so that they become globally available on your machine.
+How this works under the hood: when you open Codex, the app locates AGENTS.md files, hooks, and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink this repo's shared AGENTS.md output, a startup auto-update hook, and any skills you choose to `~/.codex` so that they become globally available on your machine. It does not edit or own your personal `~/.codex/config.toml`.
 
-First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. I will also install the $notebook-entry skill globally.
+First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. Base setup will also install a `SessionStart` startup hook at `~/.codex/hooks.json` with its script in `~/.codex/hooks/update-config.sh`, so future Codex starts can silently refresh this repo's managed Codex surfaces. I will also install the $notebook-entry skill globally.
 ```
 
 ## 2. Base Setup
@@ -35,6 +35,10 @@ If user agrees, run:
 ```bash
 bin/config-agent-tool install --agent codex
 ```
+
+This installs the generated AGENTS override, the startup auto-update hook, and the `config-agent-tool` symlink. It does not install optional skills, and it does not edit `~/.codex/config.toml`.
+
+If setup reports an unmanaged `~/.codex/hooks.json`, it has installed the other managed surfaces but refused to replace your hook file. With your permission, manually merge the reported `SessionStart` startup hook into that file, then rerun `bin/config-agent-tool install --agent codex`. If setup reports an unmanaged `~/.codex/hooks/` directory, merge or move those existing scripts before rerunning install.
 
 Next, say:
 
@@ -54,33 +58,42 @@ ${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --agent codex --gl
 
 Ask each choice separately. Do not link any skill until all choices are collected.
 
-### Project Bootstrap
+### Notebook Auxiliaries
 
-Say:
+If the user indicated that they want to use the notebook system, say:
 
 ```text
-1. $init-project
+Notebook auxiliary skills: $documentation, $defer, $remind-resume
 
-This is the normal next step after global setup. It initializes an individual project for Codex by creating project instructions, initializing the notebook, and optionally adding project-scope skills including for O2 bridge setup.
+These skills work together. $documentation updates developer-facing and agent-facing docs. $defer captures later work as notebook-backed TODOs. $remind-resume summarizes recent project state when you return after a break.
 
-This is a manual-invocation skill. Installing it does not make Codex run it automatically; you must trigger it explicitly with `$init-project`.
+All three are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly with `$documentation`, `$defer`, or `$remind-resume`.
 
-Recommendation: install globally, because users need it in other repositories to start project setup.
+Recommendation: install these globally, since you indicated that you wish to use the lab notebook system.
 
-Install $init-project globally?
+Install the notebook system auxiliary skills globally?
 ```
+
+If the user wants only some notebook skills, accept that and record exactly which ones. Do not include $notebook-entry in this list; you should always install this if the user indicates that they want the notebook system.
 
 ### Software Workflow
 
 Say:
 
 ```text
-2. $work-cycle
+$work-cycle
 
-This is the planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic. It includes mode references which you can trigger by mentioning their keywords:
-- `$worktree`, prescribing a specific git workflow: implement changes on a worktree, make a PR, run external review
-- `$afk`, prescribing less user dialogue and more autonomy
-- `$methods-first`, prescribing the use of a Methods document as a software specification
+This is the planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic.
+
+Example invocation: `$work-cycle todo 7 grillme worktree`
+
+Its keywords can be combined:
+- `$work-cycle` invokes the planning-centric workflow for substantial work.
+- `todo 7` tells Codex to use notebook TODO item 7 as the task.
+- `worktree` instructs Codex to implement changes in a Git worktree.
+- `afk` instructs Codex to ask any questions immediately and then implement autonomously.
+- `methods-first` instructs Codex to use a Methods document as the plan or specification.
+- `grillme` is Matt Pocock-inspired and instructs Codex to stress-test the plan through structured questioning before implementation.
 
 This is a manual-invocation skill. Installing it does not make Codex use it automatically; you must trigger it explicitly with `$work-cycle`.
 
@@ -94,7 +107,7 @@ Install $work-cycle globally?
 Say:
 
 ```text
-3. $systematize
+$systematize
 
 This is the workflow-customization skill. It helps Codex modify its own instructions or diagnose problems with this configuration. It includes four subskills which you can trigger by mentioning their keywords:
 - `$skill-creator`, to create or update a Codex skill
@@ -112,14 +125,14 @@ Install $systematize globally?
 Say:
 
 ```text
-4. $artifacts
+$artifacts
 
 This is a subskill router, with six subskills which you can trigger by keyword:
 - `$docx`, for Word documents
 - `$pptx`, for PowerPoint presentations
 - `$pdf`, for PDF files
 - `$tikz-flowchart`, for LaTeX/TikZ flowcharts
-- `$nature-figure-style`, for polished figures
+- `$polished-manuscript-figure`, for polished manuscript figures
 - `$finalize-manuscript`, for a long list of pre-submission manuscript checks
 
 Recommendation: install globally if you use Codex for papers, figures, slides, or other public-facing scientific artifacts.
@@ -127,35 +140,27 @@ Recommendation: install globally if you use Codex for papers, figures, slides, o
 Install $artifacts globally?
 ```
 
-### Notebook Auxiliaries
-
-If the user indicated that they want to use the notebook system, say:
-
-```text
-5. Notebook auxiliary skills: $documentation, $defer, $remind-resume
-
-These skills work together. $documentation updates developer-facing and agent-facing docs. $defer captures later work as notebook-backed TODOs. $remind-resume summarizes recent project state when you return after a break.
-
-All three are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly with `$documentation`, `$defer`, or `$remind-resume`.
-
-Recommendation: install these globally, since you indicated that you wish to use the lab notebook system.
-
-Install the notebook system auxiliary skills globally?
-```
-
-If the user wants only some notebook skills, accept that and record exactly which ones. Do not include $notebook-entry in this list; you should always install this if the user indicates that they want the notebook system.
-
-### Project-Scope Skills
+### Project Setup And Local Skills
 
 Say:
 
 ```text
+$init-project and project-local skills
+
+$init-project is the normal next step after global setup. It initializes an individual project for Codex by creating project instructions, setting up the notebook if you opted into the notebook system, and optionally adding project-scope skills.
+
 These remaining skills are intended for project-local installation, not global installation:
 1. $use-o2: operate the O2 bridge after first-time setup.
 2. $dx-jobs: check, monitor, diagnose, and resubmit DNAnexus jobs.
 3. $run-graphld-o2: install and run GraphLD graphREML on O2.
 
 You can install these later inside a project with $init-project or with config-agent-tool link-skills --agent codex --add <skill>. I will not install them globally unless you explicitly ask me to override the recommendation.
+
+This is a manual-invocation skill. Installing it does not make Codex run it automatically; you must trigger it explicitly with `$init-project`.
+
+Recommendation: install $init-project globally, because users need it in other repositories to start project setup. Skipped global skills can still be installed project-locally later.
+
+Install $init-project globally?
 ```
 
 ## 4. Confirm And Link
@@ -173,7 +178,7 @@ Skip the command if no skills were chosen.
 Verify:
 
 ```bash
-ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool
+ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool ~/.codex/hooks.json ~/.codex/hooks/update-config.sh
 ls -l ~/.codex/skills/<chosen-skill>
 command -v remote-bridge || true
 ```
@@ -187,5 +192,5 @@ curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/r
 Finish with (assuming $init-project was installed):
 
 ```text
-Setup is complete. If you wish to modify your choices or uninstall symlinks, run `codex` inside of this directory. To set up a specific project, navigate to that project, run `codex`, and run `$init-project`.
+Setup is complete. Restart Codex so it can load the startup auto-update hook. If Codex says the hook needs review, use `/hooks` to inspect and trust it. If you wish to modify your choices or uninstall symlinks, run `codex` inside of this directory. To set up a specific project, navigate to that project, run `codex`, and run `$init-project`.
 ```
