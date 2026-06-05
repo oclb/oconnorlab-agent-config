@@ -2,7 +2,7 @@
 # Install remote-bridge binary from GitHub releases
 set -e
 
-REPO="oclb/lab-agent-config"
+REPO="${REMOTE_BRIDGE_REPO:-oclb/oconnorlab-agent-config}"
 BINARY="remote-bridge"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
@@ -46,9 +46,18 @@ echo "Download URL: $DOWNLOAD_URL"
 # Create install directory if needed
 mkdir -p "$INSTALL_DIR"
 
-# Download and install
-curl -fsSL "$DOWNLOAD_URL" -o "$INSTALL_DIR/$BINARY"
-chmod +x "$INSTALL_DIR/$BINARY"
+# Download to a temp file in the install dir so a failed update cannot clobber
+# a working binary.
+TMP_FILE="$(mktemp "$INSTALL_DIR/.${BINARY}.tmp.XXXXXX")"
+cleanup() {
+    rm -f "$TMP_FILE"
+}
+trap cleanup EXIT
+
+curl -fsSL "$DOWNLOAD_URL" -o "$TMP_FILE"
+chmod +x "$TMP_FILE"
+mv "$TMP_FILE" "$INSTALL_DIR/$BINARY"
+trap - EXIT
 
 echo "Installed to $INSTALL_DIR/$BINARY"
 

@@ -27,44 +27,26 @@ Remote Bridge establishes a **single persistent SSH session** with proper termin
 
 ## Installation
 
-### Option 1: Copy from Repo (Recommended)
+### Option 1: Install from GitHub Releases (Recommended)
 
-Pre-built binaries are included in `bin/`:
+Install the latest pre-built binary:
 
 ```bash
-# Detect platform
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-case "$OS-$ARCH" in
-    darwin-arm64)  BINARY="remote-bridge-darwin-arm64" ;;
-    darwin-x86_64) BINARY="remote-bridge-darwin-x86_64" ;;
-    linux-x86_64)  BINARY="remote-bridge-linux-x86_64" ;;
-    *) echo "Unsupported: $OS-$ARCH"; exit 1 ;;
-esac
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh | bash
+```
 
-# Install
-mkdir -p ~/.local/bin
-cp bin/$BINARY ~/.local/bin/remote-bridge
-chmod +x ~/.local/bin/remote-bridge
+To install a specific release or use a different install directory, replace `vX.Y.Z` with the desired release tag:
 
-# Add to PATH if needed
-echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.zshrc  # or ~/.bashrc
-source ~/.zshrc
+```bash
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/install.sh \
+  | VERSION=vX.Y.Z INSTALL_DIR="$HOME/.local/bin" bash
 ```
 
 Supported platforms:
 - macOS (Apple Silicon and Intel)
 - Linux (x86_64)
 
-### Option 2: Install Script (When Repo is Public)
-
-Once the repo is public, you can use the install script:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/oclb/lab-agent-config/main/remote-bridge/install.sh | bash
-```
-
-### Option 3: Build from Source
+### Option 2: Build from Source
 
 Requires [Rust](https://rustup.rs/).
 
@@ -77,16 +59,17 @@ Binary will be at `target/release/remote-bridge`.
 
 ## Quick Start
 
-### 2. Configure Permissions
+### 1. Configure Permissions
 
 ```bash
 mkdir -p ~/.config/remote-bridge
-cp config/permissions.example.toml ~/.config/remote-bridge/permissions.toml
+curl -fsSL https://raw.githubusercontent.com/oclb/oconnorlab-agent-config/main/remote-bridge/config/permissions.example.toml \
+  -o ~/.config/remote-bridge/permissions.toml
 # Edit to match your paths
 $EDITOR ~/.config/remote-bridge/permissions.toml
 ```
 
-### 3. Start Bridge
+### 2. Start Bridge
 
 ```bash
 remote-bridge start o2 --user YOUR_USERNAME
@@ -98,7 +81,7 @@ This will:
 3. Establish persistent SSH session
 4. Start JSON-RPC server on Unix socket
 
-### 4. Send Commands
+### 3. Send Commands
 
 From another terminal (or AI agents):
 
@@ -113,7 +96,7 @@ echo '{"jsonrpc":"2.0","method":"ls","params":{"path":"/n/data1/...","flags":[]}
 echo '{"jsonrpc":"2.0","method":"cat","params":{"path":"/n/data1/.../file.txt"},"id":3}' | nc -U ~/.config/remote-bridge/sockets/remote-bridge-o2.sock
 ```
 
-### 5. Stop Bridge
+### 4. Stop Bridge
 
 Press Ctrl+C in the terminal running the bridge, or:
 
