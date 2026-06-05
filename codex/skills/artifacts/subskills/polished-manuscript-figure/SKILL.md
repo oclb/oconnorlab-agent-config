@@ -1,10 +1,10 @@
 ---
-name: nature-figure-style
+name: polished-manuscript-figure
 description: >-
-  Presentation-style subset of a Nature/high-impact journal figure workflow. Use when the user asks to style, polish, critique, audit, or improve manuscript figures, multi-panel scientific plots, scientific slide figures, SVG/PDF/TIFF outputs, figure legends, panel layouts, or journal-ready visual presentation. Focuses on visual argument, hierarchy, typography, color, layout, export readability, and reviewer-risk checks. Not for dashboards, exploratory plots, Illustrator/Figma-first infographics, or choosing/implementing the full plotting backend.
+  Presentation-style subset of a high-impact manuscript figure workflow. Use when the user asks to style, polish, critique, audit, or improve manuscript figures, multi-panel scientific plots, scientific slide figures, SVG/PDF/TIFF outputs, figure legends, panel layouts, or journal-ready visual presentation. Focuses on visual argument, hierarchy, typography, color, layout, export readability, and reviewer-risk checks. Not for dashboards, exploratory plots, Illustrator/Figma-first infographics, or choosing/implementing the full plotting backend.
 ---
 
-# Nature Figure Style
+# Polished Manuscript Figure
 
 Use this skill to make scientific figures read as a visual argument, not as isolated
 pretty plots. Every figure starts from a claim, an evidence hierarchy, and a

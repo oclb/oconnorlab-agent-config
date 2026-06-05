@@ -54,33 +54,42 @@ ${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --agent codex --gl
 
 Ask each choice separately. Do not link any skill until all choices are collected.
 
-### Project Bootstrap
+### Notebook Auxiliaries
 
-Say:
+If the user indicated that they want to use the notebook system, say:
 
 ```text
-1. $init-project
+Notebook auxiliary skills: $documentation, $defer, $remind-resume
 
-This is the normal next step after global setup. It initializes an individual project for Codex by creating project instructions, initializing the notebook, and optionally adding project-scope skills including for O2 bridge setup.
+These skills work together. $documentation updates developer-facing and agent-facing docs. $defer captures later work as notebook-backed TODOs. $remind-resume summarizes recent project state when you return after a break.
 
-This is a manual-invocation skill. Installing it does not make Codex run it automatically; you must trigger it explicitly with `$init-project`.
+All three are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly with `$documentation`, `$defer`, or `$remind-resume`.
 
-Recommendation: install globally, because users need it in other repositories to start project setup.
+Recommendation: install these globally, since you indicated that you wish to use the lab notebook system.
 
-Install $init-project globally?
+Install the notebook system auxiliary skills globally?
 ```
+
+If the user wants only some notebook skills, accept that and record exactly which ones. Do not include $notebook-entry in this list; you should always install this if the user indicates that they want the notebook system.
 
 ### Software Workflow
 
 Say:
 
 ```text
-2. $work-cycle
+$work-cycle
 
-This is the planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic. It includes mode references which you can trigger by mentioning their keywords:
-- `$worktree`, prescribing a specific git workflow: implement changes on a worktree, make a PR, run external review
-- `$afk`, prescribing less user dialogue and more autonomy
-- `$methods-first`, prescribing the use of a Methods document as a software specification
+This is the planning-centric workflow for substantial software, analysis, artifact, documentation, and configuration work. It pushes Codex toward explicit alignment with the user before changing modules, APIs, edges, or core logic.
+
+Example invocation: `$work-cycle todo 7 grillme worktree`
+
+Its keywords can be combined:
+- `$work-cycle` invokes the planning-centric workflow for substantial work.
+- `todo 7` tells Codex to use notebook TODO item 7 as the task.
+- `worktree` instructs Codex to implement changes in a Git worktree.
+- `afk` instructs Codex to ask any questions immediately and then implement autonomously.
+- `methods-first` instructs Codex to use a Methods document as the plan or specification.
+- `grillme` is Matt Pocock-inspired and instructs Codex to stress-test the plan through structured questioning before implementation.
 
 This is a manual-invocation skill. Installing it does not make Codex use it automatically; you must trigger it explicitly with `$work-cycle`.
 
@@ -94,7 +103,7 @@ Install $work-cycle globally?
 Say:
 
 ```text
-3. $systematize
+$systematize
 
 This is the workflow-customization skill. It helps Codex modify its own instructions or diagnose problems with this configuration. It includes four subskills which you can trigger by mentioning their keywords:
 - `$skill-creator`, to create or update a Codex skill
@@ -112,14 +121,14 @@ Install $systematize globally?
 Say:
 
 ```text
-4. $artifacts
+$artifacts
 
 This is a subskill router, with six subskills which you can trigger by keyword:
 - `$docx`, for Word documents
 - `$pptx`, for PowerPoint presentations
 - `$pdf`, for PDF files
 - `$tikz-flowchart`, for LaTeX/TikZ flowcharts
-- `$nature-figure-style`, for polished figures
+- `$polished-manuscript-figure`, for polished manuscript figures
 - `$finalize-manuscript`, for a long list of pre-submission manuscript checks
 
 Recommendation: install globally if you use Codex for papers, figures, slides, or other public-facing scientific artifacts.
@@ -127,35 +136,27 @@ Recommendation: install globally if you use Codex for papers, figures, slides, o
 Install $artifacts globally?
 ```
 
-### Notebook Auxiliaries
-
-If the user indicated that they want to use the notebook system, say:
-
-```text
-5. Notebook auxiliary skills: $documentation, $defer, $remind-resume
-
-These skills work together. $documentation updates developer-facing and agent-facing docs. $defer captures later work as notebook-backed TODOs. $remind-resume summarizes recent project state when you return after a break.
-
-All three are manual-invocation skills. Installing them does not make Codex use them automatically; you trigger them explicitly with `$documentation`, `$defer`, or `$remind-resume`.
-
-Recommendation: install these globally, since you indicated that you wish to use the lab notebook system.
-
-Install the notebook system auxiliary skills globally?
-```
-
-If the user wants only some notebook skills, accept that and record exactly which ones. Do not include $notebook-entry in this list; you should always install this if the user indicates that they want the notebook system.
-
-### Project-Scope Skills
+### Project Setup And Local Skills
 
 Say:
 
 ```text
+$init-project and project-local skills
+
+$init-project is the normal next step after global setup. It initializes an individual project for Codex by creating project instructions, setting up the notebook if you opted into the notebook system, and optionally adding project-scope skills.
+
 These remaining skills are intended for project-local installation, not global installation:
 1. $use-o2: operate the O2 bridge after first-time setup.
 2. $dx-jobs: check, monitor, diagnose, and resubmit DNAnexus jobs.
 3. $run-graphld-o2: install and run GraphLD graphREML on O2.
 
 You can install these later inside a project with $init-project or with config-agent-tool link-skills --agent codex --add <skill>. I will not install them globally unless you explicitly ask me to override the recommendation.
+
+This is a manual-invocation skill. Installing it does not make Codex run it automatically; you must trigger it explicitly with `$init-project`.
+
+Recommendation: install $init-project globally, because users need it in other repositories to start project setup. Skipped global skills can still be installed project-locally later.
+
+Install $init-project globally?
 ```
 
 ## 4. Confirm And Link

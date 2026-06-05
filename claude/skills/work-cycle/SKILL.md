@@ -22,6 +22,7 @@ The user may request one or more special modes, in which case read and follow th
 - *worktree:* read `references/modes/worktree.md`
 - *afk:* read `references/modes/afk.md`
 - *methods-first:* read `references/modes/methods-first.md`
+- *grill-me* or *grillme:* read `references/modes/grill-me.md`
 
 ## Planning
 
