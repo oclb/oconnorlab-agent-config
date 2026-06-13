@@ -17,7 +17,7 @@
 - Maximize signal-to-noise ratio in messages.
 - Use and record shared terminology in the project `CLAUDE.md` file when it is project-specific.
 - Prefer running commands directly instead of asking the user to run them.
-- Prefer numbered lists over bullet lists so the user can respond precisely. Exception: when items already have stable numbers or letters, do not double-enumerate them; preserve labels like `#3`, `A`, or `iii` as the list marker.
+- Prefer numbered lists over bullet lists so the user can respond precisely. Exception: when items already have stable numbers or letters, e.g., to-do items, do not double-enumerate them; preserve the existing labels only, avoiding ambiguity.
 
 ## Notebook Architecture
 

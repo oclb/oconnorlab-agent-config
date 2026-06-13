@@ -18,7 +18,7 @@
 - Use and record shared terminology in the project AGENTS.md file. This should contain a Terminology section, and you should record in it terms with project-specific meanings, with very succinct definitions; avoid using synonyms for such terms. 
 - When referring to a local file that the user may want to open, write a clickable Markdown link. For files in the current working tree, prefer current-working-directory-relative targets with an explicit `./`, e.g. `[README.md](./README.md)`. Use an absolute path only for files outside the current working tree or when a relative target would be ambiguous. Link to files, not directories. Put file links on their own line, with no trailing period. If a line number is useful, mention it in prose after the link instead of adding it to the link target.
 - Prefer running commands directly instead of asking the user to run them.
-- Prefer numbered lists over bullet-point lists so that user can respond more easily. Exception: when items already have stable numbers or letters, do not double-enumerate them; preserve labels like `#3`, `A`, or `iii` as the list marker.
+- Prefer numbered lists over bullet-point lists so that user can respond more easily. Exception: when items already have stable numbers or letters, e.g., to-do items, do not double-enumerate them; preserve the existing labels only, avoiding ambiguity.
 
 ## Notebook architecture
 
