@@ -24,6 +24,8 @@
 
 The notebook is a separate git repository at `notebook/`. It contains `INDEX.md` for active entries, `TODO.md` and `DONE.md` for notebook-backed tasks, `entries/` for durable work records, `plans/` for written plans, and optionally `feedback/` for reusable feedback.
 
+Unless a project already has a different convention, save results of analyses in `notebook/results/`, creating that directory if it does not exist. Results that support notebook entries should live in durable notebook paths rather than temporary directories.
+
 - At session start, read `notebook/INDEX.md`. This may contain a subset of entries.
 - Retrieve notebook entries when the user references past work, or when you infer that there is historical context you are missing.
 - Create notebook entries for new analyses, software changes that change the interpretation of scientific results obtained before versus after the change, codebase investigations, or significant decisions.
