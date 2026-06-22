@@ -61,16 +61,6 @@ Use `Codex` for `Author`. Use the `git config user.name` value for `User`.
 - Keep public-facing documents, private local paths, secrets, credentials, and irrelevant chat texture out of the entry.
 - If updating during ongoing work, write incrementally; git history can preserve how the entry evolved.
 
-## Todo Format
-
-When adding notebook-backed TODO candidates to `notebook/TODO.md`, assign stable numeric IDs in the visible item text:
-
-```markdown
-- [ ] Todo #N: <task>
-```
-
-Use the next unused integer unless the source artifact already has stable finding or task numbers; in that case preserve those source numbers. When moving an item to `DONE.md`, keep the same `Todo #N` prefix. Do not renumber remaining active todos after items are completed.
-
 For style examples, find the config repo from the installed global instructions and read `templates/entry-examples.md` only if needed:
 
 ```bash
