@@ -1,6 +1,6 @@
 ---
 name: maintain-project
-description: Documentation subskill for comprehensive project maintenance audits. Use through $documentation when the user asks to "maintain", "audit", "clean up", "health check", or review overall project state. Checks AGENTS.md freshness, notebook index, TODO list, git state, test suite, and compiles actionable suggestions.
+description: Documentation subskill for project hygiene maintenance. Use through $documentation when the user asks to maintain, clean up, health-check, refresh AGENTS.md/notebook/TODOs, inspect git branches/PRs/stashes, or review overall project state. Do not use for codebase audit, codebase review, release-check, or module-scoped bug-finding requests; those belong to module-codebase-review.
 ---
 
 # Maintain Project

@@ -1,7 +1,7 @@
 interface:
   display_name: "Documentation"
-  short_description: "Route module maps, module docs, and project maintenance audits."
-  default_prompt: "Use $documentation to create or audit developer-facing project documentation: <documentation-task>."
+  short_description: "Route module maps, module docs, project hygiene, and codebase audits."
+  default_prompt: "Use $documentation for module maps, module docs, project hygiene, or module-scoped codebase audits: <documentation-task>."
 
 policy:
   allow_implicit_invocation: false

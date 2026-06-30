@@ -464,6 +464,34 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("link-skills --global", text)
         self.assertNotIn("$software", text)
 
+    def test_documentation_codebase_audit_routes_away_from_maintenance(self) -> None:
+        documentation = (REPO_ROOT / "codex" / "skills" / "documentation" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        maintain_project = (
+            REPO_ROOT
+            / "codex"
+            / "skills"
+            / "documentation"
+            / "subskills"
+            / "maintain-project"
+            / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        module_review = (
+            REPO_ROOT
+            / "codex"
+            / "skills"
+            / "documentation"
+            / "subskills"
+            / "module-codebase-review"
+            / "SKILL.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("codebase audit", documentation)
+        self.assertIn("subskills/module-codebase-review/", documentation)
+        self.assertIn("Do not use for codebase audit", maintain_project)
+        self.assertIn("Use this instead of maintain-project", module_review)
+
     def test_codex_update_hook_invokes_update_silently_and_returns_quickly(self) -> None:
         fake_home = self.root / "fake-codex-home"
         fake_bin = fake_home / "bin"
