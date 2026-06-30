@@ -71,7 +71,10 @@ mkdir -p notebook/{entries,feedback,plans}
 test -d notebook/.git || git -C notebook init
 ```
 
-Create missing template files:
+Create these missing template files with the exact starting contents shown below.
+If `notebook/TODO.md` exists but has no `Next ID:` line, repair it before committing: find the largest `#N` task id in both `notebook/TODO.md` and `notebook/DONE.md`, then insert `Next ID: N+1` below the `# To-Do` heading.
+
+`notebook/INDEX.md`:
 
 ```markdown
 # Notebook Index
@@ -80,9 +83,15 @@ Create missing template files:
 |------|------|---------|
 ```
 
+`notebook/TODO.md`:
+
 ```markdown
 # To-Do
+
+Next ID: 1
 ```
+
+`notebook/DONE.md`:
 
 ```markdown
 # Completed

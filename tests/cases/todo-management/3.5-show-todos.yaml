@@ -18,6 +18,8 @@ setup:
       cat > notebook/TODO.md << 'EOF'
       # To-Do
 
+      Next ID: 3
+
       - [ ] #1 **Calculate LD scores** - For EUR population
         - Added: 2026-01-15
 

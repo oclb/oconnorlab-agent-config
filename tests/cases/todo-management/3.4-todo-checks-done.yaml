@@ -1,8 +1,8 @@
-# Test 3.4: Todo Numbering Checks DONE.md
-# Numbering considers completed todos to avoid reuse
+# Test 3.4: Todo Numbering Uses Counter
+# Counter has advanced past completed todos to avoid reuse
 
-name: todo-checks-done
-description: Todo numbering checks DONE.md for highest number
+name: todo-uses-counter
+description: Todo numbering uses Next ID counter
 
 config:
   model: sonnet
@@ -19,6 +19,8 @@ setup:
   - command: |
       cat > notebook/TODO.md << 'EOF'
       # To-Do
+
+      Next ID: 4
 
       - [ ] #3 **Run association test** - GWAS on filtered data
         - Added: 2026-01-16
@@ -44,8 +46,8 @@ assertions:
     prompt: |
       The new todo should be numbered #4 (after #1, #2 in DONE.md and #3 in TODO.md).
 
-      Does the new todo item have #4 in it (not reusing #1, #2, or #3)?
+      Does the new todo item have #4 in it, using the Next ID counter rather than reusing #1, #2, or #3?
       Answer yes or no.
     pass_if: "yes"
     model: haiku
-    description: "New todo should be #4"
+    description: "New todo should use counter value #4"

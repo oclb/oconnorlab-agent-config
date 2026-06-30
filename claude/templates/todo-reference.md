@@ -34,13 +34,16 @@ Next ID: 3
 Todo completion is usually handled automatically by the memory agent when work results in a notebook entry. The manual completion flow below is a fallback.
 
 ### Adding a todo
-1. Read `Next ID:` counter from TODO.md, use that number, then increment the counter
-2. If the todo arises from a notebook entry, add a `Context:` line linking to it
-3. Commit:
+1. If `TODO.md` is missing, create it with `# To-Do` and `Next ID: 1`. If `DONE.md` is missing, create it with `# Completed`.
+2. Read `Next ID:` counter from TODO.md, use that number, then increment the counter
+3. If the todo arises from a notebook entry, add a `Context:` line linking to it
+4. Commit:
    ```bash
    git -C notebook add TODO.md && git -C notebook commit -m "todo: add #N - <task name>"
    git -C notebook remote | grep -q origin && git -C notebook push
    ```
+
+If `TODO.md` exists but has no `Next ID:` line, repair it before adding the todo: find the largest `#N` task id in both `TODO.md` and `DONE.md`, insert `Next ID: N+1` below the `# To-Do` heading, then use that repaired counter. New notebooks should start with `Next ID: 1`.
 
 ### Completing a todo (manual fallback)
 1. Read TODO.md to find the item; if it has a `Context:` link, read that entry for background

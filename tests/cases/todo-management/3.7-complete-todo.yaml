@@ -20,6 +20,8 @@ setup:
       cat > notebook/TODO.md << 'EOF'
       # To-Do
 
+      Next ID: 2
+
       - [ ] #1 **Count variants** - Count variants passing QC filters
         - Added: 2026-01-15
       EOF

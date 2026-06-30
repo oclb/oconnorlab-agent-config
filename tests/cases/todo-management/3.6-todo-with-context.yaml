@@ -43,6 +43,8 @@ setup:
       cat > notebook/TODO.md << 'EOF'
       # To-Do
 
+      Next ID: 1
+
       EOF
   - command: |
       cat > notebook/DONE.md << 'EOF'
