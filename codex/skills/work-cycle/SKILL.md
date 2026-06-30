@@ -57,6 +57,8 @@ Run relevant validation and iteratively debug. If the task is substantial, or if
 
 Create or update notebook entries for new analyses, code changes that alter interpretation of scientific results, codebase investigations, significant decisions, or substantial work whose context should survive the session. For entry creation after implementation, fork a subagent.
 
+If the user asked to work on a specific notebook TODO, complete the TODO once implementation is finished in normal mode, or as soon as the PR is opened in worktree mode; do not wait for merge.
+
 ## Gotchas
 
 - Failing to switch into Plan Mode and attempting a one-shot implementation.
