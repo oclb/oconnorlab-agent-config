@@ -8,7 +8,7 @@ These examples show the expected style and level of detail for notebook entries.
 # Gene Expression Batch Effect Analysis
 
 **Date:** 2026-01-15
-**Author:** Claude
+**Author:** Claude Code
 **User:** jsmith
 
 ## Summary
@@ -37,7 +37,7 @@ Batch correction with ComBat reduced batch-PC1 correlation to 0.11 while preserv
 # User Authentication with OAuth2
 
 **Date:** 2026-01-10
-**Author:** Claude
+**Author:** Claude Code
 **User:** jsmith
 
 ## Summary
@@ -69,7 +69,7 @@ Edge cases handled:
 # SSH Socket Validation Findings
 
 **Date:** 2026-01-17
-**Author:** Claude
+**Author:** Claude Code
 **User:** jsmith
 
 ## Summary
