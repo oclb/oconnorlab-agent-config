@@ -1,0 +1,5 @@
+{
+  "name": "lab-config",
+  "description": "Lab-managed Claude Code hooks: silent config auto-update at session start, memory reminder, and desktop notifications.",
+  "version": "0.1.0"
+}

@@ -42,7 +42,8 @@ ${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool link-skills --agent claude -
 Skip this command if the user chooses no global skills.
 8. Verify the files and symlinks created by setup:
    - `~/.claude/CLAUDE.md`
-   - `~/.claude/settings.json`
+   - `~/.claude/settings.json` (a user-owned regular file, never a symlink; seeded from `claude/global/settings.json` and afterwards owned by the user)
+   - `~/.claude/skills/lab-config` (symlink to this repo's `claude/plugin/lab-config`, which delivers the managed hooks as a plugin)
    - `~/.claude/hooks`
    - `~/.claude/bin/config-agent-tool`
    - any chosen global skills under `~/.claude/skills/`

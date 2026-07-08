@@ -23,7 +23,7 @@ For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
 
 Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
 
-How this works under the hood: when you open Claude Code, the app locates CLAUDE.md files and skills located at `~/.claude` and within your project directory. This setup will nondestructively add an import to `~/.claude/CLAUDE.md` and symlink settings, hooks, and skills to `~/.claude` so that they become globally available on your machine.
+How this works under the hood: when you open Claude Code, the app locates CLAUDE.md files, plugins, and skills located at `~/.claude` and within your project directory. This setup will nondestructively add an import to `~/.claude/CLAUDE.md`, link this repo's lab-config plugin (which provides the managed hooks, including a startup auto-update hook) into `~/.claude/skills/`, and symlink any skills you choose. Your `~/.claude/settings.json` stays a user-owned file: setup seeds it from this repo's template if it is missing, and your own interactive changes (model choice, permission grants) are never written back to this repo.
 
 First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [CLAUDE.md](claude/global/CLAUDE.md) import and install the /notebook-entry skill globally.
 ```
@@ -174,7 +174,7 @@ Skip the command if no skills were chosen.
 Verify:
 
 ```bash
-ls -l ~/.claude/CLAUDE.md ~/.claude/settings.json ~/.claude/hooks ~/.claude/bin/config-agent-tool
+ls -l ~/.claude/CLAUDE.md ~/.claude/settings.json ~/.claude/skills/lab-config ~/.claude/hooks ~/.claude/bin/config-agent-tool
 ls -l ~/.claude/skills/<chosen-skill>
 command -v remote-bridge || true
 ```
