@@ -46,6 +46,8 @@ def validate_skill(skill_path):
         'allowed-tools',
         'metadata',
         'disable-model-invocation',
+        'recommended_scope',
+        'version',
     }
 
     # Check for unexpected properties (excluding nested keys under metadata)
