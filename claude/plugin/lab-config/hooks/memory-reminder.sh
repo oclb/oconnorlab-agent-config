@@ -13,5 +13,5 @@ while [ "$DIR" != "/" ]; do
 done
 
 if [ "$FOUND" = true ]; then
-  echo '<reminder>DECIDE NOW: Will this turn produce SUBSTANTIAL work (multi-step analysis, significant implementation, non-obvious discovery, tool setup with gotchas)? If yes, spawn a memory agent before your turn ends. Most turns do NOT need entries - skip for discussions, minor fixes, routine operations, and planning without action.</reminder>'
+  echo '<reminder>DECIDE NOW: Will this turn produce SUBSTANTIAL work (multi-step analysis, significant implementation, non-obvious discovery, tool setup with gotchas)? If yes, create or update a notebook entry before your turn ends by delegating to a background Agent with the /notebook-entry prompt. Most turns do NOT need entries - skip for discussions, minor fixes, routine operations, and planning without action.</reminder>'
 fi
