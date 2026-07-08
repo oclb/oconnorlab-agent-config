@@ -72,7 +72,7 @@ test -d notebook/.git || git -C notebook init
 ```
 
 Create these missing template files with the exact starting contents shown below.
-If `notebook/TODO.md` exists but has no `Next ID:` line, repair it before committing: find the largest `#N` task id in both `notebook/TODO.md` and `notebook/DONE.md`, then insert `Next ID: N+1` below the `# To-Do` heading.
+Do not create todo files: `notebook/todos.json` is created by the `todo` script on first use. If the notebook has legacy `TODO.md`/`DONE.md` files, convert them with "${CLAUDE_HOME:-$HOME/.claude}/bin/todo" `migrate`.
 
 `notebook/INDEX.md`:
 
@@ -83,19 +83,6 @@ If `notebook/TODO.md` exists but has no `Next ID:` line, repair it before commit
 |------|------|---------|
 ```
 
-`notebook/TODO.md`:
-
-```markdown
-# To-Do
-
-Next ID: 1
-```
-
-`notebook/DONE.md`:
-
-```markdown
-# Completed
-```
 
 Commit notebook initialization when there are notebook changes:
 
