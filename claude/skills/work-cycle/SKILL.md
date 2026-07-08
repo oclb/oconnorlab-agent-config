@@ -23,6 +23,7 @@ The user may request one or more special modes, in which case read and follow th
 - *afk:* read `references/modes/afk.md`
 - *methods-first:* read `references/modes/methods-first.md`
 - *grill-me* or *grillme:* read `references/modes/grill-me.md`
+- *detailed:* read `references/modes/detailed.md`
 
 ## Planning
 
@@ -44,6 +45,8 @@ Draft and edit plans in `notebook/plans/`. The plan should include:
 2. *Approach:* high-level approach as discussed with user.
 3. *Current state:* current behavior or artifact/data state, with names and line numbers when applicable.
 4. *Changes:* concrete changes to make, with filenames when applicable.
+
+In detailed mode, the plan must separate the user-facing summary from the implementation context so the user can review the former while Claude can resume from the latter.
 
 After drafting the plan, assess whether a different approach would be simpler or better aligned with user intent; if so, ask an additional question and iterate.
 
