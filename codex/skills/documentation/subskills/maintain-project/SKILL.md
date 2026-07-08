@@ -95,14 +95,14 @@ Look for:
 
 ### Task 7: Audit TODO List
 
-Read `notebook/TODO.md` and `notebook/DONE.md`.
+List todos with "${CODEX_HOME:-$HOME/.codex}/bin/todo" `list` and "${CODEX_HOME:-$HOME/.codex}/bin/todo" `list --done`.
 
 For each open TODO:
 - Check if the work has already been done (search notebook entries and recent commits)
 - Check if the item is stale (>2 months old with no progress)
 - Check if it's still relevant given current project state
 
-**Action:** Mark completed items as done (move to DONE.md with `Result:` link if applicable). Flag stale items for user review in Task 10.
+**Action:** Mark completed items done with "${CODEX_HOME:-$HOME/.codex}/bin/todo" `complete <id> --result <entry>` when applicable. Flag stale items for user review in Task 10.
 
 ### Task 8: Run Test Suite
 

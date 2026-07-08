@@ -1,78 +1,30 @@
 # To-Do System Reference
 
-## File Formats
+Todos live in `notebook/todos.json` and are managed with the `todo` script. Do not edit `todos.json` by hand; every mutating command rewrites the file and commits (and pushes, when an origin remote exists) in the notebook repo in a single call.
 
-### notebook/TODO.md (active tasks)
+## Invocation
 
-~~~markdown
-# To-Do
+```bash
+TODO="${CODEX_HOME:-$HOME/.codex}/bin/todo"
+```
 
-Next ID: 3
-
-- [ ] #1 **Task name** - Brief description
-  - Context: `notebook/entries/related-entry` (if applicable)
-  - Added: YYYY-MM-DD
-
-- [ ] #2 **Another task** - Description
-  - Added: YYYY-MM-DD
-~~~
-
-### notebook/DONE.md (completed tasks)
-
-~~~markdown
-# Completed
-
-- [x] #0 **Example task** - Original description preserved
-  - Context: `notebook/entries/related-entry` (if it had one)
-  - Added: YYYY-MM-DD
-  - Completed: YYYY-MM-DD
-  - Result: `notebook/entries/resulting-entry`
-~~~
+Run it from anywhere inside the project; it discovers `notebook/` by walking up from the working directory. Pass `--notebook <path>` only when discovery cannot work.
 
 ## Operations
 
-Todo completion is usually handled by the agent creating or updating the notebook entry when work results in one. The manual completion flow below is a fallback.
+1. Add: `"$TODO" add "Title" [--description "..."] [--context notebook/entries/<slug>]` — prints the new id. Use `--context` when the todo arises from a notebook entry.
+2. List: `"$TODO" list` (active, plus the next id), `"$TODO" list --done`, `"$TODO" list --all`, `--json` for raw data.
+3. Show: `"$TODO" show <id>`
+4. Complete: `"$TODO" complete <id> [--result notebook/entries/<slug>]` — most completed todos should result in a notebook entry; the `--result` link connects the task to its entry for traceability.
+5. Edit: `"$TODO" edit <id> [--title ...] [--description ...] [--context ...] [--result ...]`
+6. Delete without completing: `"$TODO" delete <id> [--reason "..."]`
 
-### Adding a todo
-1. If `TODO.md` is missing, create it with `# To-Do` and `Next ID: 1`. If `DONE.md` is missing, create it with `# Completed`.
-2. Read `Next ID:` counter from TODO.md, use that number, then increment the counter
-3. If the todo arises from a notebook entry, add a `Context:` line linking to it
-4. Commit:
-   ```bash
-   git -C notebook add TODO.md && git -C notebook commit -m "todo: add #N - <task name>"
-   git -C notebook remote | grep -q origin && git -C notebook push
-   ```
+Todo completion is usually handled by the agent creating or updating the notebook entry when work results in one.
 
-If `TODO.md` exists but has no `Next ID:` line, repair it before adding the todo: find the largest `#N` task id in both `TODO.md` and `DONE.md`, insert `Next ID: N+1` below the `# To-Do` heading, then use that repaired counter. New notebooks should start with `Next ID: 1`.
+## Data Format
 
-### Completing a todo (manual fallback)
-1. Read TODO.md to find the item; if it has a `Context:` link, read that entry for background
-2. Make a plan and execute the work
-3. Move the entire item to DONE.md, preserving all original fields, adding:
-   - `Completed:` date
-   - `Result:` link if the work created a notebook entry
-4. Commit:
-   ```bash
-   git -C notebook add TODO.md DONE.md && git -C notebook commit -m "todo: complete #N - <task name>"
-   git -C notebook remote | grep -q origin && git -C notebook push
-   ```
+`notebook/todos.json` holds `next_id` plus `active` and `done` arrays. Each todo has `id`, `title`, `description`, optional `context`, and `added`; done todos also have `completed` and optional `result`. Ids are never reused.
 
-### Editing a todo
-1. Update the description or context as needed
-2. Commit:
-   ```bash
-   git -C notebook add TODO.md && git -C notebook commit -m "todo: update #N - <brief change>"
-   git -C notebook remote | grep -q origin && git -C notebook push
-   ```
+## Legacy Notebooks
 
-### Deleting a todo (without completing)
-1. Remove the item entirely (don't move to DONE.md)
-2. Commit:
-   ```bash
-   git -C notebook add TODO.md && git -C notebook commit -m "todo: remove #N - <reason>"
-   git -C notebook remote | grep -q origin && git -C notebook push
-   ```
-
-### Integration with Notebook
-
-Most completed todos should result in a notebook entry. The `Result:` link in DONE.md connects the task to its entry for traceability.
+Notebooks predating this system use `TODO.md`/`DONE.md`. Run `"$TODO" migrate` to convert one; mutating commands also auto-migrate on first use. Read-only commands (`list`, `show`) work on legacy notebooks without converting them.

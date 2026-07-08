@@ -565,6 +565,7 @@ def repair_claude_managed_surface() -> None:
         cdir / "bin" / "config-agent-tool",
         "config-agent-tool",
     )
+    ensure_symlink(repo_dir() / "bin" / "todo", cdir / "bin" / "todo", "todo tool")
 
 
 def codex_hooks_sidecar(code_dir: Path) -> Path:
@@ -705,6 +706,7 @@ def repair_codex_managed_surface(first_run: bool) -> None:
         code_dir / "bin" / "config-agent-tool",
         "config-agent-tool",
     )
+    ensure_symlink(repo_dir() / "bin" / "todo", code_dir / "bin" / "todo", "todo tool")
     command_render_override(argparse.Namespace(agent="codex", first_run=first_run))
     issues = []
     issues.extend(repair_codex_hooks_json(code_dir, first_run))

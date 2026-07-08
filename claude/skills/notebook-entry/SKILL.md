@@ -71,12 +71,8 @@ CONFIG_REPO="$("${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool" repo-dir)"
 
 Only do this when the conversation shows the user asked to work on a specific todo, such as "work on todo #3" or "do the X task".
 
-1. Read `notebook/TODO.md` and find the matching item.
-2. Read `notebook/DONE.md`.
-3. Move the item from TODO to DONE, preserving original fields and adding:
-   - `Completed: YYYY-MM-DD`
-   - `Result: notebook/entries/<slug>`
-   - Change the checkbox from `- [ ]` to `- [x]`
+1. Run "${CLAUDE_HOME:-$HOME/.claude}/bin/todo" `list` to find the matching item; read its `Context` entry if background is needed.
+2. Complete it with "${CLAUDE_HOME:-$HOME/.claude}/bin/todo" `complete <id> --result notebook/entries/<slug>`. The script commits and pushes the todo change itself.
 
 Skip this section entirely when no specific todo was being worked.
 
@@ -86,12 +82,12 @@ Skip this section entirely when no specific todo was being worked.
 2. Commit notebook changes with separate commands, not chained shell commands:
 
 ```bash
-git -C notebook add entries/ INDEX.md TODO.md DONE.md
+git -C notebook add entries/ INDEX.md
 git -C notebook commit -m "entry: <slug>"
 git -C notebook push
 ```
 
-Including unchanged `TODO.md` or `DONE.md` is fine. If `git push` fails because no remote exists, report that without treating the entry as failed.
+If `git push` fails because no remote exists, report that without treating the entry as failed.
 
 Return exactly one short status line, using the final entry path:
 

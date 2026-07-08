@@ -30,9 +30,7 @@ Use $notebook-entry to create or update the project notebook entry for this defe
 
 Requirements:
 - Assume `notebook/` is a subdirectory of the active project root.
-- After the entry exists, add a TODO item to `notebook/TODO.md` using the local format. The TODO line should be one-line and user-facing, with a `Context:` link to the entry.
-- Before editing `notebook/TODO.md`, read `$CONFIG_REPO/templates/todo-reference.md` for the local TODO/DONE format. If `CONFIG_REPO` is unset, derive it with `CONFIG_REPO="$("${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool" repo-dir)"`.
-- If `notebook/TODO.md` or `notebook/DONE.md` is missing, create the missing file with the starting contents from `todo-reference.md`. If `TODO.md` exists without `Next ID:`, repair it using the rule in `todo-reference.md` before adding the item.
+- After the entry exists, add the todo with "${CODEX_HOME:-$HOME/.codex}/bin/todo" `add "<one-line user-facing title>" --context notebook/entries/<slug>`. The script commits and pushes the todo change itself.
 - Commit only the notebook changes.
 - Do not implement the deferred task.
 - Return the TODO id and entry path.

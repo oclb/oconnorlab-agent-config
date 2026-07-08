@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+"""Manage notebook-backed todos stored in notebook/todos.json.
+
+The notebook is a separate git repository at <project>/notebook/. Todos live in
+todos.json ({"next_id": N, "active": [...], "done": [...]}); every mutating
+subcommand rewrites the file and commits (and pushes, when an origin remote
+exists) in a single invocation. Legacy TODO.md/DONE.md notebooks are migrated
+automatically on the first mutation, or explicitly with `todo migrate`.
+"""
+
+import argparse
+import datetime
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ITEM_RE = re.compile(r"^- \[( |x)\] #(\d+) \*\*(.*?)\*\*(?:\s*-\s*(.*))?$")
+FIELD_RE = re.compile(r"^\s+- (Context|Added|Completed|Result):\s*(.*)$")
+NEXT_ID_RE = re.compile(r"^Next ID:\s*(\d+)\s*$", re.MULTILINE)
+
+
+def fail(message):
+    print(f"error: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def find_notebook(override):
+    if override:
+        path = Path(override).resolve()
+        if not path.is_dir():
+            fail(f"notebook directory not found: {path}")
+        return path
+    current = Path.cwd().resolve()
+    for candidate in [current, *current.parents]:
+        if candidate.name == "notebook" and (candidate / ".git").exists():
+            return candidate
+        notebook = candidate / "notebook"
+        if notebook.is_dir():
+            return notebook
+    fail("no notebook/ directory found between the working directory and /")
+
+
+def todos_path(notebook):
+    return notebook / "todos.json"
+
+
+def strip_backticks(value):
+    return value.strip().strip("`").strip()
+
+
+def parse_markdown_items(text):
+    items = []
+    for line in text.splitlines():
+        match = ITEM_RE.match(line)
+        if match:
+            _, item_id, title, description = match.groups()
+            items.append(
+                {
+                    "id": int(item_id),
+                    "title": title.strip(),
+                    "description": (description or "").strip(),
+                }
+            )
+            continue
+        field = FIELD_RE.match(line)
+        if field and items:
+            key, value = field.groups()
+            items[-1][key.lower()] = strip_backticks(value)
+    return items
+
+
+def parse_legacy(notebook):
+    todo_md = notebook / "TODO.md"
+    done_md = notebook / "DONE.md"
+    todo_text = todo_md.read_text(encoding="utf-8") if todo_md.exists() else ""
+    done_text = done_md.read_text(encoding="utf-8") if done_md.exists() else ""
+    active = parse_markdown_items(todo_text)
+    done = parse_markdown_items(done_text)
+    next_id_match = NEXT_ID_RE.search(todo_text)
+    if next_id_match:
+        next_id = int(next_id_match.group(1))
+    else:
+        next_id = max([item["id"] for item in active + done], default=0) + 1
+    highest = max([item["id"] for item in active + done], default=0)
+    next_id = max(next_id, highest + 1)
+    return {"next_id": next_id, "active": active, "done": done}
+
+
+def load(notebook):
+    path = todos_path(notebook)
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"could not parse {path}: {exc}")
+        for key, default in (("next_id", 1), ("active", []), ("done", [])):
+            data.setdefault(key, default)
+        return data, False
+    return parse_legacy(notebook), True
+
+
+def git(notebook, *args, check=True):
+    return subprocess.run(
+        ["git", "-C", str(notebook), *args],
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+
+
+def save_and_commit(notebook, data, message, extra_rm=()):
+    path = todos_path(notebook)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    for name in extra_rm:
+        target = notebook / name
+        if target.exists():
+            git(notebook, "rm", "-q", "--cached", name, check=False)
+            target.unlink()
+    git(notebook, "add", path.name)
+    result = git(notebook, "commit", "-m", message, check=False)
+    if result.returncode != 0:
+        fail(f"git commit failed in {notebook}:\n{result.stderr.strip()}")
+    remotes = git(notebook, "remote").stdout.split()
+    if "origin" in remotes:
+        push = git(notebook, "push", check=False)
+        if push.returncode != 0:
+            print(f"warning: git push failed: {push.stderr.strip()}", file=sys.stderr)
+
+
+def migrate_if_legacy(notebook, data, was_legacy):
+    if not was_legacy:
+        return data
+    legacy_files = [n for n in ("TODO.md", "DONE.md") if (notebook / n).exists()]
+    save_and_commit(notebook, data, "todo: migrate to todos.json", extra_rm=legacy_files)
+    print(f"migrated {' and '.join(legacy_files) or 'empty todo list'} to todos.json")
+    return data
+
+
+def find_item(data, item_id, pools=("active", "done")):
+    for pool in pools:
+        for item in data[pool]:
+            if item["id"] == item_id:
+                return pool, item
+    fail(f"no todo #{item_id} in {' or '.join(pools)}")
+
+
+def format_item(item):
+    lines = [f"#{item['id']} {item['title']}"]
+    if item.get("description"):
+        lines.append(f"    {item['description']}")
+    meta = [
+        f"{key.capitalize()}: {item[key]}"
+        for key in ("context", "added", "completed", "result")
+        if item.get(key)
+    ]
+    if meta:
+        lines.append("    " + " | ".join(meta))
+    return "\n".join(lines)
+
+
+def today():
+    return datetime.date.today().isoformat()
+
+
+def cmd_add(notebook, args):
+    data, was_legacy = load(notebook)
+    migrate_if_legacy(notebook, data, was_legacy)
+    item = {
+        "id": data["next_id"],
+        "title": args.title,
+        "description": args.description or "",
+        "added": today(),
+    }
+    if args.context:
+        item["context"] = args.context
+    data["next_id"] += 1
+    data["active"].append(item)
+    save_and_commit(notebook, data, f"todo: add #{item['id']} - {args.title}")
+    print(f"added #{item['id']}: {args.title}")
+
+
+def cmd_list(notebook, args):
+    data, _ = load(notebook)
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return
+    pools = ["done"] if args.done else ["active"]
+    if args.all:
+        pools = ["active", "done"]
+    for pool in pools:
+        if args.all:
+            print(f"[{pool}]")
+        items = data[pool]
+        if not items:
+            print("(none)")
+        for item in items:
+            print(format_item(item))
+    if not args.done:
+        print(f"Next ID: {data['next_id']}")
+
+
+def cmd_show(notebook, args):
+    data, _ = load(notebook)
+    _, item = find_item(data, args.id)
+    if args.json:
+        print(json.dumps(item, indent=2))
+    else:
+        print(format_item(item))
+
+
+def cmd_complete(notebook, args):
+    data, was_legacy = load(notebook)
+    migrate_if_legacy(notebook, data, was_legacy)
+    pool, item = find_item(data, args.id, pools=("active",))
+    data["active"].remove(item)
+    item["completed"] = today()
+    if args.result:
+        item["result"] = args.result
+    data["done"].append(item)
+    save_and_commit(notebook, data, f"todo: complete #{item['id']} - {item['title']}")
+    print(f"completed #{item['id']}: {item['title']}")
+
+
+def cmd_edit(notebook, args):
+    data, was_legacy = load(notebook)
+    migrate_if_legacy(notebook, data, was_legacy)
+    _, item = find_item(data, args.id)
+    changed = False
+    for field in ("title", "description", "context", "result"):
+        value = getattr(args, field)
+        if value is not None:
+            item[field] = value
+            changed = True
+    if not changed:
+        fail("nothing to edit; pass --title, --description, --context, or --result")
+    save_and_commit(notebook, data, f"todo: update #{item['id']} - {item['title']}")
+    print(f"updated #{item['id']}: {item['title']}")
+
+
+def cmd_delete(notebook, args):
+    data, was_legacy = load(notebook)
+    migrate_if_legacy(notebook, data, was_legacy)
+    pool, item = find_item(data, args.id)
+    data[pool].remove(item)
+    reason = f" ({args.reason})" if args.reason else ""
+    save_and_commit(notebook, data, f"todo: remove #{item['id']} - {item['title']}{reason}")
+    print(f"deleted #{item['id']}: {item['title']}")
+
+
+def cmd_migrate(notebook, args):
+    if todos_path(notebook).exists():
+        fail("todos.json already exists; nothing to migrate")
+    data, _ = load(notebook)
+    migrate_if_legacy(notebook, data, True)
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="todo", description=__doc__)
+    parser.add_argument("--notebook", help="path to the notebook directory (default: auto-discover)")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_add = sub.add_parser("add", help="add an active todo")
+    p_add.add_argument("title")
+    p_add.add_argument("--description", default="")
+    p_add.add_argument("--context", help="notebook entry path backing this todo")
+    p_add.set_defaults(func=cmd_add)
+
+    p_list = sub.add_parser("list", help="list todos (active by default)")
+    p_list.add_argument("--done", action="store_true", help="list completed todos")
+    p_list.add_argument("--all", action="store_true", help="list active and completed todos")
+    p_list.add_argument("--json", action="store_true", help="dump todos.json")
+    p_list.set_defaults(func=cmd_list)
+
+    p_show = sub.add_parser("show", help="show one todo")
+    p_show.add_argument("id", type=int)
+    p_show.add_argument("--json", action="store_true")
+    p_show.set_defaults(func=cmd_show)
+
+    p_complete = sub.add_parser("complete", help="mark an active todo as done")
+    p_complete.add_argument("id", type=int)
+    p_complete.add_argument("--result", help="notebook entry path recording the result")
+    p_complete.set_defaults(func=cmd_complete)
+
+    p_edit = sub.add_parser("edit", help="edit fields of a todo")
+    p_edit.add_argument("id", type=int)
+    p_edit.add_argument("--title")
+    p_edit.add_argument("--description")
+    p_edit.add_argument("--context")
+    p_edit.add_argument("--result")
+    p_edit.set_defaults(func=cmd_edit)
+
+    p_delete = sub.add_parser("delete", help="delete a todo without completing it")
+    p_delete.add_argument("id", type=int)
+    p_delete.add_argument("--reason")
+    p_delete.set_defaults(func=cmd_delete)
+
+    p_migrate = sub.add_parser("migrate", help="convert legacy TODO.md/DONE.md to todos.json")
+    p_migrate.set_defaults(func=cmd_migrate)
+
+    args = parser.parse_args()
+    notebook = find_notebook(args.notebook)
+    args.func(notebook, args)
+
+
+if __name__ == "__main__":
+    main()
