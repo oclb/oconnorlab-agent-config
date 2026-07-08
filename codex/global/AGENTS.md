@@ -21,6 +21,10 @@
 - Do not set `autoResolutionMs` on `request_user_input` unless the user explicitly invoked AFK mode.
 - Prefer numbered lists over bullet-point lists so that user can respond more easily. Exception: when items already have stable numbers or letters, e.g., to-do items, do not double-enumerate them; preserve the existing labels only, avoiding ambiguity.
 
+## Generated Figures
+
+When generating a figure, inspect the rendered output visually before returning it. Correct obvious issues, including overlapping plot elements, clipped labels, unreadable text, bad contrast, malformed legends, or any layout problem that makes the figure harder to interpret.
+
 ## Notebook architecture
 
 The notebook is a separate git repository at `notebook/`. It contains `INDEX.md` for active entries, `TODO.md` and `DONE.md` for notebook-backed tasks, `entries/` for durable work records, `plans/` for written plans, and optionally `feedback/` for reusable feedback.
