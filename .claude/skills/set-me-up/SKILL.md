@@ -18,6 +18,7 @@ Core rules:
 - Treat recommendations as explanations, not consent.
 - Tell the user that skipped skills can still be installed project-locally later.
 - If the user asks for a faster path, still state exactly what will be installed and ask for one explicit confirmation before installing anything.
+- Detect existing installs and offer migration instead of full onboarding: if `~/.claude/bin/config-agent-tool` already exists, or `~/.claude/settings.json` is a symlink into this repo, this machine has a previous install. Follow the "Migration From A Pre-Plugin Install" section of the onboarding script instead of the welcome walkthrough.
 
 ## Workflow
 
@@ -42,7 +43,8 @@ ${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool link-skills --agent claude -
 Skip this command if the user chooses no global skills.
 8. Verify the files and symlinks created by setup:
    - `~/.claude/CLAUDE.md`
-   - `~/.claude/settings.json`
+   - `~/.claude/settings.json` (a user-owned regular file, never a symlink; seeded from `claude/global/settings.json` and afterwards owned by the user)
+   - `~/.claude/skills/lab-config` (symlink to this repo's `claude/plugin/lab-config`, which delivers the managed hooks as a plugin)
    - `~/.claude/hooks`
    - `~/.claude/bin/config-agent-tool`
    - any chosen global skills under `~/.claude/skills/`

@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_ENABLE_AUTO_MODE": "1"
+  },
   "permissions": {
     "allow": [
       "WebFetch",
@@ -20,9 +23,18 @@
       "Bash(gh repo list *)",
       "Read(~/.claude/skills/**)",
       "Bash(source *)",
-      "Bash(echo *)"
+      "Bash(echo *)",
+      "Bash(*)"
     ],
     "defaultMode": "auto"
+  },
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": [
+        "~/.claude",
+        "~/.codex"
+      ]
+    }
   },
   "hooks": {
     "SessionStart": [
@@ -60,6 +72,7 @@
       }
     ]
   },
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "remoteControlAtStartup": false,
   "agentPushNotifEnabled": true,

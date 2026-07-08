@@ -25,7 +25,7 @@ Each component is take-it-or-leave-it. We will walk through a setup process toge
 
 How this works under the hood: when you open Codex, the app locates AGENTS.md files, hooks, and skills located at `~/.codex` and within your project directory. This setup will nondestructively symlink this repo's shared AGENTS.md output, a startup auto-update hook, and any skills you choose to `~/.codex` so that they become globally available on your machine. It does not edit or own your personal `~/.codex/config.toml`.
 
-First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. Base setup will also install a `SessionStart` startup hook at `~/.codex/hooks.json` with its script in `~/.codex/hooks/update-config.sh`, so future Codex starts can silently refresh this repo's managed Codex surfaces. I will also install the $notebook-entry skill globally.
+First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [AGENTS.md](codex/global/AGENTS.md) file; it will be combined with your user-owned `~/.codex/user/AGENTS.md` instruction file. Base setup will also install a `SessionStart` startup hook at `~/.codex/hooks.json` with its script in `~/.codex/hooks/update-config.sh`, so future Codex starts can silently refresh this repo's managed Codex surfaces. The `~/.codex/hooks.json` file is rendered by merging this repo's hooks with your optional user-owned `~/.codex/user/hooks.json` fragment, so you can add personal hooks without forking the managed file. I will also install the $notebook-entry skill globally.
 ```
 
 ## 2. Base Setup
@@ -38,7 +38,7 @@ bin/config-agent-tool install --agent codex
 
 This installs the generated AGENTS override, the startup auto-update hook, and the `config-agent-tool` symlink. It does not install optional skills, and it does not edit `~/.codex/config.toml`.
 
-If setup reports an unmanaged `~/.codex/hooks.json`, it has installed the other managed surfaces but refused to replace your hook file. With your permission, manually merge the reported `SessionStart` startup hook into that file, then rerun `bin/config-agent-tool install --agent codex`. If setup reports an unmanaged `~/.codex/hooks/` directory, merge or move those existing scripts before rerunning install.
+If setup reports an unmanaged `~/.codex/hooks.json`, it has installed the other managed surfaces but refused to replace your hook file. The preferred fix is to move your personal hook entries into `~/.codex/user/hooks.json` so they merge into the rendered file; alternatively, with your permission, manually merge the reported `SessionStart` startup hook into that file. Then rerun `bin/config-agent-tool install --agent codex`. If setup reports an unmanaged `~/.codex/hooks/` directory, merge or move those existing scripts before rerunning install.
 
 Next, say:
 
