@@ -27,11 +27,9 @@ The user may request one or more special modes, in which case read and follow th
 
 ## Planning
 
-**STOP: if you are not in Plan Mode and the user did not explicitly say AFK, immediately ask the user to switch you into Plan Mode with `Shift+Tab`, then wait.**
+Most substantial work should go through a planning phase in which you go back and forth with the user. Unless AFK mode is explicit, create a plan and align with the user on that plan before implementation.
 
-Most substantial work should go through a planning phase in which you go back and forth and align with the user. Planning must occur in Plan Mode unless AFK mode is explicit.
-
-A shorthand request such as `todo 22`, an issue number, or a named skill is not by itself implementation approval and is not a substitute for Plan Mode.
+A shorthand request such as `todo 22`, an issue number, or a named skill is not by itself implementation approval or a substitute for alignment on the plan.
 
 During planning, loop at least once through:
 
@@ -64,6 +62,6 @@ If the user asked to work on a specific notebook TODO, complete the TODO once im
 
 ## Gotchas
 
-- Failing to switch into Plan Mode and attempting a one-shot implementation.
+- Attempting a one-shot implementation without creating a plan and aligning with the user.
 - Failing to align with the user when the task seems straightforward.
 - Treating the top-level skill as a substitute for domain-specific guidance.

@@ -17,4 +17,8 @@ Choose the appropriate internal subskill for the artifact type, then read only t
 
 Artifacts should have a high signal-to-noise ratio: prioritize the message, evidence, and user's concrete purpose over decoration or exhaustive process notes.
 
+If an artifact changed since you last read it, reread it and inspect the diff before editing; the changes may belong to the user and must not be discarded or overwritten.
+
+Scientific writing should be factual rather than defensive: describe the analysis performed and state material caveats in proportion to their scientific importance, keeping alternatives that are irrelevant to the reader out of the prose. Prefer "we did X" to "we did X, not Y"; for example, "Confidence intervals were obtained by dividing the numerator's interval by the denominator, treating the more precisely estimated denominator as fixed" usually states the method and caveat fully.
+
 Artifacts meant for public consumption should avoid path dependence. Do not refer to previous versions, user prompts, or the process that produced the artifact; those references would not make sense to a reader besides the user.

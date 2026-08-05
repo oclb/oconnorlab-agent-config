@@ -14,7 +14,7 @@ Explore the codebase as if implementing now. Read relevant entry points, tests, 
 
 ## Planning
 
-When not in AFK mode, nontrivial changes that create new seams or alter install/setup behavior require Plan Mode and user alignment before implementation.
+When not in AFK mode, nontrivial changes that create new seams or alter install/setup behavior require a plan and user alignment on that plan before implementation.
 
 In the user dialogue, state the software shape plainly:
 

@@ -244,6 +244,55 @@ class ConfigAgentToolTests(unittest.TestCase):
             [{"hooks": [{"type": "command", "command": "echo done"}]}],
         )
 
+    def test_codex_invalid_user_hooks_fragment_keeps_last_valid_render(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        hooks_json = self.codex_home / "hooks.json"
+        sidecar = self.codex_home / ".hooks.json.rendered"
+        previous_hooks = hooks_json.read_text(encoding="utf-8")
+        previous_sidecar = sidecar.read_text(encoding="utf-8")
+        (self.codex_home / "user" / "hooks.json").write_text(
+            '{"hooks": {"Stop": [{"hooks": [42]}]}}', encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertIn("keeping existing hooks.json", stderr)
+        self.assertEqual(hooks_json.read_text(encoding="utf-8"), previous_hooks)
+        self.assertEqual(sidecar.read_text(encoding="utf-8"), previous_sidecar)
+
+    def test_codex_invalid_managed_hooks_fragment_keeps_last_valid_render(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        hooks_json = self.codex_home / "hooks.json"
+        sidecar = self.codex_home / ".hooks.json.rendered"
+        previous_hooks = hooks_json.read_text(encoding="utf-8")
+        previous_sidecar = sidecar.read_text(encoding="utf-8")
+        fake_root = self.root / "invalid-codex-config"
+        (fake_root / "global").mkdir(parents=True)
+        (fake_root / "global" / "hooks.json").write_text(
+            '{"hooks": {"SessionStart": [42]}}', encoding="utf-8"
+        )
+        real_agent_config = self.tool.agent_config
+
+        def fake_agent_config(name):
+            if name == "codex":
+                return self.tool.AgentConfig(name="codex", root=fake_root)
+            return real_agent_config(name)
+
+        stderr_buffer = io.StringIO()
+        with (
+            mock.patch.object(self.tool, "agent_config", side_effect=fake_agent_config),
+            contextlib.redirect_stderr(stderr_buffer),
+        ):
+            issues = self.tool.repair_codex_hooks_json(self.codex_home, first_run=False)
+
+        self.assertEqual(issues, [])
+        self.assertIn("keeping existing hooks.json", stderr_buffer.getvalue())
+        self.assertEqual(hooks_json.read_text(encoding="utf-8"), previous_hooks)
+        self.assertEqual(sidecar.read_text(encoding="utf-8"), previous_sidecar)
+
     def test_codex_hand_edited_rendered_hooks_json_is_left_in_place(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "codex")
         self.assertEqual(code, 0)
@@ -284,8 +333,8 @@ class ConfigAgentToolTests(unittest.TestCase):
             for group in groups:
                 for hook in group.get("hooks", []):
                     self.assertNotIn(
-                        "/.claude/hooks/",
-                        str(hook.get("command", "")),
+                        hook.get("command"),
+                        self.tool.CLAUDE_LEGACY_HOOK_COMMANDS,
                         f"legacy repo-managed hook left in {event}",
                     )
         return content
@@ -341,7 +390,7 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.claude_home.mkdir(parents=True)
         custom_hook = {
             "type": "command",
-            "command": "~/personal/hooks/lint.sh",
+            "command": "~/.claude/hooks/custom-lint.sh",
         }
         user_settings = {
             "model": "opus",
@@ -618,6 +667,16 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("list-skills --global", text)
         self.assertNotIn("link-skills --global", text)
         self.assertNotIn("$software", text)
+
+    def test_work_cycle_requires_plan_alignment_without_ui_mode(self) -> None:
+        for agent in ("claude", "codex"):
+            skill_dir = REPO_ROOT / agent / "skills" / "work-cycle"
+            files = [skill_dir / "SKILL.md", *skill_dir.glob("references/**/*.md")]
+            text = "\n".join(path.read_text(encoding="utf-8") for path in files)
+
+            self.assertIn("create a plan and align with the user on that plan", text)
+            self.assertNotIn("Plan Mode", text)
+            self.assertNotIn("Shift+Tab", text)
 
     def test_documentation_codebase_audit_routes_away_from_maintenance(self) -> None:
         documentation = (REPO_ROOT / "codex" / "skills" / "documentation" / "SKILL.md").read_text(
