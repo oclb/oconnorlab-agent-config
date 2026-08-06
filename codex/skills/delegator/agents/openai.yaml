@@ -1,7 +1,0 @@
-interface:
-  display_name: "Delegator"
-  short_description: "Dispatch notebook todos into pinned Codex tasks."
-  default_prompt: "Use $delegator to list this project's active notebook todos and wait for my choices."
-
-policy:
-  allow_implicit_invocation: false
