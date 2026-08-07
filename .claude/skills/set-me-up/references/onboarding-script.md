@@ -11,13 +11,13 @@ Follow this script when onboarding the user.
 
 ## Migration From A Pre-Plugin Install
 
-Use this section instead of the welcome walkthrough when the machine already has a previous install (`~/.claude/bin/config-agent-tool` exists, or `~/.claude/settings.json` is a symlink into this repo). Existing installs do not migrate on their own: the pre-plugin startup hook could not pull this repo, so the machine stays on the old layout until an update runs.
+Use this section instead of the welcome walkthrough when `~/.claude/settings.json` is a symlink into this repo, or when `~/.claude/bin/config-agent-tool` exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent. The installed tool remains after a successful migration and is not itself evidence of a legacy install. Existing installs do not migrate on their own: the pre-plugin startup hook could not pull this repo, so the machine stays on the old layout until an update runs.
 
 Say:
 
 ```text
 This machine has an existing install of this repo's Claude Code configuration, which predates the current plugin-based layout. Migrating will:
-1. Convert `~/.claude/settings.json` from a symlink into a regular file that you own. Your current settings are preserved, and future interactive changes (model choice, permission grants) will stay on this machine instead of writing into the shared repo.
+1. Convert `~/.claude/settings.json` from a symlink into a regular file that you own. This repo does not configure Claude permissions; permission grants and future interactive changes stay in your user-owned file instead of the shared repo.
 2. Link the lab-config plugin into `~/.claude/skills/`, which takes over the managed hooks (startup auto-update, memory reminder, notifications). The old hook entries are removed from your settings file so nothing fires twice.
 3. Repair the startup auto-update hook, which was silently broken in the old layout.
 
@@ -49,7 +49,7 @@ For details, see [README.md](README.md) and [ADVICE.md](ADVICE.md).
 
 Each component is take-it-or-leave-it. We will walk through a setup process together so that you can install the components that you want, and so that you understand what is being installed. At any time you may ask me questions.
 
-How this works under the hood: when you open Claude Code, the app locates CLAUDE.md files, plugins, and skills located at `~/.claude` and within your project directory. This setup will nondestructively add an import to `~/.claude/CLAUDE.md`, link this repo's lab-config plugin (which provides the managed hooks, including a startup auto-update hook) into `~/.claude/skills/`, and symlink any skills you choose. Your `~/.claude/settings.json` stays a user-owned file: setup seeds it from this repo's template only if it is missing, and your own interactive changes (model choice, permission grants) are never written back to this repo. Be aware that the seeded template applies this lab's permission baseline, including a broad Bash allowlist, auto permission mode, and sandbox write access to `~/.claude` and `~/.codex`; you can edit or remove any of these in your own `~/.claude/settings.json` afterwards, and personal hooks also belong in that file.
+How this works under the hood: when you open Claude Code, the app locates CLAUDE.md files, plugins, and skills located at `~/.claude` and within your project directory. This setup will nondestructively add an import to `~/.claude/CLAUDE.md`, link this repo's lab-config plugin (which provides the managed hooks, including a startup auto-update hook) into `~/.claude/skills/`, and symlink any skills you choose. Your `~/.claude/settings.json` stays a user-owned file: setup seeds non-permission preferences from this repo's template only if it is missing, and your own interactive changes are never written back to this repo. This repo does not configure Claude permission allowlists, permission modes, prompt suppression, or sandbox write policy; permissions and personal hooks belong in your own `~/.claude/settings.json`.
 
 First question: do you wish to use the lab notebook system? This is recommended for all users; see [README.md: Project notebook](README.md#project-notebook) for how this works and its rationale. If so, I will install this repo's global [CLAUDE.md](claude/global/CLAUDE.md) import and install the /notebook-entry skill globally.
 ```

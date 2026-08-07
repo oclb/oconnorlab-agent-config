@@ -1,41 +1,4 @@
 {
-  "env": {
-    "CLAUDE_CODE_ENABLE_AUTO_MODE": "1"
-  },
-  "permissions": {
-    "allow": [
-      "WebFetch",
-      "Bash(git diff *)",
-      "Bash(git status *)",
-      "Bash(git log *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git -C *)",
-      "Bash(git branch *)",
-      "Bash(git checkout *)",
-      "Bash(git stash *)",
-      "Bash(git show *)",
-      "Bash(git rev-parse *)",
-      "Bash(git config *)",
-      "Bash(which *)",
-      "Bash(gh auth status *)",
-      "Bash(gh auth switch *)",
-      "Bash(gh repo list *)",
-      "Read(~/.claude/skills/**)",
-      "Bash(source *)",
-      "Bash(echo *)",
-      "Bash(*)"
-    ],
-    "defaultMode": "auto"
-  },
-  "sandbox": {
-    "filesystem": {
-      "allowWrite": [
-        "~/.claude",
-        "~/.codex"
-      ]
-    }
-  },
   "hooks": {
     "SessionStart": [
       {
@@ -73,8 +36,6 @@
     ]
   },
   "tui": "fullscreen",
-  "skipDangerousModePermissionPrompt": true,
   "remoteControlAtStartup": false,
-  "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "agentPushNotifEnabled": true
 }

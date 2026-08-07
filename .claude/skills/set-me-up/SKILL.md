@@ -18,7 +18,7 @@ Core rules:
 - Treat recommendations as explanations, not consent.
 - Tell the user that skipped skills can still be installed project-locally later.
 - If the user asks for a faster path, still state exactly what will be installed and ask for one explicit confirmation before installing anything.
-- Detect existing installs and offer migration instead of full onboarding: if `~/.claude/bin/config-agent-tool` already exists, or `~/.claude/settings.json` is a symlink into this repo, this machine has a previous install. Follow the "Migration From A Pre-Plugin Install" section of the onboarding script instead of the welcome walkthrough.
+- Detect legacy or incomplete installs and offer migration instead of full onboarding: migration is needed when `~/.claude/settings.json` is a symlink into this repo, or when `~/.claude/bin/config-agent-tool` exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent. Follow the "Migration From A Pre-Plugin Install" section of the onboarding script instead of the welcome walkthrough. The installed tool remains after migration and is not itself a legacy marker.
 
 ## Workflow
 

@@ -339,6 +339,16 @@ class ConfigAgentToolTests(unittest.TestCase):
                     )
         return content
 
+    def assert_repo_does_not_configure_claude_permissions(self, content: dict) -> None:
+        for key in (
+            "permissions",
+            "sandbox",
+            "skipDangerousModePermissionPrompt",
+            "skipAutoPermissionPrompt",
+        ):
+            self.assertNotIn(key, content)
+        self.assertNotIn("CLAUDE_CODE_ENABLE_AUTO_MODE", content.get("env", {}))
+
     def test_claude_install_adds_import_seeds_settings_and_links_plugin(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "claude")
 
@@ -350,6 +360,8 @@ class ConfigAgentToolTests(unittest.TestCase):
         template = json.loads(
             (REPO_ROOT / "claude" / "global" / "settings.json").read_text(encoding="utf-8")
         )
+        self.assert_repo_does_not_configure_claude_permissions(template)
+        self.assert_repo_does_not_configure_claude_permissions(content)
         for key in template:
             if key == "hooks":
                 continue
@@ -380,6 +392,8 @@ class ConfigAgentToolTests(unittest.TestCase):
         template = json.loads(
             (REPO_ROOT / "claude" / "global" / "settings.json").read_text(encoding="utf-8")
         )
+        self.assert_repo_does_not_configure_claude_permissions(template)
+        self.assert_repo_does_not_configure_claude_permissions(content)
         for key in template:
             if key == "hooks":
                 continue
@@ -395,6 +409,7 @@ class ConfigAgentToolTests(unittest.TestCase):
         user_settings = {
             "model": "opus",
             "env": {"MY_VAR": "1"},
+            "permissions": {"allow": ["Bash(custom-command *)"]},
             "hooks": {
                 "SessionStart": [
                     {
@@ -421,6 +436,7 @@ class ConfigAgentToolTests(unittest.TestCase):
         content = self.assert_user_owned_claude_settings()
         self.assertEqual(content["model"], "opus")
         self.assertEqual(content["env"], {"MY_VAR": "1"})
+        self.assertEqual(content["permissions"], user_settings["permissions"])
         self.assertNotIn("SessionStart", content["hooks"])
         self.assertEqual(content["hooks"]["PostToolUse"], [
             {"matcher": "Write", "hooks": [custom_hook]}
@@ -850,6 +866,10 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("list-skills --agent claude --global", text)
         self.assertIn("link-skills --agent claude --global", text)
         self.assertIn("/work-cycle", text)
+        self.assertIn("tool remains after migration and is not itself a legacy marker", text)
+        self.assertIn("exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent", text)
+        self.assertIn("does not configure Claude permission allowlists", text)
+        self.assertFalse((REPO_ROOT / ".claude" / "settings.json").exists())
         self.assertNotIn("test -d skills", text)
         self.assertNotIn("global/CLAUDE.md", text.replace("claude/global/CLAUDE.md", ""))
         self.assertNotIn("install --global", text)
