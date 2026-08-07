@@ -4,6 +4,7 @@ Follow this script when onboarding the user.
 
 ## Overall Guidance
 
+- Before entering this script, the setup skill must fast-forward pull the checkout and re-read the updated setup files. Do not repeat that initial pull after reloading the script.
 - User-facing text can be modified if circumstances or user input deviates from the happy path; otherwise, it should be quoted exactly.
 - Answer any user questions by consulting README.md and other documents, particularly the skill files themselves; then, resume the script.
 - Interpret answers like "yea" or "y" as "yes", "nty" for "no", etc. Don't say "I am interpreting 'yea' as 'yes'" or similar.

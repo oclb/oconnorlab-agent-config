@@ -668,6 +668,8 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("codex/global/AGENTS.md", text)
         self.assertIn("Auto-trigger", text)
         self.assertIn("set up, initialize, install, onboard, configure", text)
+        self.assertIn("git pull --ff-only", text)
+        self.assertIn("Re-read this `SKILL.md`", text)
         self.assertIn("install --agent codex", text)
         self.assertIn("~/.codex/hooks.json", text)
         self.assertIn("~/.codex/hooks/update-config.sh", text)
@@ -862,6 +864,8 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("claude/global/CLAUDE.md", text)
         self.assertIn("Auto-trigger", text)
         self.assertIn("set up, initialize, install, onboard, configure", text)
+        self.assertIn("git pull --ff-only", text)
+        self.assertIn("Re-read this `SKILL.md`", text)
         self.assertIn("install --agent claude", text)
         self.assertIn("list-skills --agent claude --global", text)
         self.assertIn("link-skills --agent claude --global", text)
@@ -876,6 +880,14 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("list-skills --global", text)
         self.assertNotIn("link-skills --global", text)
         self.assertNotIn("$work-cycle", text)
+
+    def test_readme_keeps_set_me_up_as_the_permanent_user_instruction(self) -> None:
+        text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("\nset me up\n", text)
+        self.assertIn("first fast-forward pulls this repository", text)
+        self.assertIn("You do not need to request the pull", text)
+        self.assertNotIn("pull the latest changes and set me up", text)
+        self.assertNotIn("set me up for both Claude and Codex", text)
 
 
 if __name__ == "__main__":
