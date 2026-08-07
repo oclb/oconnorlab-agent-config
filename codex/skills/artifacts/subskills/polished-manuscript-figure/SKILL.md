@@ -91,6 +91,12 @@ through the whole figure and, where possible, through the manuscript.
 - Avoid equal-sized panels when the evidence is not equally important.
 - Keep schematic colors and quantitative plot colors related. A schematic-led figure
   should look like one integrated argument, not a pasted collage.
+- When revising an existing figure, inspect the last accepted artifact and script before
+  changing its presentation. Preserve established visual choices and reuse accepted
+  plotting code unless the request or scientific logic calls for a change.
+- Keep in-figure text economical: manuscript figures usually do not need a global title,
+  and related figures should use concise, parallel labels. Use panel titles when helpful
+  and leave explanatory context to the legend or caption.
 - Keep backgrounds white for plots and diagrams; switch to black only for microscopy,
   image plates, or raster content that benefits from it.
 

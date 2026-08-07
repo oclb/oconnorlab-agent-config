@@ -6,7 +6,7 @@ This repository maintains configuration surfaces for both Claude Code and Codex.
 
 | Path | Purpose |
 | --- | --- |
-| `claude/` | Claude Code global prompt, settings, hooks, templates, and skills. |
+| `claude/` | Claude Code global prompt, settings template, hooks, the lab-config plugin (`claude/plugin/lab-config`), templates, and skills. |
 | `codex/` | Codex global instructions, templates, repo-local setup support, and skills. |
 | `bin/config-agent-tool` | Unified installer and skill-link manager. Commands require `--agent claude` or `--agent codex`. |
 | `remote-bridge/` | Product-neutral O2/SSH bridge shared by both agents. |
@@ -19,6 +19,7 @@ This repository maintains configuration surfaces for both Claude Code and Codex.
 3. Keep Codex wording Codex-native: `$skill`, `AGENTS.md`, `~/.codex`, `.agents/skills`.
 4. Keep `remote-bridge/` agent-neutral; do not introduce Claude-only or Codex-only runtime paths.
 5. Do not reintroduce the dropped old flat Claude skills without an explicit decision to rebuild an analysis taxonomy.
+6. User settings files stay user-owned: never symlink `~/.claude/settings.json` into this repo (repo-managed Claude hooks ship via the `lab-config` plugin), and never own `~/.codex/config.toml`. `~/.codex/hooks.json` is rendered from `codex/global/hooks.json` plus the user's optional `~/.codex/user/hooks.json` fragment.
 
 ## Validation
 

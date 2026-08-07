@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/update-config.sh",
-            "timeout": 5000
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/update-config.sh\"",
+            "timeout": 10
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/memory-reminder.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory-reminder.sh\""
           }
         ]
       }
@@ -28,14 +28,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/notify.sh 'Claude Code' 'Awaiting your input'",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/notify.sh\" 'Claude Code' 'Awaiting your input'",
             "timeout": 5
           }
         ]
       }
     ]
-  },
-  "tui": "fullscreen",
-  "remoteControlAtStartup": false,
-  "agentPushNotifEnabled": true
+  }
 }

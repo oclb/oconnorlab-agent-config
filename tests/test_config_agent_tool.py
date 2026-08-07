@@ -92,6 +92,20 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertEqual(stdout, "")
         self.assertIn("--agent", stderr)
 
+    def assert_rendered_codex_hooks_json(self) -> None:
+        hooks_json = self.codex_home / "hooks.json"
+        self.assertTrue(hooks_json.exists(), f"{hooks_json} does not exist")
+        self.assertFalse(hooks_json.is_symlink(), f"{hooks_json} should be a rendered file")
+        sidecar = self.codex_home / ".hooks.json.rendered"
+        self.assertTrue(sidecar.exists(), f"{sidecar} does not exist")
+        data = json.loads(hooks_json.read_text(encoding="utf-8"))
+        commands = [
+            hook["command"]
+            for group in data["hooks"]["SessionStart"]
+            for hook in group["hooks"]
+        ]
+        self.assertIn(self.tool.CODEX_UPDATE_HOOK_COMMAND, commands)
+
     def test_codex_install_renders_override_and_links_tool(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "codex")
 
@@ -101,10 +115,7 @@ class ConfigAgentToolTests(unittest.TestCase):
             self.codex_home / "bin" / "config-agent-tool",
             REPO_ROOT / "bin" / "config-agent-tool",
         )
-        self.assert_symlink_target(
-            self.codex_home / "hooks.json",
-            REPO_ROOT / "codex" / "global" / "hooks.json",
-        )
+        self.assert_rendered_codex_hooks_json()
         self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
         override = (self.codex_home / "AGENTS.override.md").read_text(encoding="utf-8")
         content_agents = (REPO_ROOT / "codex" / "global" / "AGENTS.md").read_text(encoding="utf-8")
@@ -158,10 +169,7 @@ class ConfigAgentToolTests(unittest.TestCase):
         pull.assert_called_once_with()
         self.assertFalse(user_hooks.is_symlink())
         self.assertTrue((user_hooks / "custom.sh").exists())
-        self.assert_symlink_target(
-            self.codex_home / "hooks.json",
-            REPO_ROOT / "codex" / "global" / "hooks.json",
-        )
+        self.assert_rendered_codex_hooks_json()
         self.assertTrue((self.codex_home / "AGENTS.override.md").exists())
         self.assertIn("Rendered", stdout)
 
@@ -198,6 +206,109 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
         self.assertIn("Leaving unmanaged Codex hooks.json with startup update hook", stdout)
 
+    def test_codex_render_merges_user_hooks_fragment(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        user_fragment = {
+            "hooks": {
+                "SessionStart": [
+                    {
+                        "matcher": "startup",
+                        "hooks": [{"type": "command", "command": "echo personal"}],
+                    }
+                ],
+                "Stop": [{"hooks": [{"type": "command", "command": "echo done"}]}],
+            }
+        }
+        (self.codex_home / "user" / "hooks.json").write_text(
+            json.dumps(user_fragment), encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assert_rendered_codex_hooks_json()
+        data = json.loads((self.codex_home / "hooks.json").read_text(encoding="utf-8"))
+        session_start_commands = [
+            hook["command"]
+            for group in data["hooks"]["SessionStart"]
+            for hook in group["hooks"]
+        ]
+        self.assertEqual(
+            session_start_commands,
+            [self.tool.CODEX_UPDATE_HOOK_COMMAND, "echo personal"],
+        )
+        self.assertEqual(
+            data["hooks"]["Stop"],
+            [{"hooks": [{"type": "command", "command": "echo done"}]}],
+        )
+
+    def test_codex_invalid_user_hooks_fragment_keeps_last_valid_render(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        hooks_json = self.codex_home / "hooks.json"
+        sidecar = self.codex_home / ".hooks.json.rendered"
+        previous_hooks = hooks_json.read_text(encoding="utf-8")
+        previous_sidecar = sidecar.read_text(encoding="utf-8")
+        (self.codex_home / "user" / "hooks.json").write_text(
+            '{"hooks": {"Stop": [{"hooks": [42]}]}}', encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertIn("keeping existing hooks.json", stderr)
+        self.assertEqual(hooks_json.read_text(encoding="utf-8"), previous_hooks)
+        self.assertEqual(sidecar.read_text(encoding="utf-8"), previous_sidecar)
+
+    def test_codex_invalid_managed_hooks_fragment_keeps_last_valid_render(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        hooks_json = self.codex_home / "hooks.json"
+        sidecar = self.codex_home / ".hooks.json.rendered"
+        previous_hooks = hooks_json.read_text(encoding="utf-8")
+        previous_sidecar = sidecar.read_text(encoding="utf-8")
+        fake_root = self.root / "invalid-codex-config"
+        (fake_root / "global").mkdir(parents=True)
+        (fake_root / "global" / "hooks.json").write_text(
+            '{"hooks": {"SessionStart": [42]}}', encoding="utf-8"
+        )
+        real_agent_config = self.tool.agent_config
+
+        def fake_agent_config(name):
+            if name == "codex":
+                return self.tool.AgentConfig(name="codex", root=fake_root)
+            return real_agent_config(name)
+
+        stderr_buffer = io.StringIO()
+        with (
+            mock.patch.object(self.tool, "agent_config", side_effect=fake_agent_config),
+            contextlib.redirect_stderr(stderr_buffer),
+        ):
+            issues = self.tool.repair_codex_hooks_json(self.codex_home, first_run=False)
+
+        self.assertEqual(issues, [])
+        self.assertIn("keeping existing hooks.json", stderr_buffer.getvalue())
+        self.assertEqual(hooks_json.read_text(encoding="utf-8"), previous_hooks)
+        self.assertEqual(sidecar.read_text(encoding="utf-8"), previous_sidecar)
+
+    def test_codex_hand_edited_rendered_hooks_json_is_left_in_place(self) -> None:
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+        self.assertEqual(code, 0)
+        hooks_json = self.codex_home / "hooks.json"
+        data = json.loads(hooks_json.read_text(encoding="utf-8"))
+        data["hooks"]["Stop"] = [{"hooks": [{"type": "command", "command": "echo edited"}]}]
+        hooks_json.write_text(json.dumps(data), encoding="utf-8")
+
+        code, stdout, stderr = self.invoke("install", "--agent", "codex")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertIn("Leaving unmanaged Codex hooks.json with startup update hook", stdout)
+        preserved = json.loads(hooks_json.read_text(encoding="utf-8"))
+        self.assertIn("Stop", preserved["hooks"])
+
     def test_codex_install_refuses_unmanaged_hooks_directory(self) -> None:
         user_hooks = self.codex_home / "hooks"
         user_hooks.mkdir(parents=True)
@@ -210,29 +321,142 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertEqual(stderr, "")
         self.assertFalse(user_hooks.is_symlink())
         self.assertTrue((user_hooks / "custom.sh").exists())
-        self.assert_symlink_target(
-            self.codex_home / "hooks.json",
-            REPO_ROOT / "codex" / "global" / "hooks.json",
-        )
+        self.assert_rendered_codex_hooks_json()
         self.assertIn("Rendered", stdout)
 
-    def test_claude_install_adds_import_and_links_settings_hooks_and_tool(self) -> None:
+    def assert_user_owned_claude_settings(self) -> dict:
+        settings = self.claude_home / "settings.json"
+        self.assertTrue(settings.exists(), f"{settings} does not exist")
+        self.assertFalse(settings.is_symlink(), f"{settings} should be a user-owned file")
+        content = json.loads(settings.read_text(encoding="utf-8"))
+        for event, groups in content.get("hooks", {}).items():
+            for group in groups:
+                for hook in group.get("hooks", []):
+                    self.assertNotIn(
+                        hook.get("command"),
+                        self.tool.CLAUDE_LEGACY_HOOK_COMMANDS,
+                        f"legacy repo-managed hook left in {event}",
+                    )
+        return content
+
+    def assert_repo_does_not_configure_claude_permissions(self, content: dict) -> None:
+        for key in (
+            "permissions",
+            "sandbox",
+            "skipDangerousModePermissionPrompt",
+            "skipAutoPermissionPrompt",
+        ):
+            self.assertNotIn(key, content)
+        self.assertNotIn("CLAUDE_CODE_ENABLE_AUTO_MODE", content.get("env", {}))
+
+    def test_claude_install_adds_import_seeds_settings_and_links_plugin(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "claude")
 
         self.assertEqual(code, 0)
         self.assertEqual(stderr, "")
         claude_md = (self.claude_home / "CLAUDE.md").read_text(encoding="utf-8")
         self.assertIn(f"@{REPO_ROOT / 'claude' / 'global' / 'CLAUDE.md'}", claude_md)
+        content = self.assert_user_owned_claude_settings()
+        template = json.loads(
+            (REPO_ROOT / "claude" / "global" / "settings.json").read_text(encoding="utf-8")
+        )
+        self.assert_repo_does_not_configure_claude_permissions(template)
+        self.assert_repo_does_not_configure_claude_permissions(content)
+        for key in template:
+            if key == "hooks":
+                continue
+            self.assertEqual(content.get(key), template[key])
         self.assert_symlink_target(
-            self.claude_home / "settings.json",
-            REPO_ROOT / "claude" / "global" / "settings.json",
+            self.claude_home / "skills" / "lab-config",
+            REPO_ROOT / "claude" / "plugin" / "lab-config",
         )
         self.assert_symlink_target(self.claude_home / "hooks", REPO_ROOT / "claude" / "hooks")
         self.assert_symlink_target(
             self.claude_home / "bin" / "config-agent-tool",
             REPO_ROOT / "bin" / "config-agent-tool",
         )
+        self.assertIn("Seeded Claude settings from repo template", stdout)
         self.assertIn("No skills were installed automatically", stdout)
+
+    def test_claude_install_converts_managed_settings_symlink_to_file(self) -> None:
+        self.claude_home.mkdir(parents=True)
+        (self.claude_home / "settings.json").symlink_to(
+            REPO_ROOT / "claude" / "global" / "settings.json"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "claude")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        content = self.assert_user_owned_claude_settings()
+        template = json.loads(
+            (REPO_ROOT / "claude" / "global" / "settings.json").read_text(encoding="utf-8")
+        )
+        self.assert_repo_does_not_configure_claude_permissions(template)
+        self.assert_repo_does_not_configure_claude_permissions(content)
+        for key in template:
+            if key == "hooks":
+                continue
+            self.assertEqual(content.get(key), template[key])
+        self.assertIn("Converted Claude settings symlink to user-owned file", stdout)
+
+    def test_claude_install_strips_legacy_hooks_but_keeps_user_settings(self) -> None:
+        self.claude_home.mkdir(parents=True)
+        custom_hook = {
+            "type": "command",
+            "command": "~/.claude/hooks/custom-lint.sh",
+        }
+        user_settings = {
+            "model": "opus",
+            "env": {"MY_VAR": "1"},
+            "permissions": {"allow": ["Bash(custom-command *)"]},
+            "hooks": {
+                "SessionStart": [
+                    {
+                        "matcher": "startup",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "~/.claude/hooks/update-config.sh",
+                            }
+                        ],
+                    }
+                ],
+                "PostToolUse": [{"matcher": "Write", "hooks": [custom_hook]}],
+            },
+        }
+        (self.claude_home / "settings.json").write_text(
+            json.dumps(user_settings), encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "claude")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        content = self.assert_user_owned_claude_settings()
+        self.assertEqual(content["model"], "opus")
+        self.assertEqual(content["env"], {"MY_VAR": "1"})
+        self.assertEqual(content["permissions"], user_settings["permissions"])
+        self.assertNotIn("SessionStart", content["hooks"])
+        self.assertEqual(content["hooks"]["PostToolUse"], [
+            {"matcher": "Write", "hooks": [custom_hook]}
+        ])
+        self.assertIn("Removed legacy repo-managed hooks from user settings", stdout)
+
+    def test_claude_install_leaves_user_owned_settings_without_legacy_hooks(self) -> None:
+        self.claude_home.mkdir(parents=True)
+        user_settings = {"model": "opus"}
+        (self.claude_home / "settings.json").write_text(
+            json.dumps(user_settings), encoding="utf-8"
+        )
+
+        code, stdout, stderr = self.invoke("install", "--agent", "claude")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        content = self.assert_user_owned_claude_settings()
+        self.assertEqual(content, user_settings)
+        self.assertIn("User-owned Claude settings present", stdout)
 
     def test_claude_install_replaces_stale_flat_import_without_duplicate(self) -> None:
         self.claude_home.mkdir(parents=True)
@@ -328,7 +552,7 @@ class ConfigAgentToolTests(unittest.TestCase):
         }
         self.assertNotIn("work-cycle", listed_skill_names)
 
-    def test_update_stops_when_git_pull_fails(self) -> None:
+    def test_update_repairs_managed_surface_when_git_pull_fails(self) -> None:
         pull_error = subprocess.CalledProcessError(
             returncode=1, cmd=["git", "-C", str(REPO_ROOT), "pull", "--ff-only"]
         )
@@ -337,10 +561,12 @@ class ConfigAgentToolTests(unittest.TestCase):
             code, stdout, stderr = self.invoke("update", "--agent", "codex")
 
         self.assertIsInstance(code, subprocess.CalledProcessError)
-        self.assertEqual(stdout, "")
         self.assertEqual(stderr, "")
         pull.assert_called_once_with()
-        self.assertFalse((self.codex_home / "AGENTS.override.md").exists())
+        self.assert_rendered_codex_hooks_json()
+        self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
+        self.assertTrue((self.codex_home / "AGENTS.override.md").exists())
+        self.assertIn("Rendered", stdout)
 
     def test_codex_update_repairs_managed_surface_links_after_pull(self) -> None:
         code, stdout, stderr = self.invoke("install", "--agent", "codex")
@@ -358,16 +584,13 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(stderr, "")
         pull.assert_called_once_with()
-        self.assert_symlink_target(
-            self.codex_home / "hooks.json",
-            REPO_ROOT / "codex" / "global" / "hooks.json",
-        )
+        self.assert_rendered_codex_hooks_json()
         self.assert_symlink_target(self.codex_home / "hooks", REPO_ROOT / "codex" / "hooks")
         self.assert_symlink_target(
             self.codex_home / "bin" / "config-agent-tool",
             REPO_ROOT / "bin" / "config-agent-tool",
         )
-        self.assertIn("Replacing symlink: Codex hooks.json", stdout)
+        self.assertIn("Rendered Codex hooks.json", stdout)
         self.assertIn("Replacing symlink: Codex hooks", stdout)
         self.assertIn("Creating symlink:", stdout)
 
@@ -419,17 +642,14 @@ class ConfigAgentToolTests(unittest.TestCase):
         claude_md = (self.claude_home / "CLAUDE.md").read_text(encoding="utf-8")
         self.assertNotIn(stale_import, claude_md)
         self.assertEqual(claude_md.count(current_import), 1)
-        self.assert_symlink_target(
-            self.claude_home / "settings.json",
-            REPO_ROOT / "claude" / "global" / "settings.json",
-        )
+        self.assert_user_owned_claude_settings()
         self.assert_symlink_target(self.claude_home / "hooks", REPO_ROOT / "claude" / "hooks")
         self.assert_symlink_target(
             self.claude_home / "bin" / "config-agent-tool",
             REPO_ROOT / "bin" / "config-agent-tool",
         )
         self.assertIn("Repaired stale Claude import", stdout)
-        self.assertIn("Replacing symlink: Claude settings", stdout)
+        self.assertIn("Converted Claude settings symlink to user-owned file", stdout)
         self.assertIn("Replacing symlink: Claude hooks", stdout)
 
     def test_codex_set_me_up_onboarding_uses_merged_layout_commands(self) -> None:
@@ -463,6 +683,16 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertNotIn("list-skills --global", text)
         self.assertNotIn("link-skills --global", text)
         self.assertNotIn("$software", text)
+
+    def test_work_cycle_requires_plan_alignment_without_ui_mode(self) -> None:
+        for agent in ("claude", "codex"):
+            skill_dir = REPO_ROOT / agent / "skills" / "work-cycle"
+            files = [skill_dir / "SKILL.md", *skill_dir.glob("references/**/*.md")]
+            text = "\n".join(path.read_text(encoding="utf-8") for path in files)
+
+            self.assertIn("create a plan and align with the user on that plan", text)
+            self.assertNotIn("Plan Mode", text)
+            self.assertNotIn("Shift+Tab", text)
 
     def test_documentation_codebase_audit_routes_away_from_maintenance(self) -> None:
         documentation = (REPO_ROOT / "codex" / "skills" / "documentation" / "SKILL.md").read_text(
@@ -636,6 +866,10 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("list-skills --agent claude --global", text)
         self.assertIn("link-skills --agent claude --global", text)
         self.assertIn("/work-cycle", text)
+        self.assertIn("tool remains after migration and is not itself a legacy marker", text)
+        self.assertIn("exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent", text)
+        self.assertIn("does not configure Claude permission allowlists", text)
+        self.assertFalse((REPO_ROOT / ".claude" / "settings.json").exists())
         self.assertNotIn("test -d skills", text)
         self.assertNotIn("global/CLAUDE.md", text.replace("claude/global/CLAUDE.md", ""))
         self.assertNotIn("install --global", text)

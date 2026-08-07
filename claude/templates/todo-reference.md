@@ -31,7 +31,7 @@ Next ID: 3
 
 ## Operations
 
-Todo completion is usually handled automatically by the memory agent when work results in a notebook entry. The manual completion flow below is a fallback.
+Todo completion is usually handled by the agent creating or updating the notebook entry when work results in one. The manual completion flow below is a fallback.
 
 ### Adding a todo
 1. If `TODO.md` is missing, create it with `# To-Do` and `Next ID: 1`. If `DONE.md` is missing, create it with `# Completed`.
