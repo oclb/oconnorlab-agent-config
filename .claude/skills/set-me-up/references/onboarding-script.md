@@ -4,6 +4,7 @@ Follow this script when onboarding the user.
 
 ## Overall Guidance
 
+- Before entering this script, the setup skill must fast-forward pull the checkout and re-read the updated setup files. Do not repeat that initial pull after reloading the script.
 - User-facing text can be modified if circumstances or user input deviates from the happy path; otherwise, it should be quoted exactly.
 - Answer any user questions by consulting README.md and other documents, particularly the skill files themselves; then, resume the script.
 - Interpret answers like "yea" or "y" as "yes", "nty" for "no", etc. Don't say "I am interpreting 'yea' as 'yes'" or similar.
@@ -27,11 +28,10 @@ Your installed skills and `~/.claude/CLAUDE.md` import are unaffected. Shall I m
 If the user agrees, run:
 
 ```bash
-git pull --ff-only
 bin/config-agent-tool update --agent claude
 ```
 
-Run the pull first and separately: `update` alone would execute the already-loaded pre-migration repair logic even after pulling new code. If the pull fails because of local changes or a diverged branch, stop and ask the user how to proceed rather than forcing it.
+The setup skill's initial pull and instruction reload ensure this command uses the current migration logic. The command's own update check may perform a second no-op pull.
 
 Then verify as in the Verify And Close section, and tell the user to restart Claude Code so the plugin's hooks load. Migration is one-time: after it, the repaired startup hook keeps the repo and managed surfaces current automatically.
 

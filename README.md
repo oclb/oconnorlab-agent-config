@@ -29,6 +29,8 @@ For Claude Code or Codex, the repo-local setup skill should be discoverable befo
 set me up
 ```
 
+The setup workflow first fast-forward pulls this repository, then follows the running agent's Claude or Codex setup path. You do not need to request the pull or know agent-specific setup commands.
+
 ### 3. Initialize A Project
 
 Open your own project and start your agent there.

@@ -21,6 +21,15 @@ Core rules:
 
 ## Workflow
 
+Before starting the numbered workflow, update this checkout:
+
+```bash
+git pull --ff-only
+```
+
+If the pull fails because of local changes, divergence, authentication, or network access, stop and ask the user how to proceed. Never force, reset, stash, or discard their work. Record that the pull completed for this setup request so it is not repeated when the refreshed instructions are loaded.
+Re-read this `SKILL.md`, `README.md`, and `references/onboarding-script.md` from the updated checkout, then continue below using the refreshed instructions.
+
 1. Read `README.md` and `references/onboarding-script.md`.
 2. Confirm the current directory is this config repo.
 
