@@ -662,6 +662,7 @@ class ConfigAgentToolTests(unittest.TestCase):
             / "references"
             / "onboarding-script.md",
         ]
+        skill_text = onboarding_files[0].read_text(encoding="utf-8")
         text = "\n".join(path.read_text(encoding="utf-8") for path in onboarding_files)
 
         self.assertIn("codex/skills", text)
@@ -670,7 +671,13 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("set up, initialize, install, onboard, configure", text)
         self.assertIn("git pull --ff-only", text)
         self.assertIn("Re-read this `SKILL.md`", text)
+        self.assertLess(
+            skill_text.index("git pull --ff-only"), skill_text.index("1. Read `README.md`")
+        )
         self.assertIn("install --agent codex", text)
+        self.assertNotIn("install --agent claude", text)
+        self.assertNotIn("update --agent claude", text)
+        self.assertNotIn("link-skills --agent claude", text)
         self.assertIn("~/.codex/hooks.json", text)
         self.assertIn("~/.codex/hooks/update-config.sh", text)
         self.assertIn("SessionStart", text)
@@ -858,6 +865,7 @@ class ConfigAgentToolTests(unittest.TestCase):
             / "references"
             / "onboarding-script.md",
         ]
+        skill_text = onboarding_files[0].read_text(encoding="utf-8")
         text = "\n".join(path.read_text(encoding="utf-8") for path in onboarding_files)
 
         self.assertIn("claude/skills", text)
@@ -866,7 +874,13 @@ class ConfigAgentToolTests(unittest.TestCase):
         self.assertIn("set up, initialize, install, onboard, configure", text)
         self.assertIn("git pull --ff-only", text)
         self.assertIn("Re-read this `SKILL.md`", text)
+        self.assertLess(
+            skill_text.index("git pull --ff-only"), skill_text.index("1. Read `README.md`")
+        )
         self.assertIn("install --agent claude", text)
+        self.assertNotIn("install --agent codex", text)
+        self.assertNotIn("update --agent codex", text)
+        self.assertNotIn("link-skills --agent codex", text)
         self.assertIn("list-skills --agent claude --global", text)
         self.assertIn("link-skills --agent claude --global", text)
         self.assertIn("/work-cycle", text)
