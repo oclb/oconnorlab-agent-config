@@ -757,6 +757,58 @@ def install_codex() -> int:
     return 0
 
 
+def managed_install_present(name: str) -> bool:
+    """Return whether this repo already manages any surface for an agent."""
+    if name == "claude":
+        cdir = claude_dir()
+        return any(
+            (
+                (cdir / "bin" / "config-agent-tool").exists(),
+                (cdir / "bin" / "config-agent-tool").is_symlink(),
+                is_link_under(cdir / "settings.json", repo_dir()),
+                is_link_under(cdir / "skills" / CLAUDE_PLUGIN_NAME, repo_dir()),
+                is_link_under(cdir / "hooks", repo_dir()),
+            )
+        )
+    if name == "codex":
+        code_dir = codex_dir()
+        override = code_dir / "AGENTS.override.md"
+        override_is_managed = False
+        if override.exists():
+            with contextlib.suppress(OSError):
+                content = override.read_text(encoding="utf-8")
+                override_is_managed = any(
+                    marker in content
+                    for marker in (GENERATED_MARKER, OLD_CODEX_MARKER, OLD_CODEX_MARKER_2)
+                )
+        return any(
+            (
+                (code_dir / "bin" / "config-agent-tool").exists(),
+                (code_dir / "bin" / "config-agent-tool").is_symlink(),
+                override_is_managed,
+                codex_hooks_sidecar(code_dir).exists(),
+                is_link_under(code_dir / "hooks", repo_dir()),
+            )
+        )
+    raise SystemExit(f"Unknown agent: {name}")
+
+
+def refresh_agent(name: str, *, first_run: bool) -> None:
+    config = agent_config(name)
+    if name == "claude":
+        repair_claude_managed_surface()
+    elif name == "codex":
+        repair_codex_managed_surface(first_run=first_run)
+    else:
+        raise SystemExit(f"Unknown agent: {name}")
+    global_count = refresh_links(config, target_skills_dir(config, True))
+    print(f"Refreshed {global_count} global {config.name} skill link(s).")
+    project_target = target_skills_dir(config, False)
+    if project_target.exists():
+        project_count = refresh_links(config, project_target)
+        print(f"Refreshed {project_count} project {config.name} skill link(s).")
+
+
 def command_install(args: argparse.Namespace) -> int:
     if args.agent == "claude":
         return install_claude()
@@ -775,16 +827,34 @@ def command_update(args: argparse.Namespace) -> int:
         if config.name == "claude":
             repair_claude_managed_surface()
         raise
-    if config.name == "codex":
-        repair_codex_managed_surface(first_run=False)
-    if config.name == "claude":
-        repair_claude_managed_surface()
-    global_count = refresh_links(config, target_skills_dir(config, True))
-    print(f"Refreshed {global_count} global {config.name} skill link(s).")
-    project_target = target_skills_dir(config, False)
-    if project_target.exists():
-        project_count = refresh_links(config, project_target)
-        print(f"Refreshed {project_count} project {config.name} skill link(s).")
+    refresh_agent(config.name, first_run=False)
+    return 0
+
+
+def command_setup(args: argparse.Namespace) -> int:
+    if args.agent != "both":
+        raise SystemExit(f"Unknown setup target: {args.agent}")
+    if not args.after_pull:
+        git_pull_ff_only()
+        os.execv(
+            sys.executable,
+            [
+                sys.executable,
+                str(repo_dir() / "bin" / "config-agent-tool"),
+                "setup",
+                "--agent",
+                "both",
+                "--after-pull",
+            ],
+        )
+    existing = {name: managed_install_present(name) for name in sorted(AGENTS)}
+    # Run stricter first-time Codex checks before touching a fresh Claude home.
+    order = ("codex", "claude") if not existing["codex"] else ("claude", "codex")
+    for name in order:
+        action = "Updating existing" if existing[name] else "Installing first-time"
+        print(f"{action} {name} configuration.")
+        refresh_agent(name, first_run=not existing[name])
+    print("Claude and Codex setup/update complete. No new skills were installed automatically.")
     return 0
 
 
@@ -827,6 +897,11 @@ def build_parser() -> argparse.ArgumentParser:
     update = subcommands.add_parser("update")
     add_agent_arg(update)
     update.set_defaults(func=command_update)
+
+    setup = subcommands.add_parser("setup")
+    setup.add_argument("--agent", required=True, choices=["both"])
+    setup.add_argument("--after-pull", action="store_true", help=argparse.SUPPRESS)
+    setup.set_defaults(func=command_setup)
 
     repo = subcommands.add_parser("repo-dir")
     repo.set_defaults(func=command_repo_dir)

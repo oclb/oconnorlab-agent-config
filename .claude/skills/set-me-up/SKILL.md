@@ -18,6 +18,7 @@ Core rules:
 - Treat recommendations as explanations, not consent.
 - Tell the user that skipped skills can still be installed project-locally later.
 - If the user asks for a faster path, still state exactly what will be installed and ask for one explicit confirmation before installing anything.
+- If the user says `set me up for both Claude and Codex`, use the cross-agent workflow in the onboarding script. This exact phrase takes precedence over the ordinary Claude-only path. After one explicit base-setup consent checkpoint, that workflow pulls the repo first and installs or updates both configurations.
 - Detect legacy or incomplete installs and offer migration instead of full onboarding: migration is needed when `~/.claude/settings.json` is a symlink into this repo, or when `~/.claude/bin/config-agent-tool` exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent. Follow the "Migration From A Pre-Plugin Install" section of the onboarding script instead of the welcome walkthrough. The installed tool remains after migration and is not itself a legacy marker.
 
 ## Workflow
@@ -30,7 +31,7 @@ pwd
 test -x bin/config-agent-tool && test -d claude/skills && test -f claude/global/CLAUDE.md && echo config-repo
 ```
 
-3. Follow the script. The first user-facing message must welcome the user, summarize the three README features, and explain that setup is a guided choice process.
+3. Follow the script. For the exact cross-agent phrase, start with "Cross-Agent Setup Or Update." Otherwise, the first user-facing message must welcome the user, summarize the three README features, and explain that setup is a guided choice process.
 4. Only after the user consents, run `bin/config-agent-tool install --agent claude`.
 5. For subsequent setup commands, use the installed tool path: `${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool`.
 6. Run `${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool list-skills --agent claude --global` and continue the scripted skill walkthrough.

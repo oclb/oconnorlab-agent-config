@@ -9,6 +9,51 @@ Follow this script when onboarding the user.
 - Interpret answers like "yea" or "y" as "yes", "nty" for "no", etc. Don't say "I am interpreting 'yea' as 'yes'" or similar.
 - Avoid adding noise to the conversation or thinking out loud. Don't preface like "I am going to read this script" or add filler between steps like "/systematize is selected. Next is..."
 
+## Cross-Agent Setup Or Update
+
+Use this section when the user says `set me up for both Claude and Codex`, whether the active agent is Claude or Codex. It takes precedence over the product-specific first-time and migration paths below.
+
+Say:
+
+```text
+I can set up or update both Claude and Codex from this checkout. After you approve, I will first pull the latest lab-agent-config with a fast-forward-only update. I will then detect whether each configuration is new, current, or legacy; install or repair both managed surfaces; preserve user-owned Claude settings, Codex instructions, and personal hooks; retain existing skill choices; and verify both installations. The repository does not configure Claude permissions or edit Codex's config.toml.
+
+Proceed with the base setup or update for both Claude and Codex?
+```
+
+Only after the user agrees, run:
+
+```bash
+bin/config-agent-tool setup --agent both
+```
+
+This command pulls and then restarts itself from the updated checkout before changing either agent configuration, so the newly downloaded migration logic is used. If the pull fails because of local changes, divergence, authentication, or network access, stop without forcing or resetting anything. If first-time Codex safety checks report an unmanaged `~/.codex/AGENTS.override.md`, `~/.codex/hooks.json`, or `~/.codex/hooks/` directory, explain the existing-file conflict and use the same consent-based resolution as the Codex onboarding workflow; never overwrite it silently.
+
+If both sides were reported as existing installations, retain their current skill choices and continue to cross-agent verification. If either side was first-time, list the currently available global skills for both agents, then offer the ordinary skill walkthrough once:
+
+```bash
+${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool list-skills --agent claude --global
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool list-skills --agent codex --global
+```
+
+Describe both invocation forms (`/skill-name` in Claude and `$skill-name` in Codex), ask once per conceptual skill, and state that each accepted choice will be linked for both agents. Honor different per-agent choices if requested. Include `notebook-entry` for each agent only if the user chooses the notebook system. After collecting all choices, run the applicable commands:
+
+```bash
+${CLAUDE_HOME:-$HOME/.claude}/bin/config-agent-tool link-skills --agent claude --global --add <chosen-claude-skill-names>
+${CODEX_HOME:-$HOME/.codex}/bin/config-agent-tool link-skills --agent codex --global --add <chosen-codex-skill-names>
+```
+
+Skip either command if no skills were chosen for that agent. Verify both installations:
+
+```bash
+ls -l ~/.claude/CLAUDE.md ~/.claude/settings.json ~/.claude/skills/lab-config ~/.claude/hooks ~/.claude/bin/config-agent-tool
+test -f ~/.claude/settings.json && test ! -L ~/.claude/settings.json
+claude plugin list
+ls -l ~/.codex/user/AGENTS.md ~/.codex/AGENTS.override.md ~/.codex/bin/config-agent-tool ~/.codex/hooks.json ~/.codex/hooks/update-config.sh
+```
+
+Confirm that `claude plugin list` shows `lab-config@skills-dir`, Codex hooks render successfully, personal hooks/settings remain intact, and chosen skill links resolve into the matching agent tree. Finish by telling the user to restart both Claude and Codex; mention `/hooks` if Codex asks the user to review its startup hook.
+
 ## Migration From A Pre-Plugin Install
 
 Use this section instead of the welcome walkthrough when `~/.claude/settings.json` is a symlink into this repo, or when `~/.claude/bin/config-agent-tool` exists but the repo-managed `~/.claude/skills/lab-config` plugin link is absent. The installed tool remains after a successful migration and is not itself evidence of a legacy install. Existing installs do not migrate on their own: the pre-plugin startup hook could not pull this repo, so the machine stays on the old layout until an update runs.

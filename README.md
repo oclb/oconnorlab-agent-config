@@ -29,6 +29,14 @@ For Claude Code or Codex, the repo-local setup skill should be discoverable befo
 set me up
 ```
 
+To install or update both configurations from either agent, say:
+
+```text
+set me up for both Claude and Codex
+```
+
+After you approve the described changes, the agent pulls this repository first, installs or updates both configurations, preserves user-owned settings and hooks, and verifies both sides. You do not need to run agent-specific setup commands.
+
 ### 3. Initialize A Project
 
 Open your own project and start your agent there.
