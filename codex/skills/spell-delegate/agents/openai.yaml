@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spell Delegate"
+  short_description: "Delegate one-shot work to Spell with review"
+  default_prompt: "Use $spell-delegate to delegate this task to a one-shot Spell agent and supervise the result."
