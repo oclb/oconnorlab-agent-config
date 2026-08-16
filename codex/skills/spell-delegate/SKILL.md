@@ -1,93 +1,121 @@
 ---
 name: spell-delegate
-description: Delegate bounded one-shot implementation, research, or analysis tasks to a local Spell CLI agent while Codex owns Git state, review, notebook provenance, and user communication. Use when independent Spell exploration or implementation would materially help, including dogfooding Spell itself.
+description: Delegate a bounded implementation task to a local Spell CLI agent. Use when implementing features within Spell itself.
 ---
 
 # Spell Delegate
 
-Use Spell as a one-shot worker and Codex as supervisor. Do not create a persistent
-intercom or assume that a later Spell run remembers an earlier one.
+Use Spell as a one-shot worker and Codex as supervisor. Do not assume that a
+later Spell run remembers an earlier one or knows context from the user
+conversation. Use the CLI default model by omitting `-m` unless the user requests
+otherwise or the default fails; record why an override was necessary.
 
-Before invoking Spell, read [references/run-record.md](references/run-record.md)
-for the run bundle, command forms, and required prompt clauses.
+Codex owns user alignment and planning, Git state, the notebook, validation,
+acceptance, PRs, and merge approval. Spell owns only its explicit assignment.
+Before implementation, align with the user on scope and the big-picture approach.
+If the user asks for a plan, make it detailed enough to name the files to change
+and pass the approved plan verbatim to Spell.
 
-## Choose the delegation
+## Prepare the run
 
-1. Use an **implementation run** for bounded code or documentation changes.
-2. Use a **research run** for substantial feature exploration, proposal analysis,
-   or data gathering where an independent report will help.
-3. Skip delegation when the needed information is narrow and direct inspection is
-   faster. Codex may always inspect files or research independently to verify or
-   extend Spell's work.
-
-Use the CLI's default model by omitting `-m`. Override it only when the user asks,
-the default fails, or the chosen transport is incompatible; record the reason.
-
-## Codex owns the boundary
-
-Codex owns user alignment, Git state, the notebook, validation, acceptance, PRs,
-and merge approval. Spell owns only its explicit assignment.
-
-For implementation, Codex must:
-
-1. Inspect the repository and notebook, preserve the primary checkout, and create
+1. Inspect the repository and notebook. Preserve the primary checkout and create
    an isolated branch and worktree from the requested base.
-2. Invoke Spell with that worktree as its process directory. Instruct it to edit
-   only that worktree and never create/switch branches, add/commit files, push, or
-   open a PR. Read-only Git inspection is allowed.
-3. Give exact scope and acceptance criteria. Enable feedback and durable tracing.
-4. Inspect the resulting diff and Git status, run proportionate checks, and decide
-   whether to accept, revise, or discard the work. Spell's report is not evidence
-   that the task is complete.
+2. Create `notebook/results/spell-runs/<date>-<slug>-<run-id>/` in the separate
+   notebook repository. When the code worktree lacks `notebook/`, locate it from
+   the primary checkout.
+3. Create this run bundle:
+   - `assignment.spl`: exact self-contained prompt.
+   - `run.md`: run ID, timestamps, process directory, branch, base commit, exact
+     command, model override reason, exit status, and supervisor-observed failures.
+   - `trace/`: CLI trace.
+   - `verbose.log`: raw model log.
+   - `feedback.edn`: append-only Spell feedback.
+   - `result.md`: returned implementation report.
+   - `review.md`: Spell self-review, Codex assessment, validation, commit or PR,
+     and outcome.
+4. Run Spell with the code worktree as its process directory. The host may write
+   telemetry to the notebook bundle; the agent must write only in its worktree.
 
-Multiple one-shot runs may contribute to one PR. Each new assignment must restate
-the original requirements, current cumulative state, relevant prior findings, and
-the remaining task; never rely on conversational memory.
+Example, with all standard delegation features enabled:
 
-## Require two review rounds
+```bash
+SPELL_FEEDBACK_PATH=/absolute/notebook/results/spell-runs/2026-08-16-example-001/feedback.edn \
+bin/spell --dogfood --agents-md \
+  --trace-dir /absolute/notebook/results/spell-runs/2026-08-16-example-001/trace \
+  --log /absolute/notebook/results/spell-runs/2026-08-16-example-001/verbose.log \
+  /absolute/notebook/results/spell-runs/2026-08-16-example-001/assignment.spl
+```
 
-Every implementation assignment must tell the implementing Spell agent to run a
-fresh-context Spell reviewer after making and testing the changes, then address
-actionable findings and report both findings and resolutions. The reviewer should
-use the read-only `explore` agent when available.
+`--dogfood` activates self-improvement feedback for the main agent and workers.
+`--agents-md` puts the worktree-root `AGENTS.md` into the natural-language prompt,
+capped at 32 KiB. Explicit paths make trace, log, and feedback durable. Run the
+command without `-m` to use Spell's default model.
 
-If the changes advance to a PR, Codex must start its own fresh-context reviewer
-against the actual PR before merge. Reconcile actionable findings, revalidate the
-final diff, and merge only with the user's explicit approval. This Codex-side PR
-review is required even if several Spell implementation runs reviewed themselves.
+## Write the assignment
 
-## Research runs
+Include the user's motivation, preferences, decisions, exact scope, acceptance
+criteria, and approved plan. Always include these instructions:
 
-Use `config/agent-profiles/explore.agent.edn`: it exposes `io-read`, web, and
-feedback, but no file-write or process-execution functions. Ask for a report in
-the response; Codex saves it in the run bundle. Do not ask the research agent to
-create artifacts or modify the notebook.
+1. Work only inside the current worktree. Do not change anything outside it.
+2. Do not create or switch branches, stage or commit files, push, or open a PR.
+   Codex owns Git state; read-only Git inspection is allowed.
+3. Implement the acceptance criteria and run relevant tests.
+4. While doing the task, use `feedback/log` for concrete Spell bugs, friction,
+   ideas, or documentation gaps encountered; do not divert into issue hunting.
+5. After implementation and tests, delegate a fresh-context reviewer with the
+   original assignment. Have it inspect the cumulative diff, address actionable
+   findings, and rerun affected tests.
+6. Return a summary of changes; tests; reviewer findings and their patches or
+   explanations for non-patches; feedback items; and deviations from the
+   assignment. If review does not pass, say so plainly.
 
-Research delegation is especially useful for initial exploration of a significant
-feature or proposal. Codex remains responsible for checking claims and deciding
-what reaches the user.
+Multiple one-shot Spell runs may contribute to one PR. Every later assignment
+must restate the original requirements, cumulative state, accepted decisions,
+prior findings, and remaining task. If patches are needed after a run, Codex or a
+Codex subagent normally makes them unless the user asks for another Spell run.
 
-## Run synchronously without becoming unavailable
+## Supervise the process
 
-Default to synchronous supervision: start one process, retain its session handle,
-and do not accept the task until it exits and its artifacts are reviewed. Use a
-bounded initial yield (normally 30 seconds); if the process is still running, poll
-the same session in bounded intervals and provide concise progress updates.
+Default to synchronous acceptance, not a permanently blocked interface:
 
-"Synchronous" describes acceptance, not UI exclusivity. A yielded process can keep
-running while Codex receives a user message or does other useful work. Use an
-explicit asynchronous run when parallel work is valuable, then retain and poll its
-session. A one-shot run cannot receive a mid-run message: queue additive context
-for the next run, or terminate/ignore the result if new direction invalidates it.
+1. Start Spell with an initial yield of about 30 seconds. If it exits, start and
+   result cost one server-to-computer round-trip.
+2. If it is still running, the tool returns a session ID while the process keeps
+   running on the computer. Each later poll is another round-trip. Poll about
+   once a minute for straightforward work. For complex work, inspect progress
+   roughly every five minutes using short polls; never make one five-minute
+   blocking wait. Report progress after ten minutes.
+3. Between polls, Codex can respond to the user or do independent work while
+   Spell continues. A wait already in flight must return before Codex can act in
+   this task.
+4. Use an explicitly asynchronous start—a very short initial yield—when parallel
+   work is immediately useful. It is the same retained process and still requires
+   later polling, review, and acceptance.
 
-## Preserve provenance
+A one-shot run cannot receive mid-run instructions. Put additive context in the
+next run. If new direction invalidates the current task, terminate it or ignore
+its result rather than treating stale work as accepted.
 
-Codex creates and curates the run bundle and durable notebook entry. Link the
-assignment, trace, feedback, result, worktree/base commit, resulting commit or PR,
-Spell self-review, Codex review, and validation. Use feedback `:agent-handle` and
-`:trace-node-id` to locate the exact response to a logged observation. If failure
-occurs before the agent can log feedback, record it as a supervisor-observed issue.
+## Review and preserve provenance
 
-Classify dogfood findings as model/agent behavior, Spell robustness, CLI friction,
-or documentation. Do not turn raw feedback into an issue or code change without
-Codex triage.
+Inspect Git status and the full diff, run proportionate validation, and decide
+whether to accept, revise, or discard the work. A confident Spell report is not
+completion evidence. If the report is absent, confused, implausibly confident, or
+otherwise suspicious, inspect the trace and logs; delegate that audit to a Codex
+subagent when useful.
+
+Every implementation has Spell's fresh-context review. If changes advance to a
+PR, run a separate fresh-context Codex review against the actual PR, reconcile
+findings, revalidate, and merge only with explicit user approval.
+
+Create or update the durable notebook entry and link the assignment, trace,
+feedback, result, worktree and base commit, resulting commit or PR, both reviews,
+and validation. Use feedback `:agent-handle` and `:trace-node-id` to locate the
+exact response behind an observation. Record failures before feedback was
+available as supervisor-observed issues. Classify findings as model or agent
+behavior, Spell robustness, CLI friction, or documentation; Codex triages them
+before creating issues or code changes.
+
+Relay the result to the user with a one-to-three-sentence TL;DR and, if incomplete,
+a one-to-two-sentence recommended next step. If the user says “continue,” follow
+that recommendation.
