@@ -117,15 +117,15 @@ PR, run a separate fresh-context Codex review against the actual PR, reconcile
 findings, revalidate, and merge only with explicit user approval.
 
 For each accepted commit, add one `Spell-Run: <run-id>` per contributing run.
-Follow global `Notebook-Entry` convention when applicable. Put Codex review
+Follow global `Notebook-Entry` convention. Put Codex review
 provenance in PR description or equivalent record.
 
 Create or update durable notebook entry with assignment, trace, feedback,
-result, worktree, base/result commits, reviews, and validation. Use
-`:agent-handle` and `:trace-node-id` to locate each observation's exact
-response. Record failures before feedback was available as supervisor-observed
+result, worktree, base, resulting commit or PR, reviews, and validation.
+`:agent-handle` and `:trace-node-id` locate each observation's exact response.
+Record failures before feedback was available as supervisor-observed
 issues. Classify findings as model/agent behavior, Spell robustness, CLI friction,
-or documentation; Codex triages them before creating issues or code changes.
+or documentation; Codex triages before creating issues or code changes.
 
 Relay the result to the user with a one-to-three-sentence TL;DR and, if incomplete,
 a one-to-two-sentence recommended next step. If the user says “continue,” follow
