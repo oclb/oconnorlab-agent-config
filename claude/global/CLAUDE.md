@@ -19,6 +19,15 @@
 - Prefer running commands directly instead of asking the user to run them.
 - Prefer numbered lists over bullet lists so the user can respond precisely. Exception: when items already have stable numbers or letters, e.g., to-do items, do not double-enumerate them; preserve the existing labels only, avoiding ambiguity.
 
+## Written Documents
+
+- In all written documents, including skills, instructions, documentation, and human-facing writeups, state the chosen behavior directly. Mention rejected alternatives or use contrastive "X, not Y" framing only when the audience would naturally expect Y and omitting it would cause material misunderstanding.
+
+## Git Provenance
+
+- When a commit has a supporting project notebook entry, add a `Notebook-Entry: notebook/entries/<file>.md` commit trailer.
+- When Codex performs a durable review, add `Codex-Review: <review-artifact>` to the PR description or equivalent review record. The value should identify the notebook or run-bundle review file.
+
 ## Generated Figures
 
 When generating a figure, inspect the rendered output visually before returning it. Correct obvious issues, including overlapping plot elements, clipped labels, unreadable text, bad contrast, malformed legends, or any layout problem that makes the figure harder to interpret.
