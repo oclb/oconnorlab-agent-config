@@ -116,13 +116,15 @@ Every implementation has Spell's fresh-context review. If changes advance to a
 PR, run a separate fresh-context Codex review against the actual PR, reconcile
 findings, revalidate, and merge only with explicit user approval.
 
-Create or update the durable notebook entry and link the assignment, trace,
-feedback, result, worktree and base commit, resulting commit or PR, both reviews,
-and validation. Use feedback `:agent-handle` and `:trace-node-id` to locate the
-exact response behind an observation. Record failures before feedback was
-available as supervisor-observed issues. Classify findings as model or agent
-behavior, Spell robustness, CLI friction, or documentation; Codex triages them
-before creating issues or code changes.
+For each accepted commit, add one `Spell-Run: <run-id>` trailer per contributing
+run. If the work has a notebook entry, also follow the global `Notebook-Entry`
+commit-trailer convention. Record Codex review provenance in the PR description
+or equivalent review record.
+
+Update the durable notebook entry with the assignment, trace, feedback, result,
+worktree, base and resulting commits, reviews, and validation. Use feedback
+`:agent-handle` and `:trace-node-id` to locate observations. Codex triages
+findings before creating issues or code changes.
 
 Relay the result to the user with a one-to-three-sentence TL;DR and, if incomplete,
 a one-to-two-sentence recommended next step. If the user says “continue,” follow
