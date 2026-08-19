@@ -54,6 +54,13 @@ Be open to issues with the plan or better approaches during implementation. If t
 
 Run relevant validation and iteratively debug. If the task is substantial, or if you are in worktree mode, trigger external review when complete and report findings to the user.
 
+## Reporting
+
+Report completed work in two layers, in this order:
+
+1. *Conceptual changes:* give a brief, plain-language account of the behavior or contract changes that a human can understand without reading code. Usually use one to three points and keep this section short.
+2. *File-by-file implementation:* map each changed file, or tightly related group of files, to the concrete implementation and validation. Do not lead with file details or repeat the conceptual summary.
+
 ## Notebook
 
 Create or update notebook entries for new analyses, code changes that alter interpretation of scientific results, codebase investigations, significant decisions, or substantial work whose context should survive the session. For entry creation after implementation, fork a subagent.
