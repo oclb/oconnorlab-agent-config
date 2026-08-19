@@ -704,6 +704,18 @@ class ConfigAgentToolTests(unittest.TestCase):
             self.assertNotIn("Plan Mode", text)
             self.assertNotIn("Shift+Tab", text)
 
+    def test_work_cycle_reports_concept_before_file_details(self) -> None:
+        for agent in ("claude", "codex"):
+            text = (
+                REPO_ROOT / agent / "skills" / "work-cycle" / "SKILL.md"
+            ).read_text(encoding="utf-8")
+
+            conceptual_index = text.index("*Conceptual changes:*")
+            file_index = text.index("*File-by-file implementation:*")
+            self.assertLess(conceptual_index, file_index)
+            self.assertIn("keep this section short", text)
+            self.assertIn("Do not lead with file details", text)
+
     def test_documentation_codebase_audit_routes_away_from_maintenance(self) -> None:
         documentation = (REPO_ROOT / "codex" / "skills" / "documentation" / "SKILL.md").read_text(
             encoding="utf-8"
